@@ -1,0 +1,14 @@
+package org.datacenter.config.receiver.base;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * @author : [wangminan]
+ * @description : 数据库配置 使用Flink CDC
+ */
+@EqualsAndHashCode(callSuper = true)
+@Data
+public abstract class DatabaseCdcBaseReceiverConfig extends BaseReceiverConfig {
+    protected DataSourceType dataSourceType = DataSourceType.DATABASE_CDC;
+}
