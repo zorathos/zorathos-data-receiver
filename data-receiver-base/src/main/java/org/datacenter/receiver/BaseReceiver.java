@@ -1,7 +1,7 @@
 package org.datacenter.receiver;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.base.BaseReceiverConfig;
+import org.datacenter.config.receiver.base.receiver.BaseReceiverConfig;
 
 /**
  * @author : [wangminan]
@@ -15,12 +15,9 @@ public abstract class BaseReceiver {
     public void run() {
         prepare();
         start();
-        addShutdownHook();
     }
 
     public abstract void prepare();
 
     public abstract void start();
-
-    public abstract void addShutdownHook();
 }

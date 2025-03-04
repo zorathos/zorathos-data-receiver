@@ -3,7 +3,7 @@ package org.datacenter.config.receiver.human.machine.plan;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datacenter.config.receiver.base.KafkaBaseReceiverConfig;
+import org.datacenter.config.receiver.base.receiver.KafkaBaseReceiverConfig;
 
 /**
  * @author : [wangminan]

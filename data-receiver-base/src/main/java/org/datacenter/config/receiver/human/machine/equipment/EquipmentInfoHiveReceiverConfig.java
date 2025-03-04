@@ -3,7 +3,7 @@ package org.datacenter.config.receiver.human.machine.equipment;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datacenter.config.receiver.base.DatabaseJdbcBaseReceiverConfig;
+import org.datacenter.config.receiver.base.receiver.DatabaseJdbcBaseReceiverConfig;
 
 /**
  * @author : [wangminan]

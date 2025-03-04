@@ -1,4 +1,4 @@
-package org.datacenter.config.receiver.base;
+package org.datacenter.config.receiver.base.receiver;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
  * @author : [wangminan]
  * @description : Kafka数据接收器基础配置
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class KafkaBaseReceiverConfig extends BaseReceiverConfig {
 
     protected DataSourceType dataSourceType = DataSourceType.KAFKA;

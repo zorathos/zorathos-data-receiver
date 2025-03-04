@@ -5,12 +5,10 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.datacenter.exception.ZorathosException;
 
 import java.util.Properties;
-import java.util.concurrent.Future;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 

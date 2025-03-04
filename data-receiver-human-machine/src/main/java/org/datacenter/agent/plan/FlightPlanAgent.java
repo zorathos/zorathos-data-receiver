@@ -39,6 +39,7 @@ public class FlightPlanAgent extends BaseAgent {
 
     @Override
     public void run() {
+        super.run();
         log.info("Flight plan agent start running, fetching data from flight agent system's xml interface and sending it to kafka.");
 
         if (scheduler == null) {
@@ -53,7 +54,7 @@ public class FlightPlanAgent extends BaseAgent {
                 try {
                     String plansInJson = mapper.writeValueAsString(flightPlans);
                     KafkaUtil.sendMessage(humanMachineProperties
-                            .getProperty("kafka.flightPlan.topic"), plansInJson);
+                            .getProperty("kafka.topic.flightPlan"), plansInJson);
                 } catch (JsonProcessingException e) {
                     throw new ZorathosException(e, "Error occurs while converting flight plans to json string.");
                 }
@@ -65,13 +66,13 @@ public class FlightPlanAgent extends BaseAgent {
                 }
             }
         }, 0,
-                Integer.parseInt(humanMachineProperties.getProperty("agent.personnelAndFlightPlan.interval")),
-                TimeUnit.MINUTES);
+        Integer.parseInt(humanMachineProperties.getProperty("agent.flightPlan.interval")),
+        TimeUnit.MINUTES);
     }
 
     @Override
     public void stop() {
-        running = false;
+        super.stop();
         scheduler.shutdown();
     }
 }

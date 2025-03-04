@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.Data;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlan;
 
 import java.io.IOException;
@@ -135,6 +136,29 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             }
         }
         return flightPlans;
+    }
+
+    public static List<PersonnelInfo> getPersonnelInfos() {
+        String formattedCookies = loginToPersonnelAndFlightPlanSystem();
+        List<PersonnelInfo> personnelInfos = new ArrayList<>();
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            String url = "http://" + host + "/fxy/bindfxylb?dwdm=90121" +
+                    humanMachineProperties.getProperty("agent.personnelAndFlightPlan.pull.personnel.queryString");
+            HttpRequest request = HttpRequest.newBuilder()
+                    .GET()
+                    .header("Cookie", formattedCookies)
+                    .header("Set-Cookie", formattedCookies)
+                    .uri(new URI(url))
+                    .build();
+            // 获取响应
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // 使用objectMapper 序列化返回列表
+            personnelInfos = mapper.readValue(response.body(), mapper.getTypeFactory()
+                    .constructCollectionType(List.class, PersonnelInfo.class));
+        } catch (URISyntaxException | IOException | InterruptedException e) {
+            throw new ZorathosException(e, "Error occurs while fetching personnel infos.");
+        }
+        return personnelInfos;
     }
 
     @Data

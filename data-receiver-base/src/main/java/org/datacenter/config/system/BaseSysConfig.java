@@ -19,13 +19,11 @@ public abstract class BaseSysConfig {
      * 从外部加载配置
      */
     public static void loadConfig() {
-
     };
 
     /**
      * 保存配置到外部
      */
     public static void saveConfig() {
-
     };
 }

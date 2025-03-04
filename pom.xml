@@ -40,6 +40,7 @@
         <!-- flink 版本 和服务器一致 -->
         <flink.version>1.20.0</flink.version>
         <kafka-flink-connector.version>3.4.0-1.20</kafka-flink-connector.version>
+        <flink-connector-jdbc.version>3.2.0-1.19</flink-connector-jdbc.version>
         <kafka-clients.version>3.9.0</kafka-clients.version>
         <!-- jackson-core和jackson-xml已经在zorathos的对应包里引入 不用重复引入了 如果需要使用自己版本的jackson记得exclude -->
 
@@ -150,7 +151,7 @@
             <dependency>
                 <groupId>org.apache.flink</groupId>
                 <artifactId>flink-connector-jdbc</artifactId>
-                <version>3.2.0-1.19</version>
+                <version>${flink-connector-jdbc.version}</version>
             </dependency>
             <!-- flink connector 连接器 -->
             <!-- flink依赖结束 -->

@@ -1,4 +1,4 @@
-package org.datacenter.config.receiver.base;
+package org.datacenter.config.receiver.base.receiver;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
  * @author : [wangminan]
  * @description : 数据库JDBC接收器配置
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class DatabaseJdbcBaseReceiverConfig extends BaseReceiverConfig {
     protected DataSourceType dataSourceType = DataSourceType.DATABASE_JDBC;
 }

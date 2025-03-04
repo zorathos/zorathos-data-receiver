@@ -31,7 +31,7 @@ public class HumanMachineSysConfig extends BaseSysConfig {
      */
     public static void loadConfig() {
         // 从系统中获取 "ZORATHOS_HUMAN_MACHINE_CONFIG" 环境变量
-        File externelConfigFile = new File(System.getenv(ZORATHOS_HUMAN_MACHINE_CONFIG));
+        File externelConfigFile = new File(System.getProperty(ZORATHOS_HUMAN_MACHINE_CONFIG));
         if (externelConfigFile.exists()) {
             log.info("ZORATHOS_HUMAN_MACHINE_CONFIG found in system env, trying to load sys config from file {}", externelConfigFile.getAbsolutePath());
             // 从配置文件加载

@@ -39,5 +39,49 @@
             <scope>test</scope>
         </dependency>
         <!-- Unit Test -->
+
+        <!-- flink依赖开始 -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-streaming-java</artifactId>
+            <!-- Flink的所有依赖建议在生产环境中provided 这样打包fatjar的时候不会将flink的依赖打包进去 -->
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-clients</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-runtime-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- flink connector 连接器 -->
+        <!-- base 连接Kafka的前提条件 -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-base</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-files</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-kafka</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-jdbc</artifactId>
+        </dependency>
+        <!-- flink connector 连接器 -->
+        <!-- flink依赖结束 -->
     </dependencies>
 </project>
