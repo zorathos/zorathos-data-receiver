@@ -10,13 +10,15 @@
     </parent>
 
     <artifactId>data-receiver-human-machine</artifactId>
+    <name>zorathos-data-receiver-human-machine</name>
+    <description>为人机能力系统准备的数据接收器</description>
+    <url>https://github.com/zorathos/zorathos-data-receiver/tree/main/data-receiver-human-machine</url>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
 
     <dependencies>
         <dependency>
@@ -30,26 +32,12 @@
             <version>0.0.1</version>
         </dependency>
 
-        <!-- 下面开始log4j2 -->
+        <!-- Unit Test -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j2-impl</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-        </dependency>
-        <!-- log4j2结束 -->
+        <!-- Unit Test -->
     </dependencies>
 </project>

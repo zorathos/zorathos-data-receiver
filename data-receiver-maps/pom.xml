@@ -10,6 +10,9 @@
     </parent>
 
     <artifactId>data-receiver-maps</artifactId>
+    <name>zorathos-data-receiver-maps</name>
+    <description>为MAPS系统准备的数据接收器</description>
+    <url>https://github.com/zorathos/zorathos-data-receiver/tree/main/data-receiver-maps</url>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -28,26 +31,13 @@
             <artifactId>data-receiver-base</artifactId>
             <version>0.0.1</version>
         </dependency>
-        <!-- 下面开始log4j2 -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
 
+        <!-- Unit Test -->
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j2-impl</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-        </dependency>
-        <!-- log4j2结束 -->
+        <!-- Unit Test -->
     </dependencies>
 </project>

@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>data-receiver-base</artifactId>
+    <name>zorathos-data-receiver-base</name>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -22,5 +23,47 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.wangminan</groupId>
+            <artifactId>data-model-base</artifactId>
+        </dependency>
+
+        <!-- 下面开始log4j2 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+        <!-- log4j2结束 -->
+
+        <!-- Kafka客户端 Agent用 -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+        </dependency>
+        <!-- Kafka客户端 Agent用 -->
+
+        <!-- Unit Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Unit Test -->
     </dependencies>
 </project>

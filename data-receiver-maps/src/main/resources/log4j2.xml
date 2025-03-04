@@ -4,7 +4,8 @@
         <Console name="Console" target="SYSTEM_OUT">
             <!--            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%highlight{%level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue}] [%t] %logger{36} - %msg%n" disableAnsi="false"/>-->
             <PatternLayout
-                    pattern="%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{bright,white} [%highlight{%-5level}] [%style{%t}{bright,blue}] [%style{%C{5.}}{bright,yellow}:%L] %msg%n%style{%throwable}{red}" disableAnsi="false"/>
+                    pattern="%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{bright,white} [%highlight{%-5level}] [%style{%t}{bright,blue}] [%style{%C{5.}}{bright,yellow}:%L] %msg%n%style{%throwable}{red}"
+                    disableAnsi="false"/>
         </Console>
         <!--<RollingFile name="File" fileName="logs/app.log" filePattern="logs/app-%i.log">
             <PatternLayout>

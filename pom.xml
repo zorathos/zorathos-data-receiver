@@ -11,9 +11,9 @@
     <description>这是zorathos的数据接收器</description>
 
     <modules>
+        <module>data-receiver-base</module>
         <module>data-receiver-human-machine</module>
         <module>data-receiver-maps</module>
-        <module>data-receiver-base</module>
     </modules>
 
     <properties>
@@ -40,8 +40,16 @@
         <!-- flink 版本 和服务器一致 -->
         <flink.version>1.20.0</flink.version>
         <kafka-flink-connector.version>3.4.0-1.20</kafka-flink-connector.version>
-
+        <kafka-clients.version>3.9.0</kafka-clients.version>
         <!-- jackson-core和jackson-xml已经在zorathos的对应包里引入 不用重复引入了 如果需要使用自己版本的jackson记得exclude -->
+
+        <!-- UT -->
+        <junit-jupiter.version>5.12.0</junit-jupiter.version>
+        <mockito.version>5.15.2</mockito.version>
+        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+        <testFailureIgnore>true</testFailureIgnore>
+        <skipUTs>false</skipUTs>
+        <!-- UT -->
     </properties>
 
     <dependencyManagement>
@@ -55,6 +63,12 @@
             <dependency>
                 <groupId>io.github.wangminan</groupId>
                 <artifactId>data-model-human-machine</artifactId>
+                <version>${zorathos-data-model.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.wangminan</groupId>
+                <artifactId>data-model-base</artifactId>
                 <version>${zorathos-data-model.version}</version>
             </dependency>
 
@@ -140,6 +154,37 @@
             </dependency>
             <!-- flink connector 连接器 -->
             <!-- flink依赖结束 -->
+
+            <!-- Kafka客户端 Agent用 -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka-clients.version}</version>
+            </dependency>
+            <!-- Kafka客户端 Agent用 -->
+
+            <!-- Unit Test -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit-jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- Unit Test -->
         </dependencies>
     </dependencyManagement>
 
@@ -276,7 +321,8 @@
                                 </filter>
                             </filters>
                             <transformers combine.children="append">
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer">
                                 </transformer>
                             </transformers>
                             <relocations>
@@ -318,6 +364,24 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <testFailureIgnore>${testFailureIgnore}</testFailureIgnore>
+                    <skip>${skipUTs}</skip>
+                    <!-- 使用@argLine引入参数 否则冲突 -->
+                    <argLine>
+                        @{argLine} --add-opens java.base/java.lang=ALL-UNNAMED --add-opens
+                        java.base/java.lang.reflect=ALL-UNNAMED
+                    </argLine>
+                    <forkCount>4C</forkCount> <!-- 根据CPU核心数创建相应数量的线程 -->
+                    <reuseForks>false</reuseForks> <!-- 设置为false以确保每个测试类都在新的JVM进程中运行 -->
+                    <parallel>all</parallel> <!-- 并行模式 -->
+                    <perCoreThreadCount>true</perCoreThreadCount> <!-- 启用每核心线程数的计算 -->
+                </configuration>
             </plugin>
         </plugins>
     </build>
