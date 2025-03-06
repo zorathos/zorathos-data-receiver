@@ -1,11 +1,11 @@
-package org.datacenter.config.receiver.human.machine.personnel;
+package org.datacenter.config.sinker.human.machine.personnel;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.datacenter.config.receiver.base.sinker.TiDBSinkerConfig;
+import org.datacenter.config.sinker.base.TiDBSinkerConfig;
 
 /**
  * @author : [wangminan]

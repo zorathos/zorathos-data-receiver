@@ -26,10 +26,8 @@ public class HumanMachineSysConfig extends BaseSysConfig {
         humanMachineProperties = new Properties();
     }
 
-    /**
-     * 覆写static方法 --> 方法隐藏
-     */
-    public static void loadConfig() {
+    @Override
+    public void loadConfig() {
         // 从系统中获取 "ZORATHOS_HUMAN_MACHINE_CONFIG" 环境变量
         File externelConfigFile = new File(System.getProperty(ZORATHOS_HUMAN_MACHINE_CONFIG));
         if (externelConfigFile.exists()) {
@@ -62,10 +60,8 @@ public class HumanMachineSysConfig extends BaseSysConfig {
         }
     }
 
-    /**
-     * 覆写static方法 --> 方法隐藏
-     */
-    public static void saveConfig() {
+    @Override
+    public void saveConfig() {
 
     }
 }

@@ -1,9 +1,7 @@
-package org.datacenter.config.receiver.base.sinker;
+package org.datacenter.config.sinker.base;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 /**
  * @author : [wangminan]

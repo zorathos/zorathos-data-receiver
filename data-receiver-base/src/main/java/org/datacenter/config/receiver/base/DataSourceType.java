@@ -1,4 +1,4 @@
-package org.datacenter.config.receiver.base.receiver;
+package org.datacenter.config.receiver.base;
 
 import lombok.Getter;
 

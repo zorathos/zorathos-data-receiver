@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.datacenter.config.receiver.base.receiver.KafkaBaseReceiverConfig;
+import org.datacenter.config.receiver.base.KafkaBaseReceiverConfig;
 
 /**
  * @author : [wangminan]

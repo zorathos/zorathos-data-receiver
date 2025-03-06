@@ -16,7 +16,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.personnel.PersonnelAgent;
 import org.datacenter.config.receiver.human.machine.personnel.PersonnelKafkaReceiverConfig;
-import org.datacenter.config.receiver.human.machine.personnel.PersonnelSinkerConfig;
+import org.datacenter.config.sinker.human.machine.personnel.PersonnelSinkerConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -27,7 +27,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.Arrays;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -44,7 +43,8 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     public PersonnelKafkaReceiver(PersonnelKafkaReceiverConfig receiverConfig, PersonnelSinkerConfig sinkerConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
-        HumanMachineSysConfig.loadConfig();
+        HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
+        sysConfig.loadConfig();
         // 2. 初始化人员Agent
         this.personnelAgent = new PersonnelAgent();
         this.receiverConfig = receiverConfig;
@@ -164,6 +164,11 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         }
     }
 
+    /**
+     * 被flink调用的主函数
+     * @param args 参数 第一个为接收器参数 第二个为持久化器参数
+     * @throws JsonProcessingException json处理异常
+     */
     public static void main(String[] args) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         PersonnelKafkaReceiverConfig receiverConfig = mapper.readValue(args[0],

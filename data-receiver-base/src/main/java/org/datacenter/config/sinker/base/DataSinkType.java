@@ -1,4 +1,4 @@
-package org.datacenter.config.receiver.base.sinker;
+package org.datacenter.config.sinker.base;
 
 import lombok.Getter;
 

@@ -24,11 +24,6 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.github.wangminan</groupId>
-            <artifactId>data-model-base</artifactId>
-        </dependency>
-
         <!-- 下面开始log4j2 -->
         <dependency>
             <groupId>org.slf4j</groupId>

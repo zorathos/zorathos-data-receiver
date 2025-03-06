@@ -1,7 +1,7 @@
 package org.datacenter.receiver;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.receiver.base.receiver.BaseReceiverConfig;
+import org.datacenter.config.receiver.base.BaseReceiverConfig;
 
 /**
  * @author : [wangminan]

@@ -11,19 +11,22 @@ import java.util.Properties;
 @Data
 public abstract class BaseSysConfig {
 
-    protected static final String ZORATHOS_HUMAN_MACHINE_CONFIG = "ZORATHOS_HUMAN_MACHINE_CONFIG";
+    protected final String ZORATHOS_HUMAN_MACHINE_CONFIG = "ZORATHOS_HUMAN_MACHINE_CONFIG";
 
+    /**
+     * 最终提供给外部使用的系统properties
+     */
     public static Properties humanMachineProperties;
 
     /**
      * 从外部加载配置
      */
-    public static void loadConfig() {
+    public void loadConfig() {
     };
 
     /**
      * 保存配置到外部
      */
-    public static void saveConfig() {
+    public void saveConfig() {
     };
 }
