@@ -1,7 +1,7 @@
 package org.datacenter.receiver;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.receiver.base.BaseReceiverConfig;
+import org.datacenter.config.receiver.BaseReceiverConfig;
 
 /**
  * @author : [wangminan]
@@ -10,7 +10,7 @@ import org.datacenter.config.receiver.base.BaseReceiverConfig;
 @Slf4j
 public abstract class BaseReceiver {
 
-    protected BaseReceiverConfig config;
+    protected BaseReceiverConfig receiverConfig;
 
     public void run() {
         prepare();

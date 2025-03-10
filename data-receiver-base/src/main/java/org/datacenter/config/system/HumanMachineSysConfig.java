@@ -62,6 +62,6 @@ public class HumanMachineSysConfig extends BaseSysConfig {
 
     @Override
     public void saveConfig() {
-
+        super.saveConfig();
     }
 }

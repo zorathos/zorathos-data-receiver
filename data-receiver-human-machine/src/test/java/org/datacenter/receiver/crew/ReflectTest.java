@@ -1,10 +1,10 @@
 package org.datacenter.receiver.crew;
 
-    import org.datacenter.model.crew.PersonnelInfo;
-    import org.junit.jupiter.api.Test;
+import org.datacenter.model.crew.PersonnelInfo;
+import org.junit.jupiter.api.Test;
 
-    import java.lang.reflect.Method;
-    import java.sql.PreparedStatement;
+import java.lang.reflect.Method;
+import java.sql.PreparedStatement;
 
     /**
      * \@author : [wangminan]

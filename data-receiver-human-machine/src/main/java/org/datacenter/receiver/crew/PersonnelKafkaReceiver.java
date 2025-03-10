@@ -15,8 +15,6 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.personnel.PersonnelAgent;
-import org.datacenter.config.receiver.human.machine.personnel.PersonnelKafkaReceiverConfig;
-import org.datacenter.config.sinker.human.machine.personnel.PersonnelSinkerConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -34,21 +32,17 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @author : [wangminan]
  * @description : 人员数据Kafka接收器
  */
-@SuppressWarnings("all")
+@SuppressWarnings("deprecation")
 public class PersonnelKafkaReceiver extends BaseReceiver {
 
     private final PersonnelAgent personnelAgent;
-    private final PersonnelKafkaReceiverConfig receiverConfig;
-    private final PersonnelSinkerConfig sinkerConfig;
 
-    public PersonnelKafkaReceiver(PersonnelKafkaReceiverConfig receiverConfig, PersonnelSinkerConfig sinkerConfig) {
+    public PersonnelKafkaReceiver() {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
         // 2. 初始化人员Agent
         this.personnelAgent = new PersonnelAgent();
-        this.receiverConfig = receiverConfig;
-        this.sinkerConfig = sinkerConfig;
     }
 
     @Override
@@ -67,9 +61,9 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                 CheckpointingMode.EXACTLY_ONCE);
         // 数据源
         KafkaSource<PersonnelInfo> kafkaSource = KafkaSource.<PersonnelInfo>builder()
-                .setBootstrapServers(receiverConfig.getBootstrapServers())
-                .setGroupId(receiverConfig.getGroupId())
-                .setTopics(receiverConfig.getTopic())
+                .setBootstrapServers(humanMachineProperties.getProperty("kafka.bootstrap.servers"))
+                .setGroupId(humanMachineProperties.getProperty("kafka.consumer.group-id"))
+                .setTopics(humanMachineProperties.getProperty("kafka.topic.personnel"))
                 .setValueOnlyDeserializer(new AbstractDeserializationSchema<>() {
                     @Override
                     public PersonnelInfo deserialize(byte[] message) throws IOException {
@@ -97,51 +91,47 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 );
                 """,
-                new JdbcStatementBuilder<PersonnelInfo>() {
-                    @Override
-                    public void accept(PreparedStatement preparedStatement,
-                                       PersonnelInfo personnelInfo) throws SQLException {
-                        preparedStatement.setString(1, personnelInfo.getId());
-                        preparedStatement.setString(2, personnelInfo.getUnitCode());
-                        preparedStatement.setString(3, personnelInfo.getUnit());
-                        preparedStatement.setString(4, personnelInfo.getPersonalIdentifier());
-                        preparedStatement.setString(5, personnelInfo.getName());
-                        preparedStatement.setString(6, personnelInfo.getPosition());
-                        preparedStatement.setDate(7, Date.valueOf(personnelInfo.getAppointmentDate()));
-                        preparedStatement.setString(8, personnelInfo.getNativePlace());
-                        preparedStatement.setString(9, personnelInfo.getFamilyBackground());
-                        preparedStatement.setString(10, personnelInfo.getEducationLevel());
-                        preparedStatement.setDate(11, Date.valueOf(personnelInfo.getBirthday()));
-                        preparedStatement.setDate(12, Date.valueOf(personnelInfo.getEnlistmentDate()));
-                        preparedStatement.setDate(13, Date.valueOf(personnelInfo.getRatingDate()));
-                        preparedStatement.setString(14, personnelInfo.getGraduateCollege());
-                        preparedStatement.setDate(15, Date.valueOf(personnelInfo.getGraduationDate()));
-                        preparedStatement.setString(16, personnelInfo.getMilitaryRank());
-                        preparedStatement.setString(17, personnelInfo.getPilotRole());
-                        preparedStatement.setString(18, personnelInfo.getFlightLevel());
-                        preparedStatement.setString(19, personnelInfo.getCurrentAircraftModel());
-                        preparedStatement.setString(20, personnelInfo.getPxh());
-                        preparedStatement.setString(21, personnelInfo.getCodeName());
-                        preparedStatement.setString(22, personnelInfo.getBm());
-                        preparedStatement.setString(23, personnelInfo.getCodeCharacter());
-                        preparedStatement.setString(24, personnelInfo.getIsAirCombatCommander());
-                        preparedStatement.setString(25, personnelInfo.getFlightOutline());
-                        preparedStatement.setString(26, personnelInfo.getLeadPilot());
-                        preparedStatement.setString(27, personnelInfo.getCommandLevelDaytime());
-                        preparedStatement.setString(28, personnelInfo.getCommandLevelNighttime());
-                        preparedStatement.setString(29, personnelInfo.getInstructor());
-                        preparedStatement.setString(30, personnelInfo.getTheoreticalInstructor());
-                        preparedStatement.setString(31, personnelInfo.getZbzt());
-                        preparedStatement.setString(32, personnelInfo.getIsTrainee());
-                        preparedStatement.setString(33, personnelInfo.getIsInstructor());
-                        preparedStatement.setString(34, personnelInfo.getQb());
-                        preparedStatement.setDate(35, Date.valueOf(personnelInfo.getLastParachuteTimeLand()));
-                        preparedStatement.setDate(36, Date.valueOf(personnelInfo.getLastParachuteTimeWater()));
-                        preparedStatement.setDate(37, Date.valueOf(personnelInfo.getModificationTime()));
-                        preparedStatement.setString(38, personnelInfo.getTotalTimeHistory());
-                        preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
-                        preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
-                    }
+                (JdbcStatementBuilder<PersonnelInfo>) (preparedStatement, personnelInfo) -> {
+                    preparedStatement.setString(1, personnelInfo.getId());
+                    preparedStatement.setString(2, personnelInfo.getUnitCode());
+                    preparedStatement.setString(3, personnelInfo.getUnit());
+                    preparedStatement.setString(4, personnelInfo.getPersonalIdentifier());
+                    preparedStatement.setString(5, personnelInfo.getName());
+                    preparedStatement.setString(6, personnelInfo.getPosition());
+                    preparedStatement.setDate(7, Date.valueOf(personnelInfo.getAppointmentDate()));
+                    preparedStatement.setString(8, personnelInfo.getNativePlace());
+                    preparedStatement.setString(9, personnelInfo.getFamilyBackground());
+                    preparedStatement.setString(10, personnelInfo.getEducationLevel());
+                    preparedStatement.setDate(11, Date.valueOf(personnelInfo.getBirthday()));
+                    preparedStatement.setDate(12, Date.valueOf(personnelInfo.getEnlistmentDate()));
+                    preparedStatement.setDate(13, Date.valueOf(personnelInfo.getRatingDate()));
+                    preparedStatement.setString(14, personnelInfo.getGraduateCollege());
+                    preparedStatement.setDate(15, Date.valueOf(personnelInfo.getGraduationDate()));
+                    preparedStatement.setString(16, personnelInfo.getMilitaryRank());
+                    preparedStatement.setString(17, personnelInfo.getPilotRole());
+                    preparedStatement.setString(18, personnelInfo.getFlightLevel());
+                    preparedStatement.setString(19, personnelInfo.getCurrentAircraftModel());
+                    preparedStatement.setString(20, personnelInfo.getPxh());
+                    preparedStatement.setString(21, personnelInfo.getCodeName());
+                    preparedStatement.setString(22, personnelInfo.getBm());
+                    preparedStatement.setString(23, personnelInfo.getCodeCharacter());
+                    preparedStatement.setString(24, personnelInfo.getIsAirCombatCommander());
+                    preparedStatement.setString(25, personnelInfo.getFlightOutline());
+                    preparedStatement.setString(26, personnelInfo.getLeadPilot());
+                    preparedStatement.setString(27, personnelInfo.getCommandLevelDaytime());
+                    preparedStatement.setString(28, personnelInfo.getCommandLevelNighttime());
+                    preparedStatement.setString(29, personnelInfo.getInstructor());
+                    preparedStatement.setString(30, personnelInfo.getTheoreticalInstructor());
+                    preparedStatement.setString(31, personnelInfo.getZbzt());
+                    preparedStatement.setString(32, personnelInfo.getIsTrainee());
+                    preparedStatement.setString(33, personnelInfo.getIsInstructor());
+                    preparedStatement.setString(34, personnelInfo.getQb());
+                    preparedStatement.setDate(35, Date.valueOf(personnelInfo.getLastParachuteTimeLand()));
+                    preparedStatement.setDate(36, Date.valueOf(personnelInfo.getLastParachuteTimeWater()));
+                    preparedStatement.setDate(37, Date.valueOf(personnelInfo.getModificationTime()));
+                    preparedStatement.setString(38, personnelInfo.getTotalTimeHistory());
+                    preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
+                    preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
                 },
                 JdbcExecutionOptions.builder()
                         .withBatchSize(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchSize")))
@@ -149,11 +139,11 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                         .withMaxRetries(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.maxRetries")))
                         .build(),
                 new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                        .withUrl(sinkerConfig.getUri())
-                        .withDriverName(sinkerConfig.getDriverName())
-                        .withUsername(sinkerConfig.getUsername())
-                        .withPassword(sinkerConfig.getPassword())
-                        .withConnectionCheckTimeoutSeconds(600)
+                        .withUrl(humanMachineProperties.getProperty("tidb.url.flightPlan"))
+                        .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
+                        .withUsername(humanMachineProperties.getProperty("tidb.username"))
+                        .withPassword(humanMachineProperties.getProperty("tidb.password"))
+                        .withConnectionCheckTimeoutSeconds(Integer.parseInt(humanMachineProperties.getProperty("tidb.connectionCheckTimeoutSeconds")))
                         .build()
         );
         kafkaSourceDS.addSink(sinkFunction);
@@ -167,19 +157,9 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     /**
      * 被flink调用的主函数
      * @param args 参数 第一个为接收器参数 第二个为持久化器参数
-     * @throws JsonProcessingException json处理异常
      */
-    public static void main(String[] args) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        PersonnelKafkaReceiverConfig receiverConfig = mapper.readValue(args[0],
-                PersonnelKafkaReceiverConfig.class);
-        PersonnelSinkerConfig sinkerConfig = mapper.readValue(args[1],
-                PersonnelSinkerConfig.class);
-        PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver(receiverConfig, sinkerConfig);
+    public static void main(String[] args) {
+        PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver();
         personnelKafkaReceiver.run();
-    }
-
-    public PersonnelKafkaReceiverConfig getReceiverConfig() {
-        return receiverConfig;
     }
 }

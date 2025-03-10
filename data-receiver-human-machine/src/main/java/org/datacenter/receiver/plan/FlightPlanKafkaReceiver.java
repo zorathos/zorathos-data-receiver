@@ -1,8 +1,6 @@
 package org.datacenter.receiver.plan;
 
 import org.datacenter.agent.plan.FlightPlanAgent;
-import org.datacenter.config.receiver.human.machine.plan.FlightPlanKafkaReceiverConfig;
-import org.datacenter.config.sinker.human.machine.plan.FlightPlanSinkerConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.receiver.BaseReceiver;
 
@@ -13,16 +11,12 @@ import org.datacenter.receiver.BaseReceiver;
 public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     private final FlightPlanAgent flightPlanAgent;
-    private final FlightPlanKafkaReceiverConfig receiverConfig;
-    private final FlightPlanSinkerConfig sinkerConfig;
 
-    public FlightPlanKafkaReceiver(FlightPlanKafkaReceiverConfig receiverConfig, FlightPlanSinkerConfig sinkerConfig) {
+    public FlightPlanKafkaReceiver() {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
         this.flightPlanAgent = new FlightPlanAgent();
-        this.receiverConfig = receiverConfig;
-        this.sinkerConfig = sinkerConfig;
     }
 
     @Override
