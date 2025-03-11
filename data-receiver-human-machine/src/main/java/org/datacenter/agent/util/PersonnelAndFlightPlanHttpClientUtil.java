@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.Data;
+import org.datacenter.config.personnel.PersonnelReceiverConfig;
+import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlan;
@@ -39,23 +41,23 @@ public class PersonnelAndFlightPlanHttpClientUtil {
     }
 
     private static final String host = humanMachineProperties
-            .getProperty("agent.personnelAndFlightPlan.pull.host");
+            .getProperty("agent.personnelAndFlightPlan.host");
 
     /**
      * 登录人员与装备系统
      *
-     * @return 返回的Cookie
+     * @return 返回的Cookie 一共有三条cookie 通过逗号分隔
      */
-    private static String loginToPersonnelAndFlightPlanSystem() {
+    private static String loginAndGetCookies() {
         String url = "http://" + host + "/home/login";
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(
                             "{" +
-                                    "userInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.pull.login.username") + "\"," +
-                                    "grbsInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.pull.login.username") + "\"," +
-                                    "passwordInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.pull.login.password") +
+                                    "userInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.login.username") + "\"," +
+                                    "grbsInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.login.username") + "\"," +
+                                    "passwordInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.login.password") +
                                     "\"}"))
                     .uri(new URI(url))
                     .build();
@@ -73,8 +75,8 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlan> getFlightPlans() {
-        String formattedCookies = loginToPersonnelAndFlightPlanSystem();
+    public static List<FlightPlan> getFlightPlans(FlightPlanReceiverConfig receiverConfig) {
+        String formattedCookies = loginAndGetCookies();
         // 获取今天日期 以yyyy-MM-dd输出
         String today = LocalDate.now().toString();
         List<FlightDate> flightDates;
@@ -97,11 +99,10 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         } catch (URISyntaxException | IOException | InterruptedException e) {
             throw new ZorathosException(e, "Error occurs while fetching flight dates.");
         }
-        // 2. 从任务系统获取所有任务编号
+        // 2. TODO 从任务系统获取所有任务编号 任务编号要走别的系统 等现场调试
         Set<String> missionCodes = new HashSet<>();
         missionCodes.add("60225");
-        List<String> presetMissionCodes = Arrays.stream(humanMachineProperties.getProperty("agent.personnelAndFlightPlan.pull.flightPlan.missionCodes")
-                .split(";")).toList();
+        Set<String> presetMissionCodes = receiverConfig.getQueryCodes();
         missionCodes.addAll(presetMissionCodes);
 
         // 3. 拿飞行日期列表拼字段 获取飞行计划列表
@@ -111,6 +112,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                 // 把FlightDate转换成"yyyyMMdd"类型的字符串
                 String date = flightDate.getDate().toString().replace("-", "");
                 try (HttpClient client = HttpClient.newHttpClient()) {
+                    // 90121是个常量
                     String url = "http://" + host + "/fxdt/getxml?jhbh=" +
                             date + "-90121-" + missionCode;
                     HttpRequest request = HttpRequest.newBuilder()
@@ -124,7 +126,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     // 响应体为一段XML
                     List<String> xmls =
                             Arrays.stream(response.body().split("/>"))
-                                    .map(xml -> xml += "/>")
+                                    .map(xml -> xml + "/>")
                                     .toList();
                     // 使用xmlMapper反序列化
                     for (String xml : xmls) {
@@ -138,12 +140,12 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         return flightPlans;
     }
 
-    public static List<PersonnelInfo> getPersonnelInfos() {
-        String formattedCookies = loginToPersonnelAndFlightPlanSystem();
-        List<PersonnelInfo> personnelInfos = new ArrayList<>();
+    public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
+        String formattedCookies = loginAndGetCookies();
+        List<PersonnelInfo> personnelInfos;
         try (HttpClient client = HttpClient.newHttpClient()) {
             String url = "http://" + host + "/fxy/bindfxylb?dwdm=90121" +
-                    humanMachineProperties.getProperty("agent.personnelAndFlightPlan.pull.personnel.queryString");
+                    receiverConfig.getQueryString();
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
                     .header("Cookie", formattedCookies)

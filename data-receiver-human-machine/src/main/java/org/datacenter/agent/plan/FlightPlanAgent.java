@@ -5,12 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
-import org.datacenter.config.plan.FlightPlanKafkaReceiverConfig;
+import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.plan.FlightPlan;
 
@@ -28,14 +27,17 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-@NoArgsConstructor
 @AllArgsConstructor
 public class FlightPlanAgent extends BaseAgent {
 
-    private ObjectMapper mapper;
-    private FlightPlanKafkaReceiverConfig receiverConfig;
-
+    private final ObjectMapper mapper;
+    private final FlightPlanReceiverConfig receiverConfig;
     private ScheduledExecutorService scheduler;
+
+    public FlightPlanAgent(FlightPlanReceiverConfig receiverConfig) {
+        this.receiverConfig = receiverConfig;
+        this.mapper = new ObjectMapper();
+    }
 
     @Override
     public void run() {
@@ -49,7 +51,7 @@ public class FlightPlanAgent extends BaseAgent {
         scheduler.scheduleAtFixedRate(() -> {
             if (running) {
                 // 1. 获取请求
-                List<FlightPlan> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightPlans();
+                List<FlightPlan> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightPlans(receiverConfig);
                 // 2. 转发到Kafka
                 try {
                     String plansInJson = mapper.writeValueAsString(flightPlans);

@@ -1,30 +1,24 @@
 package org.datacenter.receiver.crew;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
-import org.apache.flink.connector.kafka.source.KafkaSource;
-import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
-import org.apache.flink.core.execution.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.personnel.PersonnelAgent;
+import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.receiver.BaseReceiver;
+import org.datacenter.receiver.util.DataReceiverUtil;
 
 import java.io.IOException;
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.time.Duration;
+import java.util.List;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -37,12 +31,13 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     private final PersonnelAgent personnelAgent;
 
-    public PersonnelKafkaReceiver() {
+    public PersonnelKafkaReceiver(PersonnelReceiverConfig receiverConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
+        this.receiverConfig = receiverConfig;
         // 2. 初始化人员Agent
-        this.personnelAgent = new PersonnelAgent();
+        this.personnelAgent = new PersonnelAgent(receiverConfig);
     }
 
     @Override
@@ -55,29 +50,9 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        // 精确一次要求开启checkpoint
-        env.enableCheckpointing(
-                Long.parseLong(humanMachineProperties.getProperty("flink.kafka.checkpoint.interval")),
-                CheckpointingMode.EXACTLY_ONCE);
-        // 数据源
-        KafkaSource<PersonnelInfo> kafkaSource = KafkaSource.<PersonnelInfo>builder()
-                .setBootstrapServers(humanMachineProperties.getProperty("kafka.bootstrap.servers"))
-                .setGroupId(humanMachineProperties.getProperty("kafka.consumer.group-id"))
-                .setTopics(humanMachineProperties.getProperty("kafka.topic.personnel"))
-                .setValueOnlyDeserializer(new AbstractDeserializationSchema<>() {
-                    @Override
-                    public PersonnelInfo deserialize(byte[] message) throws IOException {
-                        ObjectMapper mapper = new ObjectMapper();
-                        return mapper.readValue(message, PersonnelInfo.class);
-                    }
-                })
-                .setStartingOffsets(OffsetsInitializer.latest())
-                .build();
-        DataStreamSource<PersonnelInfo> kafkaSourceDS = env
-                .fromSource(kafkaSource,
-                        WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(3)),
-                        "kafkaSource");
-        // 投递到数据库
+        DataStreamSource<PersonnelInfo> kafkaSourceDS =
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.personnel")), PersonnelInfo.class);
+        // 投递到数据库 写sql时使用upsert语法
         SinkFunction<PersonnelInfo> sinkFunction = JdbcSink.sink(
                 """
                 INSERT INTO `personnel_info` (
@@ -89,7 +64,19 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                     total_time_history, total_time_current_year, total_teaching_time_history
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                );
+                ) ON DUPLICATE KEY UPDATE
+                    unit_code = VALUES(unit_code), unit = VALUES(unit), personal_identifier = VALUES(personal_identifier), name = VALUES(name),
+                    position = VALUES(position), appointment_date = VALUES(appointment_date), native_place = VALUES(native_place), family_background = VALUES(family_background),
+                    education_level = VALUES(education_level), birthday = VALUES(birthday), enlistment_date = VALUES(enlistment_date), rating_date = VALUES(rating_date),
+                    graduate_college = VALUES(graduate_college), graduation_date = VALUES(graduation_date), military_rank = VALUES(military_rank),
+                    pilot_role = VALUES(pilot_role), flight_level = VALUES(flight_level), current_aircraft_model = VALUES(current_aircraft_model), pxh = VALUES(pxh),
+                    code_name = VALUES(code_name), bm = VALUES(bm), code_character = VALUES(code_character), is_air_combat_commander = VALUES(is_air_combat_commander),
+                    flight_outline = VALUES(flight_outline), lead_pilot = VALUES(lead_pilot), command_level_daytime = VALUES(command_level_daytime),
+                    command_level_nighttime = VALUES(command_level_nighttime), instructor = VALUES(instructor), theoretical_instructor = VALUES(theoretical_instructor),
+                    zbzt = VALUES(zbzt), is_trainee = VALUES(is_trainee), is_instructor = VALUES(is_instructor), qb = VALUES(qb),
+                    last_parachute_time_land = VALUES(last_parachute_time_land), last_parachute_time_water = VALUES(last_parachute_time_water),
+                    modification_time = VALUES(modification_time), total_time_history = VALUES(total_time_history), total_time_current_year = VALUES(total_time_current_year),
+                    total_teaching_time_history = VALUES(total_teaching_time_history);
                 """,
                 (JdbcStatementBuilder<PersonnelInfo>) (preparedStatement, personnelInfo) -> {
                     preparedStatement.setString(1, personnelInfo.getId());
@@ -139,7 +126,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                         .withMaxRetries(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.maxRetries")))
                         .build(),
                 new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                        .withUrl(humanMachineProperties.getProperty("tidb.url.flightPlan"))
+                        .withUrl(humanMachineProperties.getProperty("tidb.url.humanMachine"))
                         .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
                         .withUsername(humanMachineProperties.getProperty("tidb.username"))
                         .withPassword(humanMachineProperties.getProperty("tidb.password"))
@@ -159,7 +146,16 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
      * @param args 参数 第一个为接收器参数 第二个为持久化器参数
      */
     public static void main(String[] args) {
-        PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver();
-        personnelKafkaReceiver.run();
+        ObjectMapper mapper = new ObjectMapper();
+        PersonnelReceiverConfig receiverConfig;
+        try {
+            receiverConfig = mapper.readValue(args[0], PersonnelReceiverConfig.class);
+        } catch (IOException e) {
+            throw new ZorathosException(e, "Error occurs while converting personnel receiver config to json string.");
+        }
+        if (receiverConfig != null) {
+            PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver(receiverConfig);
+            personnelKafkaReceiver.run();
+        }
     }
 }
