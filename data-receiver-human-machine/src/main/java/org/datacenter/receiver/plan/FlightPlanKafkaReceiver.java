@@ -47,7 +47,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
     public void start() {
         // 开始从kafka获取数据
         // 引入执行环境
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<FlightPlan> kafkaSourceDS =
                 DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlan")), FlightPlan.class);
         // 投递到数据库

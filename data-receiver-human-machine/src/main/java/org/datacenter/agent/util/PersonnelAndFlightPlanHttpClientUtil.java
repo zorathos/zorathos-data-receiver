@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
@@ -31,6 +32,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @author : [wangminan]
  * @description : 在本类中，我们调用HttpClient发送请求
  */
+@Slf4j
 public class PersonnelAndFlightPlanHttpClientUtil {
     private static final ObjectMapper mapper;
     private static final XmlMapper xmlMapper;
@@ -76,6 +78,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
     }
 
     public static List<FlightPlan> getFlightPlans(FlightPlanReceiverConfig receiverConfig) {
+        log.info("Trying to get flight plans from sys api.");
         String formattedCookies = loginAndGetCookies();
         // 获取今天日期 以yyyy-MM-dd输出
         String today = LocalDate.now().toString();
@@ -141,6 +144,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
     }
 
     public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
+        log.info("Trying to get personnel infos from sys api.");
         String formattedCookies = loginAndGetCookies();
         List<PersonnelInfo> personnelInfos;
         try (HttpClient client = HttpClient.newHttpClient()) {

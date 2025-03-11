@@ -3,6 +3,9 @@ package org.datacenter.receiver.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
+import org.apache.flink.configuration.CheckpointingOptions;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ExternalizedCheckpointRetention;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.core.execution.CheckpointingMode;
@@ -21,6 +24,32 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  */
 public class DataReceiverUtil {
 
+    public static StreamExecutionEnvironment prepareStreamEnv() {
+        // 创建配置
+        Configuration configuration = new Configuration();
+
+        configuration.set(CheckpointingOptions.CHECKPOINTING_INTERVAL,
+                Duration.ofSeconds(Long.parseLong(humanMachineProperties.getProperty("flink.checkpoint.interval"))));
+        configuration.set(CheckpointingOptions.CHECKPOINTING_CONSISTENCY_MODE,
+                CheckpointingMode.EXACTLY_ONCE);
+        configuration.set(CheckpointingOptions.CHECKPOINTING_TIMEOUT,
+                Duration.ofSeconds(Long.parseLong(humanMachineProperties.getProperty("flink.checkpoint.timeout"))));
+        configuration.set(CheckpointingOptions.EXTERNALIZED_CHECKPOINT_RETENTION,
+                ExternalizedCheckpointRetention.RETAIN_ON_CANCELLATION);
+
+        // 开启非对齐检查点
+        configuration.set(CheckpointingOptions.ENABLE_UNALIGNED, true);
+        configuration.set(CheckpointingOptions.ALIGNED_CHECKPOINT_TIMEOUT,
+                Duration.ofSeconds(120));
+
+        // 根据配置创建环境
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment(configuration);
+
+        // 设置并行度为核心数量 / 2 最小为1
+        env.setParallelism(Math.max(Runtime.getRuntime().availableProcessors() / 2, 1));
+        return env;
+    }
+
     /**
      * 创建Flink的Kafka数据源
      * @param env 执行环境
@@ -31,10 +60,6 @@ public class DataReceiverUtil {
      */
     public static <T> DataStreamSource<T> getKafkaSourceDS(StreamExecutionEnvironment env, List<String> topics, Class<T> clazz) {
         // 开始从kafka获取数据
-        // 精确一次要求开启checkpoint
-        env.enableCheckpointing(
-                Long.parseLong(humanMachineProperties.getProperty("flink.kafka.checkpoint.interval")),
-                CheckpointingMode.EXACTLY_ONCE);
         // 数据源
         KafkaSource<T> kafkaSource = KafkaSource.<T>builder()
                 .setBootstrapServers(humanMachineProperties.getProperty("kafka.bootstrap.servers"))

@@ -49,14 +49,14 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     public void start() {
         // 开始从kafka获取数据
         // 引入执行环境
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<PersonnelInfo> kafkaSourceDS =
                 DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.personnel")), PersonnelInfo.class);
         // 投递到数据库 写sql时使用upsert语法
         SinkFunction<PersonnelInfo> sinkFunction = JdbcSink.sink(
                 """
                 INSERT INTO `personnel_info` (
-                    id, unit_code, unit, personal_identifier, name, position, appointment_date, native_place, family_background,
+                    `id`, unit_code, unit, personal_identifier, name, position, appointment_date, native_place, family_background,
                     education_level, birthday, enlistment_date, rating_date, graduate_college, graduation_date, military_rank,
                     pilot_role, flight_level, current_aircraft_model, pxh, code_name, bm, code_character, is_air_combat_commander,
                     flight_outline, lead_pilot, command_level_daytime, command_level_nighttime, instructor, theoretical_instructor,

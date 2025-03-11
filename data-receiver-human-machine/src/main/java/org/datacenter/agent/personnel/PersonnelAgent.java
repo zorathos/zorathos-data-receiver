@@ -13,6 +13,9 @@ import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,9 +53,12 @@ public class PersonnelAgent extends BaseAgent {
 
         scheduler.scheduleAtFixedRate(() -> {
                 if (running) {
-                    // 1. 拉取人员数据
+                    // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
+                    // 1. 清空原有库表数据 用jdbc
+                    truncatePersonnelInfoTable();
+                    // 2. 拉取人员数据
                     List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
-                    // 2. 转发到Kafka
+                    // 3. 转发到Kafka
                     try {
                         String personnelInfosInJson = mapper.writeValueAsString(personnelInfos);
                         KafkaUtil.sendMessage(humanMachineProperties
@@ -65,7 +71,22 @@ public class PersonnelAgent extends BaseAgent {
             0,
             Integer.parseInt(humanMachineProperties.getProperty("agent.personnel.interval")),
             TimeUnit.SECONDS);
+    }
 
+    private void truncatePersonnelInfoTable() {
+        try {
+            log.info("Start truncating personnel info table.");
+            Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
+            Connection connection = DriverManager.getConnection(
+                    humanMachineProperties.getProperty("tidb.url.humanMachine"),
+                    humanMachineProperties.getProperty("tidb.username"),
+                    humanMachineProperties.getProperty("tidb.password"));
+            connection.prepareStatement("TRUNCATE TABLE `personnel_info`;").execute();
+            connection.close();
+            log.info("Truncate personnel info table successfully.");
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new ZorathosException(e, "Error occurs while truncating personnel database.");
+        }
     }
 
     @Override
