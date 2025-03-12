@@ -3,7 +3,6 @@ package org.datacenter.agent.util;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;

@@ -9,7 +9,6 @@ import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.table.connector.sink.SinkFunctionProvider;
 import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
@@ -24,8 +23,6 @@ import org.datacenter.model.plan.FlightTask;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
@@ -96,27 +93,24 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                             zhshh = VALUES(zhshh),
                             dwsbxh = VALUES(dwsbxh);
                         """,
-                new JdbcStatementBuilder<FlightHead>() {
-                    @Override
-                    public void accept(PreparedStatement preparedStatement, FlightHead flightHead) throws SQLException {
-                        preparedStatement.setString(1, flightHead.getRootId());
-                        preparedStatement.setLong(2, flightHead.getId());
-                        preparedStatement.setString(3, flightHead.getVer());
-                        preparedStatement.setString(4, flightHead.getTitle());
-                        preparedStatement.setString(5, flightHead.getTimeline());
-                        preparedStatement.setString(6, flightHead.getTMode());
-                        preparedStatement.setInt(7, flightHead.getPlaneNum());
-                        preparedStatement.setInt(8, flightHead.getFlightsTime());
-                        preparedStatement.setInt(9, flightHead.getTotalTime());
-                        preparedStatement.setInt(10, flightHead.getExitTime());
-                        preparedStatement.setString(11, flightHead.getSunRiseTime());
-                        preparedStatement.setString(12, flightHead.getSunSetTime());
-                        preparedStatement.setString(13, flightHead.getDarkTime());
-                        preparedStatement.setString(14, flightHead.getDawnTime());
-                        preparedStatement.setString(15, flightHead.getDxthh());
-                        preparedStatement.setString(16, flightHead.getZhshh());
-                        preparedStatement.setString(17, flightHead.getDwsbxh());
-                    }
+                (JdbcStatementBuilder<FlightHead>) (preparedStatement, flightHead) -> {
+                    preparedStatement.setString(1, flightHead.getRootId());
+                    preparedStatement.setLong(2, flightHead.getId());
+                    preparedStatement.setString(3, flightHead.getVer());
+                    preparedStatement.setString(4, flightHead.getTitle());
+                    preparedStatement.setString(5, flightHead.getTimeline());
+                    preparedStatement.setString(6, flightHead.getTMode());
+                    preparedStatement.setInt(7, flightHead.getPlaneNum());
+                    preparedStatement.setInt(8, flightHead.getFlightsTime());
+                    preparedStatement.setInt(9, flightHead.getTotalTime());
+                    preparedStatement.setInt(10, flightHead.getExitTime());
+                    preparedStatement.setString(11, flightHead.getSunRiseTime());
+                    preparedStatement.setString(12, flightHead.getSunSetTime());
+                    preparedStatement.setString(13, flightHead.getDarkTime());
+                    preparedStatement.setString(14, flightHead.getDawnTime());
+                    preparedStatement.setString(15, flightHead.getDxthh());
+                    preparedStatement.setString(16, flightHead.getZhshh());
+                    preparedStatement.setString(17, flightHead.getDwsbxh());
                 },
                 getTiDBJdbcExecutionOptions(),
                 getTiDBJdbcConnectionOptions()
@@ -131,13 +125,10 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                             root_id = VALUES(root_id),
                             note = VALUES(note);
                         """,
-                new JdbcStatementBuilder<FlightNotes>() {
-                    @Override
-                    public void accept(PreparedStatement preparedStatement, FlightNotes flightNotes) throws SQLException {
-                        preparedStatement.setString(1, flightNotes.getRootId());
-                        preparedStatement.setLong(2, flightNotes.getId());
-                        preparedStatement.setString(3, flightNotes.getNote());
-                    }
+                (JdbcStatementBuilder<FlightNotes>) (preparedStatement, flightNotes) -> {
+                    preparedStatement.setString(1, flightNotes.getRootId());
+                    preparedStatement.setLong(2, flightNotes.getId());
+                    preparedStatement.setString(3, flightNotes.getNote());
                 },
                 getTiDBJdbcExecutionOptions(),
                 getTiDBJdbcConnectionOptions()

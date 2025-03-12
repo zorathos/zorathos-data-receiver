@@ -46,6 +46,7 @@
         <!-- jackson-core和jackson-xml已经在zorathos的对应包里引入 不用重复引入了 如果需要使用自己版本的jackson记得exclude -->
 
         <mysql-connector-j.version>8.0.33</mysql-connector-j.version>
+        <minio.version>8.5.17</minio.version>
 
         <!-- UT -->
         <junit-jupiter.version>5.12.0</junit-jupiter.version>
@@ -183,6 +184,13 @@
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql-connector-j.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+
 
             <!-- Kafka客户端 Agent用 -->
             <dependency>

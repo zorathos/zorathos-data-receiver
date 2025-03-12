@@ -35,16 +35,13 @@ public class FlightPlanAgent extends BaseAgent {
     private ScheduledExecutorService scheduler;
 
     public FlightPlanAgent(FlightPlanReceiverConfig receiverConfig) {
+        super();
         this.receiverConfig = receiverConfig;
         this.mapper = new ObjectMapper();
     }
 
     @Override
     public void run() {
-        // TODO 探活 只能有一个Flight Plan Agent
-        if (running) {
-            return;
-        }
         super.run();
         log.info("Flight plan agent start running, fetching data from flight agent system's xml interface and sending it to kafka.");
 

@@ -38,6 +38,7 @@ public class PersonnelAgent extends BaseAgent {
     private ScheduledExecutorService scheduler;
 
     public PersonnelAgent(PersonnelReceiverConfig receiverConfig) {
+        super();
         this.receiverConfig = receiverConfig;
         this.mapper = new ObjectMapper();
     }
