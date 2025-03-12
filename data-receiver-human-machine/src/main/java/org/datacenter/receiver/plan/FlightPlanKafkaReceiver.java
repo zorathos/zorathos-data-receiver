@@ -9,14 +9,23 @@ import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.table.connector.sink.SinkFunctionProvider;
+import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.plan.FlightCmd;
+import org.datacenter.model.plan.FlightHead;
+import org.datacenter.model.plan.FlightNotes;
 import org.datacenter.model.plan.FlightPlan;
+import org.datacenter.model.plan.FlightPlanRoot;
+import org.datacenter.model.plan.FlightTask;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.List;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
@@ -48,27 +57,156 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
-        DataStreamSource<FlightPlan> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlan")), FlightPlan.class);
+        DataStreamSource<FlightPlanRoot> kafkaSourceDS =
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlan")), FlightPlanRoot.class);
+
+        SinkFunction<FlightPlanRoot> flightRootSink = JdbcSink.sink("""
+                        INSERT INTO `flight_plan_root` (
+                             `id`
+                        ) VALUES (
+                             ?
+                        );
+                        """,
+                (JdbcStatementBuilder<FlightPlanRoot>) (preparedStatement, flightPlanRoot) -> preparedStatement.setString(1, flightPlanRoot.getId()),
+                getTiDBJdbcExecutionOptions(),
+                getTiDBJdbcConnectionOptions()
+        );
+
+        SinkFunction<FlightHead> flightHeadSink = JdbcSink.sink("""
+                        INSERT INTO `flight_head` (
+                            root_id, `id`, ver, title, timeline, t_mode, plane_num, flights_time, total_time, exit_time,
+                            sun_rise_time, sun_set_time, dark_time, dawn_time, dxthh, zhshh, dwsbxh
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                        ) ON DUPLICATE KEY UPDATE
+                            root_id = VALUES(root_id),
+                            ver = VALUES(ver),
+                            title = VALUES(title),
+                            timeline = VALUES(timeline),
+                            t_mode = VALUES(t_mode),
+                            plane_num = VALUES(plane_num),
+                            flights_time = VALUES(flights_time),
+                            total_time = VALUES(total_time),
+                            exit_time = VALUES(exit_time),
+                            sun_rise_time = VALUES(sun_rise_time),
+                            sun_set_time = VALUES(sun_set_time),
+                            dark_time = VALUES(dark_time),
+                            dawn_time = VALUES(dawn_time),
+                            dxthh = VALUES(dxthh),
+                            zhshh = VALUES(zhshh),
+                            dwsbxh = VALUES(dwsbxh);
+                        """,
+                new JdbcStatementBuilder<FlightHead>() {
+                    @Override
+                    public void accept(PreparedStatement preparedStatement, FlightHead flightHead) throws SQLException {
+                        preparedStatement.setString(1, flightHead.getRootId());
+                        preparedStatement.setLong(2, flightHead.getId());
+                        preparedStatement.setString(3, flightHead.getVer());
+                        preparedStatement.setString(4, flightHead.getTitle());
+                        preparedStatement.setString(5, flightHead.getTimeline());
+                        preparedStatement.setString(6, flightHead.getTMode());
+                        preparedStatement.setInt(7, flightHead.getPlaneNum());
+                        preparedStatement.setInt(8, flightHead.getFlightsTime());
+                        preparedStatement.setInt(9, flightHead.getTotalTime());
+                        preparedStatement.setInt(10, flightHead.getExitTime());
+                        preparedStatement.setString(11, flightHead.getSunRiseTime());
+                        preparedStatement.setString(12, flightHead.getSunSetTime());
+                        preparedStatement.setString(13, flightHead.getDarkTime());
+                        preparedStatement.setString(14, flightHead.getDawnTime());
+                        preparedStatement.setString(15, flightHead.getDxthh());
+                        preparedStatement.setString(16, flightHead.getZhshh());
+                        preparedStatement.setString(17, flightHead.getDwsbxh());
+                    }
+                },
+                getTiDBJdbcExecutionOptions(),
+                getTiDBJdbcConnectionOptions()
+        );
+
+        SinkFunction<FlightNotes> flightNotesSink = JdbcSink.sink("""
+                        INSERT INTO `flight_notes` (
+                            `root_id`, `id`, `note`
+                        ) VALUES (
+                            ?, ?, ?
+                        ) ON DUPLICATE KEY UPDATE
+                            root_id = VALUES(root_id),
+                            note = VALUES(note);
+                        """,
+                new JdbcStatementBuilder<FlightNotes>() {
+                    @Override
+                    public void accept(PreparedStatement preparedStatement, FlightNotes flightNotes) throws SQLException {
+                        preparedStatement.setString(1, flightNotes.getRootId());
+                        preparedStatement.setLong(2, flightNotes.getId());
+                        preparedStatement.setString(3, flightNotes.getNote());
+                    }
+                },
+                getTiDBJdbcExecutionOptions(),
+                getTiDBJdbcConnectionOptions()
+        );
+
+        SinkFunction<FlightCmd> flightCmdSink = JdbcSink.sink("""
+                        INSERT INTO flight_cmd (
+                            root_id, id, name, lb, sx
+                        ) VALUES (
+                            ?, ?, ?, ?, ?
+                        ) ON DUPLICATE KEY UPDATE
+                            root_id = VALUES(root_id),
+                            name = VALUES(name),
+                            lb = VALUES(lb),
+                            sx = VALUES(sx);
+                        """,
+                (JdbcStatementBuilder<FlightCmd>) (preparedStatement, flightCmd) -> {
+                    preparedStatement.setString(1, flightCmd.getRootId());
+                    preparedStatement.setLong(2, flightCmd.getId());
+                    preparedStatement.setString(3, flightCmd.getName());
+                    preparedStatement.setString(4, flightCmd.getLb());
+                    preparedStatement.setString(5, flightCmd.getSx());
+                },
+                getTiDBJdbcExecutionOptions(),
+                getTiDBJdbcConnectionOptions()
+        );
+
+        SinkFunction<FlightTask> flightTaskSink = JdbcSink.sink("""
+                        INSERT INTO flight_task (
+                            root_id, id, model, code, name, rw
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?
+                        ) ON DUPLICATE KEY UPDATE
+                            root_id = VALUES(root_id),
+                            model = VALUES(model),
+                            code = VALUES(code),
+                            name = VALUES(name),
+                            rw = VALUES(rw);
+                        """,
+                (JdbcStatementBuilder<FlightTask>) (preparedStatement, flightTask) -> {
+                    preparedStatement.setString(1, flightTask.getRootId());
+                    preparedStatement.setLong(2, flightTask.getId());
+                    preparedStatement.setString(3, flightTask.getModel());
+                    preparedStatement.setString(4, flightTask.getCode());
+                    preparedStatement.setString(5, flightTask.getName());
+                    preparedStatement.setString(6, flightTask.getRw());
+                },
+                getTiDBJdbcExecutionOptions(),
+                getTiDBJdbcConnectionOptions()
+        );
+
         // 投递到数据库
-        SinkFunction<FlightPlan> sinkFunction = JdbcSink.sink(
-                    """
-                    INSERT INTO `flight_plan` (
-                        airport_id, takeoff_time, air_battle_time, ys, outline, lx, cs, sj, jhlx, plan_time, height, ky, fz, bdno,
-                        is_leader_plane, formation_practice, number_of_formation, front_name, front_code, front_code_name, front_nick_name,
-                        front_property, back_name, back_code, back_code_name, back_nick_name, back_property, xsms, jkys, yxyl, wqgz, grfa
-                    ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                    ) ON DUPLICATE KEY UPDATE
-                        airport_id = VALUES(airport_id), takeoff_time = VALUES(takeoff_time), air_battle_time = VALUES(air_battle_time), ys = VALUES(ys),
-                        outline = VALUES(outline), lx = VALUES(lx), cs = VALUES(cs), sj = VALUES(sj), jhlx = VALUES(jhlx), plan_time = VALUES(plan_time),
-                        height = VALUES(height), ky = VALUES(ky), fz = VALUES(fz), bdno = VALUES(bdno), is_leader_plane = VALUES(is_leader_plane),
-                        formation_practice = VALUES(formation_practice), number_of_formation = VALUES(number_of_formation), front_name = VALUES(front_name),
-                        front_code = VALUES(front_code), front_code_name = VALUES(front_code_name), front_nick_name = VALUES(front_nick_name),
-                        front_property = VALUES(front_property), back_name = VALUES(back_name), back_code = VALUES(back_code), back_code_name = VALUES(back_code_name),
-                        back_nick_name = VALUES(back_nick_name), back_property = VALUES(back_property), xsms = VALUES(xsms), jkys = VALUES(jkys),
-                        yxyl = VALUES(yxyl), wqgz = VALUES(wqgz), grfa = VALUES(grfa);
-                    """,
+        SinkFunction<FlightPlan> flightPlanSink = JdbcSink.sink("""
+                        INSERT INTO `flight_plan` (
+                            airport_id, takeoff_time, air_battle_time, ys, outline, lxh, cs, sj, jhlx, plan_time, height, ky, fz, bdno,
+                            is_leader_plane, formation_practice, number_of_formation, front_name, front_code, front_code_name, front_nick_name,
+                            front_property, back_name, back_code, back_code_name, back_nick_name, back_property, xsms, jkys, yxyl, wqgz, grfa
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                        ) ON DUPLICATE KEY UPDATE
+                            airport_id = VALUES(airport_id), takeoff_time = VALUES(takeoff_time), air_battle_time = VALUES(air_battle_time), ys = VALUES(ys),
+                            outline = VALUES(outline), lx = VALUES(lx), cs = VALUES(cs), sj = VALUES(sj), jhlx = VALUES(jhlx), plan_time = VALUES(plan_time),
+                            height = VALUES(height), ky = VALUES(ky), fz = VALUES(fz), bdno = VALUES(bdno), is_leader_plane = VALUES(is_leader_plane),
+                            formation_practice = VALUES(formation_practice), number_of_formation = VALUES(number_of_formation), front_name = VALUES(front_name),
+                            front_code = VALUES(front_code), front_code_name = VALUES(front_code_name), front_nick_name = VALUES(front_nick_name),
+                            front_property = VALUES(front_property), back_name = VALUES(back_name), back_code = VALUES(back_code), back_code_name = VALUES(back_code_name),
+                            back_nick_name = VALUES(back_nick_name), back_property = VALUES(back_property), xsms = VALUES(xsms), jkys = VALUES(jkys),
+                            yxyl = VALUES(yxyl), wqgz = VALUES(wqgz), grfa = VALUES(grfa);
+                        """,
                 (JdbcStatementBuilder<FlightPlan>) (preparedStatement, flightPlan) -> {
                     // 全是string 枚举即可
                     preparedStatement.setString(1, flightPlan.getAirportId());
@@ -76,7 +214,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(3, flightPlan.getAirBattleTime());
                     preparedStatement.setString(4, flightPlan.getYs());
                     preparedStatement.setString(5, flightPlan.getOutline());
-                    preparedStatement.setString(6, flightPlan.getLx());
+                    preparedStatement.setString(6, flightPlan.getLxh());
                     preparedStatement.setString(7, flightPlan.getCs());
                     preparedStatement.setString(8, flightPlan.getSj());
                     preparedStatement.setString(9, flightPlan.getJhlx());
@@ -104,25 +242,47 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(31, flightPlan.getWqgz());
                     preparedStatement.setString(32, flightPlan.getGrfa());
                 },
-                JdbcExecutionOptions.builder()
-                        .withBatchSize(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchSize")))
-                        .withBatchIntervalMs(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchInterval")))
-                        .withMaxRetries(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.maxRetries")))
-                        .build(),
-                new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                        .withUrl(humanMachineProperties.getProperty("tidb.url.humanMachine"))
-                        .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
-                        .withUsername(humanMachineProperties.getProperty("tidb.username"))
-                        .withPassword(humanMachineProperties.getProperty("tidb.password"))
-                        .withConnectionCheckTimeoutSeconds(Integer.parseInt(humanMachineProperties.getProperty("tidb.connectionCheckTimeoutSeconds")))
-                        .build()
+                getTiDBJdbcExecutionOptions(),
+                getTiDBJdbcConnectionOptions()
         );
-        kafkaSourceDS.addSink(sinkFunction);
+
+        // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
+        kafkaSourceDS.addSink(flightRootSink);
+        kafkaSourceDS.map(FlightPlanRoot::getFlightHead).addSink(flightHeadSink);
+        kafkaSourceDS.map(FlightPlanRoot::getFlightNotes).addSink(flightNotesSink);
+        kafkaSourceDS.flatMap((FlightPlanRoot root, Collector<FlightCmd> out) -> root.getFlightCommands()
+                        .forEach(out::collect))
+                .addSink(flightCmdSink);
+        kafkaSourceDS.flatMap((FlightPlanRoot root, Collector<FlightTask> out) -> root.getFlightTasks()
+                        .forEach(out::collect))
+                .addSink(flightTaskSink);
+        kafkaSourceDS.flatMap((FlightPlanRoot root, Collector<FlightPlan> out) -> root.getFlightPlans()
+                        .forEach(out::collect))
+                .addSink(flightPlanSink);
+
         try {
             env.execute();
         } catch (Exception e) {
             throw new ZorathosException(e, "Encounter error when sinking flight plan data to tidb.");
         }
+    }
+
+    private JdbcExecutionOptions getTiDBJdbcExecutionOptions() {
+        return JdbcExecutionOptions.builder()
+                .withBatchSize(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchSize")))
+                .withBatchIntervalMs(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchInterval")))
+                .withMaxRetries(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.maxRetries")))
+                .build();
+    }
+
+    private JdbcConnectionOptions getTiDBJdbcConnectionOptions() {
+        return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
+                .withUrl(humanMachineProperties.getProperty("tidb.url.humanMachine"))
+                .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
+                .withUsername(humanMachineProperties.getProperty("tidb.username"))
+                .withPassword(humanMachineProperties.getProperty("tidb.password"))
+                .withConnectionCheckTimeoutSeconds(Integer.parseInt(humanMachineProperties.getProperty("tidb.connectionCheckTimeoutSeconds")))
+                .build();
     }
 
     public static void main(String[] args) {

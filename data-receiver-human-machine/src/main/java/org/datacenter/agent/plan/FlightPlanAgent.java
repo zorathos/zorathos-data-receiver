@@ -11,7 +11,7 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
-import org.datacenter.model.plan.FlightPlan;
+import org.datacenter.model.plan.FlightPlanRoot;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -41,6 +41,10 @@ public class FlightPlanAgent extends BaseAgent {
 
     @Override
     public void run() {
+        // TODO 探活 只能有一个Flight Plan Agent
+        if (running) {
+            return;
+        }
         super.run();
         log.info("Flight plan agent start running, fetching data from flight agent system's xml interface and sending it to kafka.");
 
@@ -51,7 +55,7 @@ public class FlightPlanAgent extends BaseAgent {
         scheduler.scheduleAtFixedRate(() -> {
             if (running) {
                 // 1. 获取请求
-                List<FlightPlan> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightPlans(receiverConfig);
+                List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(receiverConfig);
                 // 2. 转发到Kafka
                 try {
                     String plansInJson = mapper.writeValueAsString(flightPlans);

@@ -10,7 +10,7 @@ import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
-import org.datacenter.model.plan.FlightPlan;
+import org.datacenter.model.plan.FlightPlanRoot;
 
 import java.io.IOException;
 import java.net.URI;
@@ -20,7 +20,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -35,22 +34,20 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @Slf4j
 public class PersonnelAndFlightPlanHttpClientUtil {
     private static final ObjectMapper mapper;
-    private static final XmlMapper xmlMapper;
+
+    private static String localCookiesCache;
 
     static {
         mapper = new ObjectMapper();
-        xmlMapper = new XmlMapper();
     }
 
     private static final String host = humanMachineProperties
             .getProperty("agent.personnelAndFlightPlan.host");
 
     /**
-     * 登录人员与装备系统
-     *
-     * @return 返回的Cookie 一共有三条cookie 通过逗号分隔
+     * 登录人员与装备系统 一共有三条cookie 通过逗号分隔
      */
-    private static String loginAndGetCookies() {
+    private static void loginAndGetCookies() {
         String url = "http://" + host + "/home/login";
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
@@ -64,7 +61,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     .uri(new URI(url))
                     .build();
             // 同步的请求
-            return client.send(request, HttpResponse.BodyHandlers.ofString())
+            localCookiesCache = client.send(request, HttpResponse.BodyHandlers.ofString())
                     .headers()
                     .allValues("Set-Cookie")
                     .stream()
@@ -77,9 +74,9 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlan> getFlightPlans(FlightPlanReceiverConfig receiverConfig) {
+    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig) {
         log.info("Trying to get flight plans from sys api.");
-        String formattedCookies = loginAndGetCookies();
+        String formattedCookies = localCookiesCache;
         // 获取今天日期 以yyyy-MM-dd输出
         String today = LocalDate.now().toString();
         List<FlightDate> flightDates;
@@ -109,7 +106,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         missionCodes.addAll(presetMissionCodes);
 
         // 3. 拿飞行日期列表拼字段 获取飞行计划列表
-        List<FlightPlan> flightPlans = new ArrayList<>();
+        List<FlightPlanRoot> flightPlans = new ArrayList<>();
         for (String missionCode : missionCodes) {
             for (FlightDate flightDate : flightDates) {
                 // 把FlightDate转换成"yyyyMMdd"类型的字符串
@@ -127,14 +124,10 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     // 获取响应
                     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                     // 响应体为一段XML
-                    List<String> xmls =
-                            Arrays.stream(response.body().split("/>"))
-                                    .map(xml -> xml + "/>")
-                                    .toList();
-                    // 使用xmlMapper反序列化
-                    for (String xml : xmls) {
-                        flightPlans.add(xmlMapper.readValue(xml, FlightPlan.class));
-                    }
+                    String xml = response.body();
+                    // 解析XML文件
+                    FlightPlanRoot flightPlanRoot = FlightPlanRoot.fromXml(xml);
+                    flightPlans.add(flightPlanRoot);
                 } catch (URISyntaxException | IOException | InterruptedException e) {
                     throw new ZorathosException(e, "Error occurs while fetching flight plans.");
                 }
@@ -145,7 +138,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
 
     public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
         log.info("Trying to get personnel infos from sys api.");
-        String formattedCookies = loginAndGetCookies();
+        String formattedCookies = localCookiesCache;
         List<PersonnelInfo> personnelInfos;
         try (HttpClient client = HttpClient.newHttpClient()) {
             String url = "http://" + host + "/fxy/bindfxylb?dwdm=90121" +

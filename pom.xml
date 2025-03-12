@@ -34,7 +34,7 @@
         <!-- data-model的包里面不带lombok shade的时候排除掉了 要手动引入 -->
         <lombok.version>1.18.36</lombok.version>
         <delombok.output.dir>${project.build.directory}/delombok</delombok.output.dir>
-        <zorathos-data-model.version>0.0.5</zorathos-data-model.version>
+        <zorathos-data-model.version>0.0.6</zorathos-data-model.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <log4j2.version>2.24.3</log4j2.version>
         <!-- flink 版本 和服务器一致 -->
