@@ -1,6 +1,7 @@
 package org.datacenter.receiver.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.configuration.CheckpointingOptions;
@@ -22,9 +23,11 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @author : [wangminan]
  * @description : 数据接收器工具类
  */
+@Slf4j
 public class DataReceiverUtil {
 
     public static StreamExecutionEnvironment prepareStreamEnv() {
+        log.info("Preparing flink execution environment.");
         // 创建配置
         Configuration configuration = new Configuration();
 
