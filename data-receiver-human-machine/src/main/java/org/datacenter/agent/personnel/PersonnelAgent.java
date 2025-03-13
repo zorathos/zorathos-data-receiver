@@ -53,25 +53,23 @@ public class PersonnelAgent extends BaseAgent {
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-                if (running) {
-                    // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
-                    // 1. 清空原有库表数据 用jdbc
-                    truncatePersonnelInfoTable();
-                    // 2. 拉取人员数据
-                    List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
-                    // 3. 转发到Kafka
-                    try {
-                        String personnelInfosInJson = mapper.writeValueAsString(personnelInfos);
-                        KafkaUtil.sendMessage(humanMachineProperties
-                                .getProperty("kafka.topic.personnel"), personnelInfosInJson);
-                    } catch (JsonProcessingException e) {
-                        throw new ZorathosException(e, "Error occurs while converting personnel infos to json string.");
-                    }
+            if (running) {
+                // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
+                // 1. 清空原有库表数据 用jdbc
+                truncatePersonnelInfoTable();
+                // 2. 拉取人员数据
+                List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
+                // 3. 转发到Kafka
+                try {
+                    String personnelInfosInJson = mapper.writeValueAsString(personnelInfos);
+                    KafkaUtil.sendMessage(humanMachineProperties
+                            .getProperty("kafka.topic.personnel"), personnelInfosInJson);
+                } catch (JsonProcessingException e) {
+                    throw new ZorathosException(e, "Error occurs while converting personnel infos to json string.");
                 }
-            },
-            0,
-            Integer.parseInt(humanMachineProperties.getProperty("agent.personnel.interval")),
-            TimeUnit.SECONDS);
+            }
+        },
+        0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
     }
 
     private void truncatePersonnelInfoTable() {

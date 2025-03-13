@@ -2,6 +2,7 @@ package org.datacenter.receiver.plan;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
@@ -32,6 +33,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @description : [一句话描述该类的功能]
  */
 @SuppressWarnings("deprecation")
+@Slf4j
 public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     private final FlightPlanAgent flightPlanAgent;
@@ -51,11 +53,21 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     @Override
     public void start() {
+        // shutdownhook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                log.info("Flight plan kafka receiver shutting down.");
+                flightPlanAgent.stop();
+            } catch (Exception e) {
+                throw new ZorathosException(e, "Encounter error when sinking flight plan data to tidb.");
+            }
+        }));
+
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<FlightPlanRoot> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlan")), FlightPlanRoot.class);
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot")), FlightPlanRoot.class);
 
         SinkFunction<FlightPlanRoot> flightRootSink = JdbcSink.sink("""
                         INSERT INTO `flight_plan_root` (

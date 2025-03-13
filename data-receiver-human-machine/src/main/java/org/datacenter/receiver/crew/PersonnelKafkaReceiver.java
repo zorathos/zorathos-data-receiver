@@ -1,6 +1,7 @@
 package org.datacenter.receiver.crew;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
@@ -26,6 +27,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @author : [wangminan]
  * @description : 人员数据Kafka接收器
  */
+@Slf4j
 @SuppressWarnings("deprecation")
 public class PersonnelKafkaReceiver extends BaseReceiver {
 
@@ -47,6 +49,16 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     @Override
     public void start() {
+        // shutdownhook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                log.info("Flight plan kafka receiver shutting down.");
+                personnelAgent.stop();
+            } catch (Exception e) {
+                throw new ZorathosException(e, "Encounter error when sinking flight plan data to tidb.");
+            }
+        }));
+
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
@@ -148,6 +160,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     public static void main(String[] args) {
         ObjectMapper mapper = new ObjectMapper();
         PersonnelReceiverConfig receiverConfig;
+
         try {
             receiverConfig = mapper.readValue(args[0], PersonnelReceiverConfig.class);
         } catch (IOException e) {

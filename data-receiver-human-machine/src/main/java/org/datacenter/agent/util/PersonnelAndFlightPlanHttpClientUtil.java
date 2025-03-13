@@ -43,11 +43,15 @@ public class PersonnelAndFlightPlanHttpClientUtil {
     private static final String host = humanMachineProperties
             .getProperty("agent.personnelAndFlightPlan.host");
 
+    static {
+        loginAndGetCookies();
+    }
+
     /**
      * 登录人员与装备系统 一共有三条cookie 通过逗号分隔
      */
     private static void loginAndGetCookies() {
-        String url = "http://" + host + "/home/login";
+        String url = host + "/home/login";
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
                     .header("Content-Type", "application/json")
@@ -69,7 +73,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     .reduce(String::concat)
                     .orElseThrow();
         } catch (URISyntaxException | IOException | InterruptedException e) {
-            throw new ZorathosException(e);
+            throw new ZorathosException(e, "Encounter error while login to personnel and flight plan system.");
         }
     }
 
@@ -81,7 +85,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         List<FlightDate> flightDates;
         try (HttpClient client = HttpClient.newHttpClient()) {
             // 1. 先获取飞行日期列表
-            String url = "http://" + host +
+            String url = host +
                     "/fxjh/getfxrq?from=1970-01-01&to=" + today +
                     "&dwdm=90121";
             HttpRequest request = HttpRequest.newBuilder()
@@ -112,7 +116,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                 String date = flightDate.getDate().toString().replace("-", "");
                 try (HttpClient client = HttpClient.newHttpClient()) {
                     // 90121是个常量
-                    String url = "http://" + host + "/fxdt/getxml?jhbh=" +
+                    String url = host + "/fxdt/getxml?jhbh=" +
                             date + "-90121-" + missionCode;
                     HttpRequest request = HttpRequest.newBuilder()
                             .GET()
@@ -140,7 +144,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         String formattedCookies = localCookiesCache;
         List<PersonnelInfo> personnelInfos;
         try (HttpClient client = HttpClient.newHttpClient()) {
-            String url = "http://" + host + "/fxy/bindfxylb?dwdm=90121" +
+            String url = host + "/fxy/bindfxylb?dwdm=90121" +
                     receiverConfig.getQueryString();
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()

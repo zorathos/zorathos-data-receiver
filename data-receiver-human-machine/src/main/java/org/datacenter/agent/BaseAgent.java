@@ -65,6 +65,7 @@ public abstract class BaseAgent implements Runnable {
     }
 
     public void stop() {
+        log.info("Agent is stopping.");
         running = false;
         if (isStartedByThisInstance) {
             // 删除文件

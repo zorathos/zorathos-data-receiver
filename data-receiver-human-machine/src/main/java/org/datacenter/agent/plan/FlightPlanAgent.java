@@ -51,26 +51,18 @@ public class FlightPlanAgent extends BaseAgent {
 
         scheduler.scheduleAtFixedRate(() -> {
             if (running) {
-                // 1. 获取请求
+                // 1. 获取飞行计划根XML并解析
                 List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(receiverConfig);
                 // 2. 转发到Kafka
                 try {
                     String plansInJson = mapper.writeValueAsString(flightPlans);
                     KafkaUtil.sendMessage(humanMachineProperties
-                            .getProperty("kafka.topic.flightPlan"), plansInJson);
+                            .getProperty("kafka.topic.flightPlanRoot"), plansInJson);
                 } catch (JsonProcessingException e) {
                     throw new ZorathosException(e, "Error occurs while converting flight plans to json string.");
                 }
-                // 3. 停5s
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    throw new ZorathosException(e, "Error occurs while sleeping.");
-                }
             }
-        }, 0,
-        Integer.parseInt(humanMachineProperties.getProperty("agent.flightPlan.interval")),
-        TimeUnit.MINUTES);
+        }, 0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.flightPlan")), TimeUnit.MINUTES);
     }
 
     @Override
