@@ -17,7 +17,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @description : 把plane_code迁移到本地的equipment_code表
  */
 @Slf4j
-public class EquipmentCodeReceiver extends BaseReceiver {
+public class EquipmentCodeCdcReceiver extends BaseReceiver {
     @Override
     public void prepare() {
 
@@ -119,7 +119,7 @@ public class EquipmentCodeReceiver extends BaseReceiver {
     }
 
     public static void main(String[] args) {
-        EquipmentCodeReceiver equipmentCodeReceiver = new EquipmentCodeReceiver();
-        equipmentCodeReceiver.run();
+        EquipmentCodeCdcReceiver receiver = new EquipmentCodeCdcReceiver();
+        receiver.run();
     }
 }

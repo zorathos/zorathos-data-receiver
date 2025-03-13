@@ -65,6 +65,7 @@ public class SortiesHttpClientUtil {
      */
     public static List<Sorties> getSortiesList() {
         List<Sorties> sortiesList = new ArrayList<>();
+        // 拿着batch号去找对应的sorties
         List<SortiesBatch> sortiesBatchList = SortiesHttpClientUtil.getSortiesBatches();
         for (SortiesBatch sortiesBatch : sortiesBatchList) {
             String url = host + "/task/dataAsset/querySortiesByBatchId?batchId=" + sortiesBatch.getId();

@@ -3,8 +3,6 @@ package org.datacenter.receiver.plan;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
-import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -23,6 +21,7 @@ import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.model.plan.FlightTask;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
+import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.util.List;
 
@@ -30,7 +29,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
- * @description : [一句话描述该类的功能]
+ * @description : 从Kafka中接收飞行计划数据写入TiDB
  */
 @SuppressWarnings("deprecation")
 @Slf4j
@@ -59,7 +58,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                 log.info("Flight plan kafka receiver shutting down.");
                 flightPlanAgent.stop();
             } catch (Exception e) {
-                throw new ZorathosException(e, "Encounter error when sinking flight plan data to tidb.");
+                throw new ZorathosException(e, "Encounter error when stopping flight plan agent. You may need to check minio to delete remote tmp file.");
             }
         }));
 
@@ -77,8 +76,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                         );
                         """,
                 (JdbcStatementBuilder<FlightPlanRoot>) (preparedStatement, flightPlanRoot) -> preparedStatement.setString(1, flightPlanRoot.getId()),
-                getTiDBJdbcExecutionOptions(),
-                getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         SinkFunction<FlightHead> flightHeadSink = JdbcSink.sink("""
@@ -124,8 +122,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(16, flightHead.getZhshh());
                     preparedStatement.setString(17, flightHead.getDwsbxh());
                 },
-                getTiDBJdbcExecutionOptions(),
-                getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         SinkFunction<FlightNotes> flightNotesSink = JdbcSink.sink("""
@@ -142,8 +139,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setLong(2, flightNotes.getId());
                     preparedStatement.setString(3, flightNotes.getNote());
                 },
-                getTiDBJdbcExecutionOptions(),
-                getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         SinkFunction<FlightCmd> flightCmdSink = JdbcSink.sink("""
@@ -164,8 +160,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(4, flightCmd.getLb());
                     preparedStatement.setString(5, flightCmd.getSx());
                 },
-                getTiDBJdbcExecutionOptions(),
-                getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         SinkFunction<FlightTask> flightTaskSink = JdbcSink.sink("""
@@ -188,8 +183,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(5, flightTask.getName());
                     preparedStatement.setString(6, flightTask.getRw());
                 },
-                getTiDBJdbcExecutionOptions(),
-                getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         // 投递到数据库
@@ -245,8 +239,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(31, flightPlan.getWqgz());
                     preparedStatement.setString(32, flightPlan.getGrfa());
                 },
-                getTiDBJdbcExecutionOptions(),
-                getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
@@ -268,24 +261,6 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
         } catch (Exception e) {
             throw new ZorathosException(e, "Encounter error when sinking flight plan data to tidb.");
         }
-    }
-
-    private JdbcExecutionOptions getTiDBJdbcExecutionOptions() {
-        return JdbcExecutionOptions.builder()
-                .withBatchSize(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchSize")))
-                .withBatchIntervalMs(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchInterval")))
-                .withMaxRetries(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.maxRetries")))
-                .build();
-    }
-
-    private JdbcConnectionOptions getTiDBJdbcConnectionOptions() {
-        return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                .withUrl(humanMachineProperties.getProperty("tidb.url.humanMachine"))
-                .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
-                .withUsername(humanMachineProperties.getProperty("tidb.username"))
-                .withPassword(humanMachineProperties.getProperty("tidb.password"))
-                .withConnectionCheckTimeoutSeconds(Integer.parseInt(humanMachineProperties.getProperty("tidb.connectionCheckTimeoutSeconds")))
-                .build();
     }
 
     public static void main(String[] args) {

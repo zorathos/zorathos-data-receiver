@@ -14,8 +14,8 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * Agent只出现在人际能力匹配验证系统中 用于从老项目接口中拉取数据并投递
- * Agent理论上只能启动一个单一实例，所以我们通过给定路径下是否存在文件来判断
- * 如果无法都调度到本地可能要通过s3扩展来接入
+ * Agent理论上只能启动一个单一实例(不好意思但确实不能并发)，所以我们通过s3给定路径下是否存在文件来判断
+ * 只有确实由本实例启动的agent有写入和删除文件的权利
  *
  * @author : [wangminan]
  * @description : 基础的Agent，如有需要 将在Receiver的Prepare阶段被调用
@@ -64,6 +64,10 @@ public abstract class BaseAgent implements Runnable {
         }
     }
 
+    /**
+     * stop方法必须在shutdownhook中被调用一次 如果不调用则文件无法清理
+     * 同理的 如果对进程使用kill -9也会造成问题 最终落到外面就是停止flink的时候一定要优雅
+     */
     public void stop() {
         log.info("Agent is stopping.");
         running = false;

@@ -19,12 +19,12 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @description : 飞行架次Agent
  */
 @Slf4j
-public class SortirsAgent extends BaseAgent {
+public class SortiesAgent extends BaseAgent {
 
     private final ObjectMapper mapper;
     private ScheduledExecutorService scheduler;
 
-    public SortirsAgent() {
+    public SortiesAgent() {
         super();
         this.mapper = new ObjectMapper();
     }

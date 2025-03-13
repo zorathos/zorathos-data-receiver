@@ -17,7 +17,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @description : 装备数据接收器 MySQL表 走CDC
  */
 @Slf4j
-public class EquipmentInfoReceiver extends BaseReceiver {
+public class EquipmentInfoCdcReceiver extends BaseReceiver {
 
     @Override
     public void prepare() {
@@ -127,7 +127,7 @@ public class EquipmentInfoReceiver extends BaseReceiver {
     }
 
     public static void main(String[] args) {
-        EquipmentInfoReceiver receiver = new EquipmentInfoReceiver();
+        EquipmentInfoCdcReceiver receiver = new EquipmentInfoCdcReceiver();
         receiver.run();
     }
 }

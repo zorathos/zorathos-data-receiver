@@ -2,8 +2,6 @@ package org.datacenter.receiver.crew;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
-import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -16,6 +14,7 @@ import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
+import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -55,7 +54,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                 log.info("Flight plan kafka receiver shutting down.");
                 personnelAgent.stop();
             } catch (Exception e) {
-                throw new ZorathosException(e, "Encounter error when sinking flight plan data to tidb.");
+                throw new ZorathosException(e, "Encounter error when stopping personnel agent. You may need to check minio to delete remote tmp file.");
             }
         }));
 
@@ -67,29 +66,29 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         // 投递到数据库 写sql时使用upsert语法
         SinkFunction<PersonnelInfo> sinkFunction = JdbcSink.sink(
                 """
-                INSERT INTO `personnel_info` (
-                    `id`, unit_code, unit, personal_identifier, name, position, appointment_date, native_place, family_background,
-                    education_level, birthday, enlistment_date, rating_date, graduate_college, graduation_date, military_rank,
-                    pilot_role, flight_level, current_aircraft_model, pxh, code_name, bm, code_character, is_air_combat_commander,
-                    flight_outline, lead_pilot, command_level_daytime, command_level_nighttime, instructor, theoretical_instructor,
-                    zbzt, is_trainee, is_instructor, qb, last_parachute_time_land, last_parachute_time_water, modification_time,
-                    total_time_history, total_time_current_year, total_teaching_time_history
-                ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                ) ON DUPLICATE KEY UPDATE
-                    unit_code = VALUES(unit_code), unit = VALUES(unit), personal_identifier = VALUES(personal_identifier), name = VALUES(name),
-                    position = VALUES(position), appointment_date = VALUES(appointment_date), native_place = VALUES(native_place), family_background = VALUES(family_background),
-                    education_level = VALUES(education_level), birthday = VALUES(birthday), enlistment_date = VALUES(enlistment_date), rating_date = VALUES(rating_date),
-                    graduate_college = VALUES(graduate_college), graduation_date = VALUES(graduation_date), military_rank = VALUES(military_rank),
-                    pilot_role = VALUES(pilot_role), flight_level = VALUES(flight_level), current_aircraft_model = VALUES(current_aircraft_model), pxh = VALUES(pxh),
-                    code_name = VALUES(code_name), bm = VALUES(bm), code_character = VALUES(code_character), is_air_combat_commander = VALUES(is_air_combat_commander),
-                    flight_outline = VALUES(flight_outline), lead_pilot = VALUES(lead_pilot), command_level_daytime = VALUES(command_level_daytime),
-                    command_level_nighttime = VALUES(command_level_nighttime), instructor = VALUES(instructor), theoretical_instructor = VALUES(theoretical_instructor),
-                    zbzt = VALUES(zbzt), is_trainee = VALUES(is_trainee), is_instructor = VALUES(is_instructor), qb = VALUES(qb),
-                    last_parachute_time_land = VALUES(last_parachute_time_land), last_parachute_time_water = VALUES(last_parachute_time_water),
-                    modification_time = VALUES(modification_time), total_time_history = VALUES(total_time_history), total_time_current_year = VALUES(total_time_current_year),
-                    total_teaching_time_history = VALUES(total_teaching_time_history);
-                """,
+                        INSERT INTO `personnel_info` (
+                            `id`, unit_code, unit, personal_identifier, name, position, appointment_date, native_place, family_background,
+                            education_level, birthday, enlistment_date, rating_date, graduate_college, graduation_date, military_rank,
+                            pilot_role, flight_level, current_aircraft_model, pxh, code_name, bm, code_character, is_air_combat_commander,
+                            flight_outline, lead_pilot, command_level_daytime, command_level_nighttime, instructor, theoretical_instructor,
+                            zbzt, is_trainee, is_instructor, qb, last_parachute_time_land, last_parachute_time_water, modification_time,
+                            total_time_history, total_time_current_year, total_teaching_time_history
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                        ) ON DUPLICATE KEY UPDATE
+                            unit_code = VALUES(unit_code), unit = VALUES(unit), personal_identifier = VALUES(personal_identifier), name = VALUES(name),
+                            position = VALUES(position), appointment_date = VALUES(appointment_date), native_place = VALUES(native_place), family_background = VALUES(family_background),
+                            education_level = VALUES(education_level), birthday = VALUES(birthday), enlistment_date = VALUES(enlistment_date), rating_date = VALUES(rating_date),
+                            graduate_college = VALUES(graduate_college), graduation_date = VALUES(graduation_date), military_rank = VALUES(military_rank),
+                            pilot_role = VALUES(pilot_role), flight_level = VALUES(flight_level), current_aircraft_model = VALUES(current_aircraft_model), pxh = VALUES(pxh),
+                            code_name = VALUES(code_name), bm = VALUES(bm), code_character = VALUES(code_character), is_air_combat_commander = VALUES(is_air_combat_commander),
+                            flight_outline = VALUES(flight_outline), lead_pilot = VALUES(lead_pilot), command_level_daytime = VALUES(command_level_daytime),
+                            command_level_nighttime = VALUES(command_level_nighttime), instructor = VALUES(instructor), theoretical_instructor = VALUES(theoretical_instructor),
+                            zbzt = VALUES(zbzt), is_trainee = VALUES(is_trainee), is_instructor = VALUES(is_instructor), qb = VALUES(qb),
+                            last_parachute_time_land = VALUES(last_parachute_time_land), last_parachute_time_water = VALUES(last_parachute_time_water),
+                            modification_time = VALUES(modification_time), total_time_history = VALUES(total_time_history), total_time_current_year = VALUES(total_time_current_year),
+                            total_teaching_time_history = VALUES(total_teaching_time_history);
+                        """,
                 (JdbcStatementBuilder<PersonnelInfo>) (preparedStatement, personnelInfo) -> {
                     preparedStatement.setString(1, personnelInfo.getId());
                     preparedStatement.setString(2, personnelInfo.getUnitCode());
@@ -132,18 +131,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
                     preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
                 },
-                JdbcExecutionOptions.builder()
-                        .withBatchSize(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchSize")))
-                        .withBatchIntervalMs(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchInterval")))
-                        .withMaxRetries(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.maxRetries")))
-                        .build(),
-                new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                        .withUrl(humanMachineProperties.getProperty("tidb.url.humanMachine"))
-                        .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
-                        .withUsername(humanMachineProperties.getProperty("tidb.username"))
-                        .withPassword(humanMachineProperties.getProperty("tidb.password"))
-                        .withConnectionCheckTimeoutSeconds(Integer.parseInt(humanMachineProperties.getProperty("tidb.connectionCheckTimeoutSeconds")))
-                        .build()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
         kafkaSourceDS.addSink(sinkFunction);
         try {
@@ -155,6 +143,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     /**
      * 被flink调用的主函数
+     *
      * @param args 参数 第一个为接收器参数 第二个为持久化器参数
      */
     public static void main(String[] args) {
