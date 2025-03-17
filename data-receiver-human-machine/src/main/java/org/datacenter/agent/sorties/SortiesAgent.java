@@ -34,12 +34,18 @@ public class SortiesAgent extends BaseAgent {
         super.run();
         log.info("Flight Agent start running, fetching data from server.");
 
+        if (!isStartedByThisInstance) {
+            return;
+        }
+
         if (scheduler == null) {
             scheduler = Executors.newScheduledThreadPool(1);
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-            if (running) {
+            if (prepared) {
+                // 可以起flink任务
+                running = true;
                 // 1. 通过接口获取所有SortiesBatch
                 List<Sorties> sortiesList = SortiesHttpClientUtil.getSortiesList();
                 // 2. 转发到Kafka

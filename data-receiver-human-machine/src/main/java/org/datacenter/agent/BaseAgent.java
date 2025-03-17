@@ -25,7 +25,12 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public abstract class BaseAgent implements Runnable {
 
     /**
-     * Agent是否已经启动 由文件初始化
+     * Agent是否已经准备就绪 由文件初始化
+     */
+    protected volatile boolean prepared = false;
+
+    /**
+     * Agent是否正在运行
      */
     protected volatile boolean running = false;
 
@@ -34,19 +39,19 @@ public abstract class BaseAgent implements Runnable {
      */
     protected boolean isStartedByThisInstance = false;
 
-    protected String basePath = humanMachineProperties.getProperty("agent.running.basePath");
+    protected String basePath = humanMachineProperties.getProperty("agent.prepared.basePath");
 
     public BaseAgent() {
         boolean fileExist = MinioUtil.checkFileExist(basePath + '/' + this.getClass().getSimpleName());
         if (fileExist) {
-            running = true;
+            prepared = true;
         }
     }
 
     @Override
     public void run() {
-        if (running) {
-            log.info("Agent is running");
+        if (prepared) {
+            log.info("Agent is prepared");
             return;
         }
         try {
@@ -59,7 +64,7 @@ public abstract class BaseAgent implements Runnable {
             // tempFile转inputStream
             InputStream inputStream = Files.newInputStream(tempFile);
             MinioUtil.upload(basePath + '/' + this.getClass().getSimpleName(), inputStream);
-            running = true;
+            prepared = true;
             isStartedByThisInstance = true;
         } catch (IOException e) {
             throw new ZorathosException(e, "Encountered an error while creating temp file");
@@ -72,7 +77,7 @@ public abstract class BaseAgent implements Runnable {
      */
     public void stop() {
         log.info("Agent is stopping.");
-        running = false;
+        prepared = false;
         if (isStartedByThisInstance) {
             // 删除文件
             MinioUtil.delete(basePath + '/' + this.getClass().getSimpleName());

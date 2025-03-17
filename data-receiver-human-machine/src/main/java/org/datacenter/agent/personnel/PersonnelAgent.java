@@ -48,15 +48,21 @@ public class PersonnelAgent extends BaseAgent {
         super.run();
         log.info("Personnel agent start running, fetching data from personnel agent system's json interface and sending it to kafka.");
 
+        if (!isStartedByThisInstance) {
+            return;
+        }
+
         if (scheduler == null) {
             scheduler = Executors.newScheduledThreadPool(1);
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-            if (running) {
+            if (prepared) {
                 // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
                 // 1. 清空原有库表数据 用jdbc
                 truncatePersonnelInfoTable();
+                // 这时候才可以拉起Flink任务
+                running = true;
                 // 2. 拉取人员数据
                 List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
                 // 3. 转发到Kafka

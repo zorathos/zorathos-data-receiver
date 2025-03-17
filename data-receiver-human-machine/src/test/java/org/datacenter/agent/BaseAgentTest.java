@@ -52,8 +52,8 @@ public class BaseAgentTest {
         humanMachineSysConfig.loadConfig();
         testAgent1.run();
         testAgent2.run();
-        log.info("Agent1 running:{}", testAgent1.running);
-        log.info("Agent2 running:{}", testAgent2.running);
+        log.info("Agent1 running:{}", testAgent1.prepared);
+        log.info("Agent2 running:{}", testAgent2.prepared);
     }
 
     @Test
