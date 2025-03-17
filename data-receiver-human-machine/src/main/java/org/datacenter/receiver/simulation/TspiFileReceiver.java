@@ -39,7 +39,7 @@ public class TspiFileReceiver extends BaseReceiver {
 
         // 使用官方的CSV处理器
         CsvReaderFormat<Tspi> csvFormat = CsvReaderFormat.forPojo(Tspi.class);
-        FileSource<Tspi> fileSource = FileSource.forRecordStreamFormat(csvFormat, new Path(config.getUrl())).build();
+        FileSource<Tspi> tspiSource = FileSource.forRecordStreamFormat(csvFormat, new Path(config.getUrl())).build();
 
         SinkFunction<Tspi> sinkFunction = JdbcSink.sink("""
                 INSERT INTO tspi (id, timestamp, inertial_pressure_altitude, true_heading, longitude, latitude, pitch_angle, roll_angle, aircraft_training_status, north_velocity, east_velocity, aircraft_attribute, engine_afterburner_status, infrared_decoy_release, upward_velocity, platform_type, sat_inertial_altitude_diff, reserved)
@@ -83,12 +83,12 @@ public class TspiFileReceiver extends BaseReceiver {
             preparedStatement.setInt(18, tspi.getReserved());
         }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
 
-        env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "FileSource")
+        env.fromSource(tspiSource, WatermarkStrategy.noWatermarks(), "TspiSource")
                 .addSink(sinkFunction)
-                .name("Tspi File Sink");
+                .name("TspiSink");
 
         try {
-            env.execute();
+            env.execute("TspiSink");
         } catch (Exception e) {
             throw new ZorathosException(e, "Encounter error when sinking flight plan data to tidb.");
         }

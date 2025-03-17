@@ -32,11 +32,11 @@ public class SortiesBatchAgent extends BaseAgent {
     @Override
     public void run() {
         super.run();
-        log.info("Flight Batch Agent start running, fetching data from server.");
-
         if (!isStartedByThisInstance) {
             return;
         }
+
+        log.info("Flight Batch Agent start running, fetching data from server.");
 
         if (scheduler == null) {
             scheduler = Executors.newScheduledThreadPool(1);
