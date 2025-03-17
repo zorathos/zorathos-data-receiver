@@ -24,8 +24,6 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.util.List;
-import java.util.Timer;
-import java.util.concurrent.CountDownLatch;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
