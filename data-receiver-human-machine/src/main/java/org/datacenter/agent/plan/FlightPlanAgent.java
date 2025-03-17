@@ -46,11 +46,11 @@ public class FlightPlanAgent extends BaseAgent {
     @Override
     public void run() {
         super.run();
-        log.info("Flight plan agent start running, fetching data from flight agent system's xml interface and sending it to kafka.");
-
         if (!isStartedByThisInstance) {
             return;
         }
+
+        log.info("Flight plan agent start running, fetching data from flight agent system's xml interface and sending it to kafka.");
 
         if (scheduler == null) {
             scheduler = Executors.newScheduledThreadPool(1);

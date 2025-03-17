@@ -46,11 +46,11 @@ public class PersonnelAgent extends BaseAgent {
     @Override
     public void run() {
         super.run();
-        log.info("Personnel agent start running, fetching data from personnel agent system's json interface and sending it to kafka.");
-
         if (!isStartedByThisInstance) {
             return;
         }
+
+        log.info("Personnel agent start running, fetching data from personnel agent system's json interface and sending it to kafka.");
 
         if (scheduler == null) {
             scheduler = Executors.newScheduledThreadPool(1);

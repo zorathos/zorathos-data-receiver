@@ -11,8 +11,17 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 public class BaseAgentTest {
 
-    private final TestAgent1 testAgent1 = new TestAgent1();
-    private final TestAgent2 testAgent2 = new TestAgent2();
+    private static final TestAgent1 testAgent1;
+    private static final TestAgent2 testAgent2;
+    private static final TestAgent1 testAgent3;
+
+    static {
+        HumanMachineSysConfig humanMachineSysConfig = new HumanMachineSysConfig();
+        humanMachineSysConfig.loadConfig();
+        testAgent1 = new TestAgent1();
+        testAgent2 = new TestAgent2();
+        testAgent3 = new TestAgent1();
+    }
 
     private static class TestAgent1 extends BaseAgent {
         public TestAgent1() {
@@ -48,12 +57,12 @@ public class BaseAgentTest {
 
     @Test
     void testRun() {
-        HumanMachineSysConfig humanMachineSysConfig = new HumanMachineSysConfig();
-        humanMachineSysConfig.loadConfig();
         testAgent1.run();
         testAgent2.run();
+        testAgent3.run();
         log.info("Agent1 running:{}", testAgent1.prepared);
         log.info("Agent2 running:{}", testAgent2.prepared);
+        log.info("Agent3 running:{}", testAgent3.prepared);
     }
 
     @Test
@@ -62,5 +71,6 @@ public class BaseAgentTest {
         humanMachineSysConfig.loadConfig();
         testAgent1.stop();
         testAgent2.stop();
+        testAgent3.stop();
     }
 }

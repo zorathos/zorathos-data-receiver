@@ -47,6 +47,7 @@
 
         <mysql-connector-j.version>8.0.33</mysql-connector-j.version>
         <minio.version>8.5.17</minio.version>
+        <lettuce.version>6.5.5.RELEASE</lettuce.version>
 
         <!-- UT -->
         <junit-jupiter.version>5.12.0</junit-jupiter.version>
@@ -207,6 +208,13 @@
                 <version>${kafka-clients.version}</version>
             </dependency>
             <!-- Kafka客户端 Agent用 -->
+
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+                <version>${lettuce.version}</version>
+            </dependency>
+
 
             <!-- Unit Test -->
             <dependency>

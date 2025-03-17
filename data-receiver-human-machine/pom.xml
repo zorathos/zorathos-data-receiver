@@ -121,5 +121,10 @@
             <artifactId>flink-csv</artifactId>
         </dependency>
         <!-- flink依赖结束 -->
+
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </dependency>
     </dependencies>
 </project>
