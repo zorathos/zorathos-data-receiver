@@ -19,6 +19,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 import java.io.IOException;
 import java.sql.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.concurrent.CountDownLatch;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -44,6 +46,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         personnelAgent.run();
+        awaitAgentRunning(personnelAgent);
     }
 
     @Override

@@ -78,6 +78,7 @@ public abstract class BaseAgent implements Runnable {
     public void stop() {
         log.info("Agent is stopping.");
         prepared = false;
+        running = false;
         if (isStartedByThisInstance) {
             // 删除文件
             MinioUtil.delete(basePath + '/' + this.getClass().getSimpleName());

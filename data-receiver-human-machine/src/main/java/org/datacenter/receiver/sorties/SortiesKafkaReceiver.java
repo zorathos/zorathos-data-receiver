@@ -39,6 +39,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         sortiesAgent.run();
+        awaitAgentRunning(sortiesAgent);
     }
 
     @Override

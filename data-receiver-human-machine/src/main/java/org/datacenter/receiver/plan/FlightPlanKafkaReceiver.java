@@ -24,6 +24,8 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.util.List;
+import java.util.Timer;
+import java.util.concurrent.CountDownLatch;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -48,6 +50,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         flightPlanAgent.run();
+        awaitAgentRunning(flightPlanAgent);
     }
 
     @Override

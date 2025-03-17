@@ -61,7 +61,7 @@ public class FlightPlanAgent extends BaseAgent {
                 // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
                 // 1. 清空原有库表数据 用jdbc
                 truncateFlightPlanTables();
-                // 然后才可以拉Flink
+                // 然后才可以拉Flink running是receiver的标志位
                 running = true;
                 // 1. 获取飞行计划根XML并解析
                 List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(receiverConfig);
