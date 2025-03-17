@@ -10,7 +10,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
-import org.datacenter.config.plan.FlightPlanReceiverConfig;
+import org.datacenter.config.FlightPlanReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.plan.FlightCmd;

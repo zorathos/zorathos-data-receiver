@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
-import org.datacenter.config.personnel.PersonnelReceiverConfig;
+import org.datacenter.config.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 
