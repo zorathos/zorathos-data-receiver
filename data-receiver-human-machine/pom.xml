@@ -114,6 +114,12 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-sql-connector-mysql-cdc</artifactId>
         </dependency>
+
+        <!-- flink CSV formatter -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-csv</artifactId>
+        </dependency>
         <!-- flink依赖结束 -->
     </dependencies>
 </project>

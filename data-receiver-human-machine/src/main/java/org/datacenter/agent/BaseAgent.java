@@ -50,7 +50,9 @@ public abstract class BaseAgent implements Runnable {
             return;
         }
         try {
-            Path tempFile = Files.createTempFile(this.getClass().getSimpleName(), "");
+            // 先级联创建文件夹
+            Files.createDirectories(Path.of(basePath));
+            Path tempFile = Files.createFile(Path.of(basePath + '/' + this.getClass().getSimpleName()));
             // 随便写点什么进去
             Files.writeString(tempFile, "running");
             log.info("Temp file created: {}", tempFile);

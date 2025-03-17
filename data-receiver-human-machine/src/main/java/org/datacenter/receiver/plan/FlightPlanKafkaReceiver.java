@@ -10,7 +10,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
-import org.datacenter.config.FlightPlanReceiverConfig;
+import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.plan.FlightCmd;
@@ -81,107 +81,76 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
 
         SinkFunction<FlightHead> flightHeadSink = JdbcSink.sink("""
                         INSERT INTO `flight_head` (
-                            root_id, `id`, ver, title, timeline, t_mode, plane_num, flights_time, total_time, exit_time,
+                            root_id, ver, title, timeline, t_mode, plane_num, flights_time, total_time, exit_time,
                             sun_rise_time, sun_set_time, dark_time, dawn_time, dxthh, zhshh, dwsbxh
                         ) VALUES (
                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                        ) ON DUPLICATE KEY UPDATE
-                            root_id = VALUES(root_id),
-                            ver = VALUES(ver),
-                            title = VALUES(title),
-                            timeline = VALUES(timeline),
-                            t_mode = VALUES(t_mode),
-                            plane_num = VALUES(plane_num),
-                            flights_time = VALUES(flights_time),
-                            total_time = VALUES(total_time),
-                            exit_time = VALUES(exit_time),
-                            sun_rise_time = VALUES(sun_rise_time),
-                            sun_set_time = VALUES(sun_set_time),
-                            dark_time = VALUES(dark_time),
-                            dawn_time = VALUES(dawn_time),
-                            dxthh = VALUES(dxthh),
-                            zhshh = VALUES(zhshh),
-                            dwsbxh = VALUES(dwsbxh);
+                        );
                         """,
                 (JdbcStatementBuilder<FlightHead>) (preparedStatement, flightHead) -> {
                     preparedStatement.setString(1, flightHead.getRootId());
-                    preparedStatement.setLong(2, flightHead.getId());
-                    preparedStatement.setString(3, flightHead.getVer());
-                    preparedStatement.setString(4, flightHead.getTitle());
-                    preparedStatement.setString(5, flightHead.getTimeline());
-                    preparedStatement.setString(6, flightHead.getTMode());
-                    preparedStatement.setInt(7, flightHead.getPlaneNum());
-                    preparedStatement.setInt(8, flightHead.getFlightsTime());
-                    preparedStatement.setInt(9, flightHead.getTotalTime());
-                    preparedStatement.setInt(10, flightHead.getExitTime());
-                    preparedStatement.setString(11, flightHead.getSunRiseTime());
-                    preparedStatement.setString(12, flightHead.getSunSetTime());
-                    preparedStatement.setString(13, flightHead.getDarkTime());
-                    preparedStatement.setString(14, flightHead.getDawnTime());
-                    preparedStatement.setString(15, flightHead.getDxthh());
-                    preparedStatement.setString(16, flightHead.getZhshh());
-                    preparedStatement.setString(17, flightHead.getDwsbxh());
+                    preparedStatement.setString(2, flightHead.getVer());
+                    preparedStatement.setString(3, flightHead.getTitle());
+                    preparedStatement.setString(4, flightHead.getTimeline());
+                    preparedStatement.setString(5, flightHead.getTMode());
+                    preparedStatement.setInt(6, flightHead.getPlaneNum());
+                    preparedStatement.setInt(7, flightHead.getFlightsTime());
+                    preparedStatement.setInt(8, flightHead.getTotalTime());
+                    preparedStatement.setInt(9, flightHead.getExitTime());
+                    preparedStatement.setString(10, flightHead.getSunRiseTime());
+                    preparedStatement.setString(11, flightHead.getSunSetTime());
+                    preparedStatement.setString(12, flightHead.getDarkTime());
+                    preparedStatement.setString(13, flightHead.getDawnTime());
+                    preparedStatement.setString(14, flightHead.getDxthh());
+                    preparedStatement.setString(15, flightHead.getZhshh());
+                    preparedStatement.setString(16, flightHead.getDwsbxh());
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         SinkFunction<FlightNotes> flightNotesSink = JdbcSink.sink("""
                         INSERT INTO `flight_notes` (
-                            `root_id`, `id`, `note`
+                            `root_id`, `note`
                         ) VALUES (
                             ?, ?, ?
-                        ) ON DUPLICATE KEY UPDATE
-                            root_id = VALUES(root_id),
-                            note = VALUES(note);
+                        );
                         """,
                 (JdbcStatementBuilder<FlightNotes>) (preparedStatement, flightNotes) -> {
                     preparedStatement.setString(1, flightNotes.getRootId());
-                    preparedStatement.setLong(2, flightNotes.getId());
-                    preparedStatement.setString(3, flightNotes.getNote());
+                    preparedStatement.setString(2, flightNotes.getNote());
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         SinkFunction<FlightCmd> flightCmdSink = JdbcSink.sink("""
                         INSERT INTO flight_cmd (
-                            root_id, id, name, lb, sx
+                            root_id, name, lb, sx
                         ) VALUES (
                             ?, ?, ?, ?, ?
-                        ) ON DUPLICATE KEY UPDATE
-                            root_id = VALUES(root_id),
-                            name = VALUES(name),
-                            lb = VALUES(lb),
-                            sx = VALUES(sx);
+                        );
                         """,
                 (JdbcStatementBuilder<FlightCmd>) (preparedStatement, flightCmd) -> {
                     preparedStatement.setString(1, flightCmd.getRootId());
-                    preparedStatement.setLong(2, flightCmd.getId());
-                    preparedStatement.setString(3, flightCmd.getName());
-                    preparedStatement.setString(4, flightCmd.getLb());
-                    preparedStatement.setString(5, flightCmd.getSx());
+                    preparedStatement.setString(2, flightCmd.getName());
+                    preparedStatement.setString(3, flightCmd.getLb());
+                    preparedStatement.setString(4, flightCmd.getSx());
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
 
         SinkFunction<FlightTask> flightTaskSink = JdbcSink.sink("""
                         INSERT INTO flight_task (
-                            root_id, id, model, code, name, rw
+                            root_id, model, code, name, rw
                         ) VALUES (
                             ?, ?, ?, ?, ?, ?
-                        ) ON DUPLICATE KEY UPDATE
-                            root_id = VALUES(root_id),
-                            model = VALUES(model),
-                            code = VALUES(code),
-                            name = VALUES(name),
-                            rw = VALUES(rw);
+                        );
                         """,
                 (JdbcStatementBuilder<FlightTask>) (preparedStatement, flightTask) -> {
                     preparedStatement.setString(1, flightTask.getRootId());
-                    preparedStatement.setLong(2, flightTask.getId());
-                    preparedStatement.setString(3, flightTask.getModel());
-                    preparedStatement.setString(4, flightTask.getCode());
-                    preparedStatement.setString(5, flightTask.getName());
-                    preparedStatement.setString(6, flightTask.getRw());
+                    preparedStatement.setString(2, flightTask.getModel());
+                    preparedStatement.setString(3, flightTask.getCode());
+                    preparedStatement.setString(4, flightTask.getName());
+                    preparedStatement.setString(5, flightTask.getRw());
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
@@ -189,55 +158,48 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
         // 投递到数据库
         SinkFunction<FlightPlan> flightPlanSink = JdbcSink.sink("""
                         INSERT INTO `flight_plan` (
-                            airport_id, takeoff_time, air_battle_time, ys, outline, lxh, cs, sj, jhlx, plan_time, height, ky, fz, bdno,
+                            root_id, airport_id, takeoff_time, air_battle_time, ys, outline, lxh, cs, sj, jhlx, plan_time, height, ky, fz, bdno,
                             is_leader_plane, formation_practice, number_of_formation, front_name, front_code, front_code_name, front_nick_name,
                             front_property, back_name, back_code, back_code_name, back_nick_name, back_property, xsms, jkys, yxyl, wqgz, grfa
                         ) VALUES (
                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                        ) ON DUPLICATE KEY UPDATE
-                            airport_id = VALUES(airport_id), takeoff_time = VALUES(takeoff_time), air_battle_time = VALUES(air_battle_time), ys = VALUES(ys),
-                            outline = VALUES(outline), lx = VALUES(lx), cs = VALUES(cs), sj = VALUES(sj), jhlx = VALUES(jhlx), plan_time = VALUES(plan_time),
-                            height = VALUES(height), ky = VALUES(ky), fz = VALUES(fz), bdno = VALUES(bdno), is_leader_plane = VALUES(is_leader_plane),
-                            formation_practice = VALUES(formation_practice), number_of_formation = VALUES(number_of_formation), front_name = VALUES(front_name),
-                            front_code = VALUES(front_code), front_code_name = VALUES(front_code_name), front_nick_name = VALUES(front_nick_name),
-                            front_property = VALUES(front_property), back_name = VALUES(back_name), back_code = VALUES(back_code), back_code_name = VALUES(back_code_name),
-                            back_nick_name = VALUES(back_nick_name), back_property = VALUES(back_property), xsms = VALUES(xsms), jkys = VALUES(jkys),
-                            yxyl = VALUES(yxyl), wqgz = VALUES(wqgz), grfa = VALUES(grfa);
+                        );
                         """,
                 (JdbcStatementBuilder<FlightPlan>) (preparedStatement, flightPlan) -> {
                     // 全是string 枚举即可
-                    preparedStatement.setString(1, flightPlan.getAirportId());
-                    preparedStatement.setString(2, flightPlan.getTakeoffTime());
-                    preparedStatement.setString(3, flightPlan.getAirBattleTime());
-                    preparedStatement.setString(4, flightPlan.getYs());
-                    preparedStatement.setString(5, flightPlan.getOutline());
-                    preparedStatement.setString(6, flightPlan.getLxh());
-                    preparedStatement.setString(7, flightPlan.getCs());
-                    preparedStatement.setString(8, flightPlan.getSj());
-                    preparedStatement.setString(9, flightPlan.getJhlx());
-                    preparedStatement.setString(10, flightPlan.getPlanTime());
-                    preparedStatement.setString(11, flightPlan.getHeight());
-                    preparedStatement.setString(12, flightPlan.getKy());
-                    preparedStatement.setString(13, flightPlan.getFz());
-                    preparedStatement.setString(14, flightPlan.getBdno());
-                    preparedStatement.setString(15, flightPlan.getIsLeaderPlane());
-                    preparedStatement.setString(16, flightPlan.getFormationPractice());
-                    preparedStatement.setString(17, flightPlan.getNumberOfFormation());
-                    preparedStatement.setString(18, flightPlan.getFrontName());
-                    preparedStatement.setString(19, flightPlan.getFrontCode());
-                    preparedStatement.setString(20, flightPlan.getFrontCodeName());
-                    preparedStatement.setString(21, flightPlan.getFrontNickName());
-                    preparedStatement.setString(22, flightPlan.getFrontProperty());
-                    preparedStatement.setString(23, flightPlan.getBackName());
-                    preparedStatement.setString(24, flightPlan.getBackCode());
-                    preparedStatement.setString(25, flightPlan.getBackCodeName());
-                    preparedStatement.setString(26, flightPlan.getBackNickName());
-                    preparedStatement.setString(27, flightPlan.getBackProperty());
-                    preparedStatement.setString(28, flightPlan.getXsms());
-                    preparedStatement.setString(29, flightPlan.getJkys());
-                    preparedStatement.setString(30, flightPlan.getYxyl());
-                    preparedStatement.setString(31, flightPlan.getWqgz());
-                    preparedStatement.setString(32, flightPlan.getGrfa());
+                    preparedStatement.setString(1, flightPlan.getRootId());
+                    preparedStatement.setString(2, flightPlan.getAirportId());
+                    preparedStatement.setString(3, flightPlan.getTakeoffTime());
+                    preparedStatement.setString(4, flightPlan.getAirBattleTime());
+                    preparedStatement.setString(5, flightPlan.getYs());
+                    preparedStatement.setString(6, flightPlan.getOutline());
+                    preparedStatement.setString(7, flightPlan.getLxh());
+                    preparedStatement.setString(8, flightPlan.getCs());
+                    preparedStatement.setString(9, flightPlan.getSj());
+                    preparedStatement.setString(10, flightPlan.getJhlx());
+                    preparedStatement.setString(11, flightPlan.getPlanTime());
+                    preparedStatement.setString(12, flightPlan.getHeight());
+                    preparedStatement.setString(13, flightPlan.getKy());
+                    preparedStatement.setString(14, flightPlan.getFz());
+                    preparedStatement.setString(15, flightPlan.getBdno());
+                    preparedStatement.setString(16, flightPlan.getIsLeaderPlane());
+                    preparedStatement.setString(17, flightPlan.getFormationPractice());
+                    preparedStatement.setString(18, flightPlan.getNumberOfFormation());
+                    preparedStatement.setString(19, flightPlan.getFrontName());
+                    preparedStatement.setString(20, flightPlan.getFrontCode());
+                    preparedStatement.setString(21, flightPlan.getFrontCodeName());
+                    preparedStatement.setString(22, flightPlan.getFrontNickName());
+                    preparedStatement.setString(23, flightPlan.getFrontProperty());
+                    preparedStatement.setString(24, flightPlan.getBackName());
+                    preparedStatement.setString(25, flightPlan.getBackCode());
+                    preparedStatement.setString(26, flightPlan.getBackCodeName());
+                    preparedStatement.setString(27, flightPlan.getBackNickName());
+                    preparedStatement.setString(28, flightPlan.getBackProperty());
+                    preparedStatement.setString(29, flightPlan.getXsms());
+                    preparedStatement.setString(30, flightPlan.getJkys());
+                    preparedStatement.setString(31, flightPlan.getYxyl());
+                    preparedStatement.setString(32, flightPlan.getWqgz());
+                    preparedStatement.setString(33, flightPlan.getGrfa());
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );

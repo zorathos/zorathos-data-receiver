@@ -38,7 +38,7 @@
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <log4j2.version>2.24.3</log4j2.version>
         <!-- flink 版本 和服务器一致 -->
-        <flink.version>1.20.0</flink.version>
+        <flink.version>1.20.1</flink.version>
         <kafka-flink-connector.version>3.4.0-1.20</kafka-flink-connector.version>
         <flink-connector-jdbc.version>3.2.0-1.19</flink-connector-jdbc.version>
         <flink-mysql-cdc.version>3.3.0</flink-mysql-cdc.version>
@@ -177,6 +177,14 @@
                 <artifactId>flink-sql-connector-mysql-cdc</artifactId>
                 <version>${flink-mysql-cdc.version}</version>
             </dependency>
+
+            <!-- flink CSV formatter -->
+            <dependency>
+                <groupId>org.apache.flink</groupId>
+                <artifactId>flink-csv</artifactId>
+                <version>${flink.version}</version>
+            </dependency>
+
             <!-- flink依赖结束 -->
 
             <dependency>

@@ -8,7 +8,7 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.personnel.PersonnelAgent;
-import org.datacenter.config.PersonnelReceiverConfig;
+import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -67,7 +67,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         SinkFunction<PersonnelInfo> sinkFunction = JdbcSink.sink(
                 """
                         INSERT INTO `personnel_info` (
-                            `id`, unit_code, unit, personal_identifier, name, position, appointment_date, native_place, family_background,
+                            unit_code, unit, personal_identifier, name, position, appointment_date, native_place, family_background,
                             education_level, birthday, enlistment_date, rating_date, graduate_college, graduation_date, military_rank,
                             pilot_role, flight_level, current_aircraft_model, pxh, code_name, bm, code_character, is_air_combat_commander,
                             flight_outline, lead_pilot, command_level_daytime, command_level_nighttime, instructor, theoretical_instructor,
@@ -90,46 +90,45 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                             total_teaching_time_history = VALUES(total_teaching_time_history);
                         """,
                 (JdbcStatementBuilder<PersonnelInfo>) (preparedStatement, personnelInfo) -> {
-                    preparedStatement.setString(1, personnelInfo.getId());
-                    preparedStatement.setString(2, personnelInfo.getUnitCode());
-                    preparedStatement.setString(3, personnelInfo.getUnit());
-                    preparedStatement.setString(4, personnelInfo.getPersonalIdentifier());
-                    preparedStatement.setString(5, personnelInfo.getName());
-                    preparedStatement.setString(6, personnelInfo.getPosition());
-                    preparedStatement.setDate(7, Date.valueOf(personnelInfo.getAppointmentDate()));
-                    preparedStatement.setString(8, personnelInfo.getNativePlace());
-                    preparedStatement.setString(9, personnelInfo.getFamilyBackground());
-                    preparedStatement.setString(10, personnelInfo.getEducationLevel());
-                    preparedStatement.setDate(11, Date.valueOf(personnelInfo.getBirthday()));
-                    preparedStatement.setDate(12, Date.valueOf(personnelInfo.getEnlistmentDate()));
-                    preparedStatement.setDate(13, Date.valueOf(personnelInfo.getRatingDate()));
-                    preparedStatement.setString(14, personnelInfo.getGraduateCollege());
-                    preparedStatement.setDate(15, Date.valueOf(personnelInfo.getGraduationDate()));
-                    preparedStatement.setString(16, personnelInfo.getMilitaryRank());
-                    preparedStatement.setString(17, personnelInfo.getPilotRole());
-                    preparedStatement.setString(18, personnelInfo.getFlightLevel());
-                    preparedStatement.setString(19, personnelInfo.getCurrentAircraftModel());
-                    preparedStatement.setString(20, personnelInfo.getPxh());
-                    preparedStatement.setString(21, personnelInfo.getCodeName());
-                    preparedStatement.setString(22, personnelInfo.getBm());
-                    preparedStatement.setString(23, personnelInfo.getCodeCharacter());
-                    preparedStatement.setString(24, personnelInfo.getIsAirCombatCommander());
-                    preparedStatement.setString(25, personnelInfo.getFlightOutline());
-                    preparedStatement.setString(26, personnelInfo.getLeadPilot());
-                    preparedStatement.setString(27, personnelInfo.getCommandLevelDaytime());
-                    preparedStatement.setString(28, personnelInfo.getCommandLevelNighttime());
-                    preparedStatement.setString(29, personnelInfo.getInstructor());
-                    preparedStatement.setString(30, personnelInfo.getTheoreticalInstructor());
-                    preparedStatement.setString(31, personnelInfo.getZbzt());
-                    preparedStatement.setString(32, personnelInfo.getIsTrainee());
-                    preparedStatement.setString(33, personnelInfo.getIsInstructor());
-                    preparedStatement.setString(34, personnelInfo.getQb());
-                    preparedStatement.setDate(35, Date.valueOf(personnelInfo.getLastParachuteTimeLand()));
-                    preparedStatement.setDate(36, Date.valueOf(personnelInfo.getLastParachuteTimeWater()));
-                    preparedStatement.setDate(37, Date.valueOf(personnelInfo.getModificationTime()));
-                    preparedStatement.setString(38, personnelInfo.getTotalTimeHistory());
-                    preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
-                    preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
+                    preparedStatement.setString(1, personnelInfo.getUnitCode());
+                    preparedStatement.setString(2, personnelInfo.getUnit());
+                    preparedStatement.setString(3, personnelInfo.getPersonalIdentifier());
+                    preparedStatement.setString(4, personnelInfo.getName());
+                    preparedStatement.setString(5, personnelInfo.getPosition());
+                    preparedStatement.setDate(6, Date.valueOf(personnelInfo.getAppointmentDate()));
+                    preparedStatement.setString(7, personnelInfo.getNativePlace());
+                    preparedStatement.setString(8, personnelInfo.getFamilyBackground());
+                    preparedStatement.setString(9, personnelInfo.getEducationLevel());
+                    preparedStatement.setDate(10, Date.valueOf(personnelInfo.getBirthday()));
+                    preparedStatement.setDate(11, Date.valueOf(personnelInfo.getEnlistmentDate()));
+                    preparedStatement.setDate(12, Date.valueOf(personnelInfo.getRatingDate()));
+                    preparedStatement.setString(13, personnelInfo.getGraduateCollege());
+                    preparedStatement.setDate(14, Date.valueOf(personnelInfo.getGraduationDate()));
+                    preparedStatement.setString(15, personnelInfo.getMilitaryRank());
+                    preparedStatement.setString(16, personnelInfo.getPilotRole());
+                    preparedStatement.setString(17, personnelInfo.getFlightLevel());
+                    preparedStatement.setString(18, personnelInfo.getCurrentAircraftModel());
+                    preparedStatement.setString(19, personnelInfo.getPxh());
+                    preparedStatement.setString(20, personnelInfo.getCodeName());
+                    preparedStatement.setString(21, personnelInfo.getBm());
+                    preparedStatement.setString(22, personnelInfo.getCodeCharacter());
+                    preparedStatement.setString(23, personnelInfo.getIsAirCombatCommander());
+                    preparedStatement.setString(24, personnelInfo.getFlightOutline());
+                    preparedStatement.setString(25, personnelInfo.getLeadPilot());
+                    preparedStatement.setString(26, personnelInfo.getCommandLevelDaytime());
+                    preparedStatement.setString(27, personnelInfo.getCommandLevelNighttime());
+                    preparedStatement.setString(28, personnelInfo.getInstructor());
+                    preparedStatement.setString(29, personnelInfo.getTheoreticalInstructor());
+                    preparedStatement.setString(30, personnelInfo.getZbzt());
+                    preparedStatement.setString(31, personnelInfo.getIsTrainee());
+                    preparedStatement.setString(32, personnelInfo.getIsInstructor());
+                    preparedStatement.setString(33, personnelInfo.getQb());
+                    preparedStatement.setDate(34, Date.valueOf(personnelInfo.getLastParachuteTimeLand()));
+                    preparedStatement.setDate(35, Date.valueOf(personnelInfo.getLastParachuteTimeWater()));
+                    preparedStatement.setDate(36, Date.valueOf(personnelInfo.getModificationTime()));
+                    preparedStatement.setString(37, personnelInfo.getTotalTimeHistory());
+                    preparedStatement.setString(38, personnelInfo.getTotalTimeCurrentYear());
+                    preparedStatement.setString(39, personnelInfo.getTotalTeachingTimeHistory());
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
         );
