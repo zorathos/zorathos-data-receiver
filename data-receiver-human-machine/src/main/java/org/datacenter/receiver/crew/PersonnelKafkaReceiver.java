@@ -43,6 +43,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     @Override
     public void prepare() {
+        super.prepare();
         personnelAgent.run();
         awaitAgentRunning(personnelAgent);
     }

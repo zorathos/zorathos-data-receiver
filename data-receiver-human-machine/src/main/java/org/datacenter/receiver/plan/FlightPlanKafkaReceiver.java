@@ -47,6 +47,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     @Override
     public void prepare() {
+        super.prepare();
         flightPlanAgent.run();
         awaitAgentRunning(flightPlanAgent);
     }

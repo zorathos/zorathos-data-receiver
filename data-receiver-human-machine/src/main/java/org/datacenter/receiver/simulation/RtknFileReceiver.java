@@ -31,7 +31,7 @@ public class RtknFileReceiver extends BaseReceiver {
 
     @Override
     public void prepare() {
-
+        super.prepare();
     }
 
     @Override

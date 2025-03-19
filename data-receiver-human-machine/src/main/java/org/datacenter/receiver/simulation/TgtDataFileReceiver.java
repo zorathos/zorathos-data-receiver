@@ -31,6 +31,7 @@ public class TgtDataFileReceiver extends BaseReceiver {
 
     @Override
     public void prepare() {
+        super.prepare();
     }
 
     @Override

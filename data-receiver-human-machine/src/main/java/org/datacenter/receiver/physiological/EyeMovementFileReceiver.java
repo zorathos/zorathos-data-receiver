@@ -32,6 +32,7 @@ public class EyeMovementFileReceiver extends BaseReceiver {
 
     @Override
     public void prepare() {
+        super.prepare();
     }
 
     @Override

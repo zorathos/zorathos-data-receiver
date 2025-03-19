@@ -20,7 +20,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class EquipmentCodeCdcReceiver extends BaseReceiver {
     @Override
     public void prepare() {
-
+        super.prepare();
     }
 
     @Override
@@ -48,15 +48,17 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
                             `icd_version_id` STRING,
                             PRIMARY KEY (id) NOT ENFORCED           -- 定义主键，但不强制执行
                         ) WITH (
-                            'connector' = 'mysql-cdc',  -- 使用 MySQL 作为数据源
-                            'hostname' = ''{0}'',   -- MySQL 主机名
-                            'port' = ''{1}'',            -- MySQL 端口
-                            'username' = ''{2}'',        -- MySQL 用户名
-                            'password' = ''{3}'', -- MySQL 密码
-                            'database-name' = ''{4}'', -- 数据库名
-                            'table-name' = ''{5}'',       -- 表名
-                            'scan.startup.mode' = 'latest-offset' -- 启动模式,
-                            'jdbc.properties.useSSL' = 'false' -- 不使用SSL
+                            ''connector'' = ''mysql-cdc'',  -- 使用 MySQL 作为数据源
+                            ''hostname'' = ''{0}'',   -- MySQL 主机名
+                            ''port'' = ''{1}'',            -- MySQL 端口
+                            ''username'' = ''{2}'',        -- MySQL 用户名
+                            ''password'' = ''{3}'', -- MySQL 密码
+                            ''database-name'' = ''{4}'', -- 数据库名
+                            ''table-name'' = ''{5}'',       -- 表名
+                            ''scan.startup.mode'' = ''initial'', -- 启动模式
+                            ''scan.incremental.snapshot.enabled'' = ''true'', -- 启用增量快照
+                            ''debezium.snapshot.mode'' = ''initial'', -- 快照模式
+                            ''jdbc.properties.useSSL'' = ''false'' -- 不使用SSL
                         );
                         """,
                 humanMachineProperties.getProperty("receiver.equipment.mysql.host"),
@@ -71,30 +73,30 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
 
         String targetSql = MessageFormat.format("""
                         CREATE TABLE `equipment_code_target` (
-                            `id` STRING COMMENT '装备编号，主键 和 EquipmentInfo 中的 id 不是一个概念 id',
-                            `creator` STRING COMMENT '创建人 create_people',
-                            `create_time` DATE COMMENT '创建时间 create_time',
-                            `modifier` STRING COMMENT '修改人 update_people',
-                            `modification_time` TIMESTAMP(3) COMMENT '修改时间 update_time',
-                            `old_id` INT COMMENT '老ID old_id',
-                            `plane_old_id` INT COMMENT '飞机老ID plane_old_id',
-                            `c_coat` STRING COMMENT '涂装号 c_coat',
-                            `c_interior` STRING COMMENT '内部编号 c_interior',
-                            `c_manufacturing` STRING COMMENT '出厂编号 c_manufacturing',
-                            `icd_version` STRING COMMENT 'icd版本 icd_version',
-                            `avionics_system_version` STRING COMMENT '航电系统版本 avionics_system_version',
-                            `is_used` STRING COMMENT '是否使用 is_used',
-                            `is_deleted` STRING COMMENT '是否删除',
-                            `used_time` DATE COMMENT '使用时间 yyyy-MM-dd used_time',
-                            `icd_version_id` STRING COMMENT 'icd_version_id',
+                            `id` STRING COMMENT ''装备编号，主键 和 EquipmentInfo 中的 id 不是一个概念 id'',
+                            `creator` STRING COMMENT ''创建人 create_people'',
+                            `create_time` DATE COMMENT ''创建时间 create_time'',
+                            `modifier` STRING COMMENT ''修改人 update_people'',
+                            `modification_time` TIMESTAMP(3) COMMENT ''修改时间 update_time'',
+                            `old_id` INT COMMENT ''老ID old_id'',
+                            `plane_old_id` INT COMMENT ''飞机老ID plane_old_id'',
+                            `c_coat` STRING COMMENT ''涂装号 c_coat'',
+                            `c_interior` STRING COMMENT ''内部编号 c_interior'',
+                            `c_manufacturing` STRING COMMENT ''出厂编号 c_manufacturing'',
+                            `icd_version` STRING COMMENT ''icd版本 icd_version'',
+                            `avionics_system_version` STRING COMMENT ''航电系统版本 avionics_system_version'',
+                            `is_used` TINYINT COMMENT ''是否使用 is_used'',
+                            `is_deleted` TINYINT COMMENT ''是否删除'',
+                            `used_time` DATE COMMENT ''使用时间 yyyy-MM-dd used_time'',
+                            `icd_version_id` STRING COMMENT ''icd_version_id'',
                             PRIMARY KEY (`id`) NOT ENFORCED
                         ) WITH (
-                            'connector' = 'jdbc',                -- 使用 JDBC 持久化
-                            'url' = ''{0}'',                     -- TiDB 主机名
-                            'driver' = ''{1}'',                  -- TiDB 端口
-                            'username' = ''{2}'',                -- TiDB 用户名
-                            'password' = ''{3}'',                -- TiDB 密码
-                            'table-name' = ''{4}''               -- 表名
+                            ''connector'' = ''jdbc'',              -- 使用 JDBC 持久化
+                            ''url'' = ''{0}'',                     -- TiDB 主机名
+                            ''driver'' = ''{1}'',                  -- TiDB 端口
+                            ''username'' = ''{2}'',                -- TiDB 用户名
+                            ''password'' = ''{3}'',                -- TiDB 密码
+                            ''table-name'' = ''{4}''               -- 表名
                         );
                         """,
                 humanMachineProperties.getProperty("tidb.url.humanMachine"),
@@ -111,7 +113,7 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
         sourceTable
                 .select($("id"), $("create_people"), $("create_time"), $("update_people"), $("update_time"),
                         $("old_id"), $("plane_old_id"), $("c_coat"), $("c_interior"), $("c_manufacturing"),
-                        $("icd_version"), $("avionics_system_version"), $("is_used"), $("is_deleted"), $("used_time"),
+                        $("icd_version"), $("arionics_system_version"), $("is_used"), $("is_deleted"), $("used_time"),
                         $("icd_version_id"))
                 .as("id", "creator", "create_time", "modifier", "modification_time", "old_id", "plane_old_id",
                         "c_coat", "c_interior", "c_manufacturing", "icd_version", "avionics_system_version", "is_used",
