@@ -19,6 +19,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Timestamp;
 
+import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
+
 /**
  * @author : [wangminan]
  * @description : Rdr文件接收器
@@ -59,7 +61,7 @@ public class RdrStateFileReceiver extends BaseReceiver {
                     preparedStatement.setShort(5, rdrState.getRadiationStatus());
                     preparedStatement.setInt(6, rdrState.getReserved());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
         env.fromSource(rdrStateSource, WatermarkStrategy.noWatermarks(), "RdrStateSource").addSink(sinkFunction).name("RdrStateSink");
         try {

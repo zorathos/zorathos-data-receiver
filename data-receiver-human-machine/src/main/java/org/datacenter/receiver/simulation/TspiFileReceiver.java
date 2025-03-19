@@ -20,6 +20,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Timestamp;
 
+import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
+
 /**
  * @author : [wangminan]
  * @description :  Tspi文件接收器
@@ -82,7 +84,7 @@ public class TspiFileReceiver extends BaseReceiver {
             preparedStatement.setInt(16, tspi.getPlatformType());
             preparedStatement.setDouble(17, tspi.getSatInertialAltitudeDiff());
             preparedStatement.setInt(18, tspi.getReserved());
-        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
         env.fromSource(tspiSource, WatermarkStrategy.noWatermarks(), "TspiSource")
                 .addSink(sinkFunction)

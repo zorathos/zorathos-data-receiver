@@ -1,5 +1,6 @@
 package org.datacenter.receiver.util;
 
+import lombok.Getter;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 
@@ -18,9 +19,9 @@ public class JdbcSinkUtil {
                 .build();
     }
 
-    public static JdbcConnectionOptions getTiDBJdbcConnectionOptions() {
+    public static JdbcConnectionOptions getTiDBJdbcConnectionOptions(String url) {
         return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                .withUrl(humanMachineProperties.getProperty("tidb.url.humanMachine"))
+                .withUrl(url)
                 .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
                 .withUsername(humanMachineProperties.getProperty("tidb.username"))
                 .withPassword(humanMachineProperties.getProperty("tidb.password"))

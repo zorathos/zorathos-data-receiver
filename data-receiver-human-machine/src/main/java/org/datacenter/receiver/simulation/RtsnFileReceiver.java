@@ -19,6 +19,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Timestamp;
 
+import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
+
 /**
  * @author : [wangminan]
  * @description : Rtsn文件接收器
@@ -59,7 +61,7 @@ public class RtsnFileReceiver extends BaseReceiver {
             preparedStatement.setLong(5, rtsn.getWeaponType());
             preparedStatement.setLong(6, rtsn.getPylonId());
             preparedStatement.setLong(7, rtsn.getWeaponId());
-        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
         env.fromSource(rtsnSource, WatermarkStrategy.noWatermarks(), "RtsnSource")
                 .addSink(sinkFunction).name("RtsnSink");

@@ -135,7 +135,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
             preparedStatement.setLong(32, sorties.getTestDrive());
             preparedStatement.setString(33, sorties.getTestDriveStr());
             preparedStatement.setString(34, sorties.getUpPilot());
-        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
     }
 

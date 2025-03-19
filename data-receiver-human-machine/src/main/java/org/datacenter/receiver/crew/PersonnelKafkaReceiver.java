@@ -132,7 +132,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(38, personnelInfo.getTotalTimeCurrentYear());
                     preparedStatement.setString(39, personnelInfo.getTotalTeachingTimeHistory());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
         );
         kafkaSourceDS.addSink(sinkFunction);
         try {

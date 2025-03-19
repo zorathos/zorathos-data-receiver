@@ -19,6 +19,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Timestamp;
 
+import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
+
 /**
  * @author : [wangminan]
  * @description : Rtkn文件接收器
@@ -65,7 +67,7 @@ public class RtknFileReceiver extends BaseReceiver {
             preparedStatement.setDouble(8, rtkn.getMissDistance());
             preparedStatement.setShort(9, rtkn.getHitResult());
             preparedStatement.setInt(10, rtkn.getReserved());
-        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
         env.fromSource(rtknSource, WatermarkStrategy.noWatermarks(), "RtknSource").addSink(sinkFunction).name("RtknSink");
 

@@ -72,7 +72,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
                 (JdbcStatementBuilder<SortiesBatch>) (preparedStatement, sortiesBatch) -> {
                     preparedStatement.setString(1, sortiesBatch.getId());
                     preparedStatement.setString(2, sortiesBatch.getBatchNumber());
-                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
         kafkaSourceDS.addSink(sinkFunction);
         try {

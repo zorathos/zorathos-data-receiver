@@ -78,7 +78,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                         );
                         """,
                 (JdbcStatementBuilder<FlightPlanRoot>) (preparedStatement, flightPlanRoot) -> preparedStatement.setString(1, flightPlanRoot.getId()),
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
         );
 
         SinkFunction<FlightHead> flightHeadSink = JdbcSink.sink("""
@@ -107,7 +107,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(15, flightHead.getZhshh());
                     preparedStatement.setString(16, flightHead.getDwsbxh());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
         );
 
         SinkFunction<FlightNotes> flightNotesSink = JdbcSink.sink("""
@@ -121,7 +121,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(1, flightNotes.getRootId());
                     preparedStatement.setString(2, flightNotes.getNote());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
         );
 
         SinkFunction<FlightCmd> flightCmdSink = JdbcSink.sink("""
@@ -137,7 +137,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(3, flightCmd.getLb());
                     preparedStatement.setString(4, flightCmd.getSx());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
         );
 
         SinkFunction<FlightTask> flightTaskSink = JdbcSink.sink("""
@@ -154,7 +154,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(4, flightTask.getName());
                     preparedStatement.setString(5, flightTask.getRw());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
         );
 
         // 投递到数据库
@@ -203,7 +203,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(32, flightPlan.getWqgz());
                     preparedStatement.setString(33, flightPlan.getGrfa());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions()
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
         );
 
         // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题

@@ -20,6 +20,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Time;
 
+import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
+
 /**
  * @author : ningaocheng
  * @description :  眼动数据文件接收器
@@ -148,7 +150,7 @@ public class EyeMovementFileReceiver extends BaseReceiver {
                     preparedStatement.setString(67, eyeMovement.getGyro());
                     preparedStatement.setString(68, eyeMovement.getAccel());
                     preparedStatement.setString(69, eyeMovement.getMag());
-                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
         env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "FileSource")
                 .addSink(eyeMovementSink)

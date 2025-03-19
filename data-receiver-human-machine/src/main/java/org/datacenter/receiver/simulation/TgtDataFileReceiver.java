@@ -19,6 +19,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Timestamp;
 
+import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
+
 /**
  * @author : [wangminan]
  * @description : TgtData文件接收器
@@ -64,7 +66,7 @@ public class TgtDataFileReceiver extends BaseReceiver {
             preparedStatement.setInt(7, tgtData.getTarget1Elevation());
             preparedStatement.setInt(8, tgtData.getTarget1SlantRange());
             preparedStatement.setInt(9, tgtData.getReserved());
-        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions());
+        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
 
         env.fromSource(tgtDataSource, WatermarkStrategy.noWatermarks(), "TgtDataSource")
                 .addSink(sinkFunction)
