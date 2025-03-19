@@ -46,11 +46,8 @@ public class DataReceiverUtil {
                 Duration.ofSeconds(120));
 
         // 根据配置创建环境
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment(configuration);
 
-        // 设置并行度为核心数量 / 2 最小为1
-        env.setParallelism(Math.max(Runtime.getRuntime().availableProcessors() / 2, 1));
-        return env;
+        return StreamExecutionEnvironment.getExecutionEnvironment(configuration);
     }
 
     /**
