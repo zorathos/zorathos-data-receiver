@@ -28,9 +28,15 @@ public class HumanMachineSysConfig extends BaseSysConfig {
 
     @Override
     public void loadConfig() {
+
+        /*
+         * 逐条打印System.getenv
+         */
+        System.getenv().forEach((k, v) -> log.info("System env key:{}, value:{}", k, v));
+
         // 从系统中获取 "ZORATHOS_HUMAN_MACHINE_CONFIG" 环境变量
-        if (System.getProperty(ZORATHOS_HUMAN_MACHINE_CONFIG) != null) {
-            File externelConfigFile = new File(System.getProperty(ZORATHOS_HUMAN_MACHINE_CONFIG));
+        if (System.getenv(ZORATHOS_HUMAN_MACHINE_CONFIG) != null) {
+            File externelConfigFile = new File(System.getenv(ZORATHOS_HUMAN_MACHINE_CONFIG));
             log.info("ZORATHOS_HUMAN_MACHINE_CONFIG found in system env, trying to load sys config from file {}", externelConfigFile.getAbsolutePath());
             // 从配置文件加载
             try (
