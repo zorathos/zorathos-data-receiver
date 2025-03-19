@@ -55,7 +55,8 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
                             'password' = ''{3}'', -- MySQL 密码
                             'database-name' = ''{4}'', -- 数据库名
                             'table-name' = ''{5}'',       -- 表名
-                            'scan.startup.mode' = 'latest-offset' -- 启动模式
+                            'scan.startup.mode' = 'latest-offset' -- 启动模式,
+                            'jdbc.properties.useSSL' = 'false' -- 不使用SSL
                         );
                         """,
                 humanMachineProperties.getProperty("receiver.equipment.mysql.host"),
