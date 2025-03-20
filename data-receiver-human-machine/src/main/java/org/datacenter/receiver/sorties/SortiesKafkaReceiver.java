@@ -9,6 +9,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.sorties.SortiesAgent;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
@@ -135,8 +136,15 @@ public class SortiesKafkaReceiver extends BaseReceiver {
             preparedStatement.setLong(32, sorties.getTestDrive());
             preparedStatement.setString(33, sorties.getTestDriveStr());
             preparedStatement.setString(34, sorties.getUpPilot());
-        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
+        }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
 
+        kafkaSourceDS.addSink(sinkFunction);
+
+        try {
+            env.execute("SortiesKafkaReceiver");
+        } catch (Exception e) {
+            throw new ZorathosException(e, "Encounter error when executing SortiesKafkaReceiver.");
+        }
     }
 
     public static void main(String[] args) {

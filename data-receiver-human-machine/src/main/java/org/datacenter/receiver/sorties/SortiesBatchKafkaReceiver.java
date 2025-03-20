@@ -9,6 +9,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.sorties.SortiesBatchAgent;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.sorties.SortiesBatch;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
@@ -72,7 +73,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
                 (JdbcStatementBuilder<SortiesBatch>) (preparedStatement, sortiesBatch) -> {
                     preparedStatement.setString(1, sortiesBatch.getId());
                     preparedStatement.setString(2, sortiesBatch.getBatchNumber());
-                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
+                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
 
         kafkaSourceDS.addSink(sinkFunction);
         try {
