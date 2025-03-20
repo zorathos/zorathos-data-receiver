@@ -165,7 +165,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
         // 投递到数据库
         SinkFunction<FlightPlan> flightPlanSink = JdbcSink.sink("""
                         INSERT INTO `flight_plan` (
-                            root_id, airport_id, takeoff_time, air_battle_time, ys, outline, lxh, cs, sj, jhlx, plan_time, height, ky, fz, bdno,
+                            root_id, airport_id, takeoff_time, air_battle_time, ys, plane_model, practice_number, cs, sj, jhlx, plan_time, height, ky, fz, formation_number,
                             is_leader_plane, formation_practice, number_of_formation, front_name, front_code, front_code_name, front_nick_name,
                             front_property, back_name, back_code, back_code_name, back_nick_name, back_property, xsms, jkys, yxyl, wqgz, grfa
                         ) VALUES (
@@ -179,8 +179,8 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(3, flightPlan.getTakeoffTime());
                     preparedStatement.setString(4, flightPlan.getAirBattleTime());
                     preparedStatement.setString(5, flightPlan.getYs());
-                    preparedStatement.setString(6, flightPlan.getOutline());
-                    preparedStatement.setString(7, flightPlan.getLxh());
+                    preparedStatement.setString(6, flightPlan.getPlaneModel());
+                    preparedStatement.setString(7, flightPlan.getPracticeNumber());
                     preparedStatement.setString(8, flightPlan.getCs());
                     preparedStatement.setString(9, flightPlan.getSj());
                     preparedStatement.setString(10, flightPlan.getJhlx());
@@ -188,7 +188,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(12, flightPlan.getHeight());
                     preparedStatement.setString(13, flightPlan.getKy());
                     preparedStatement.setString(14, flightPlan.getFz());
-                    preparedStatement.setString(15, flightPlan.getBdno());
+                    preparedStatement.setString(15, flightPlan.getFormationNumber());
                     preparedStatement.setString(16, flightPlan.getIsLeaderPlane());
                     preparedStatement.setString(17, flightPlan.getFormationPractice());
                     preparedStatement.setString(18, flightPlan.getNumberOfFormation());
