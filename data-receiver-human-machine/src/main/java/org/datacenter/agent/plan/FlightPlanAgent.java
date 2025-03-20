@@ -59,6 +59,10 @@ public class FlightPlanAgent extends BaseAgent {
                 running = true;
                 // 1. 获取飞行计划根XML并解析
                 List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(receiverConfig);
+                // 所有日期都已导入完成
+                if (flightPlans.isEmpty()) {
+                    return;
+                }
                 // 2. 转发到Kafka
                 try {
                     String plansInJson = mapper.writeValueAsString(flightPlans);

@@ -124,6 +124,11 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         List<LocalDate> flightDatesFromDB = getFlightDatesFromDB();
         flightDates.removeIf(flightDate -> flightDatesFromDB.contains(flightDate.getDate()));
 
+        if (flightDates.isEmpty()) {
+            // 直接返回空
+            return new ArrayList<>();
+        }
+
         // 2. TODO 从任务系统获取所有任务编号 任务编号要走别的系统 等现场调试
         Set<String> missionCodes = new HashSet<>();
         missionCodes.add("60225");
