@@ -9,6 +9,7 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.types.DataType;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
+import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.text.MessageFormat;
 
@@ -109,7 +110,7 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                             ''table-name'' = ''{4}''               -- 表名
                         );
                         """,
-                humanMachineProperties.getProperty("tidb.url.humanMachine"),
+                JdbcSinkUtil.TIDB_DATABASE_HUMAN_MACHINE,
                 humanMachineProperties.getProperty("tidb.driverName"),
                 humanMachineProperties.getProperty("tidb.username"),
                 humanMachineProperties.getProperty("tidb.password"),

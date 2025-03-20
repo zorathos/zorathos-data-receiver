@@ -11,6 +11,7 @@ import org.datacenter.agent.personnel.PersonnelAgent;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
@@ -132,7 +133,8 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(38, personnelInfo.getTotalTimeCurrentYear());
                     preparedStatement.setString(39, personnelInfo.getTotalTeachingTimeHistory());
                 },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine"))
+                JdbcSinkUtil.getTiDBJdbcExecutionOptions(),
+                JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.HUMAN_MACHINE)
         );
         kafkaSourceDS.addSink(sinkFunction);
         try {

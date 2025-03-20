@@ -4,8 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
+import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.text.MessageFormat;
 
@@ -75,7 +77,7 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
                         CREATE TABLE `equipment_code_target` (
                             `id` STRING COMMENT ''装备编号，主键 和 EquipmentInfo 中的 id 不是一个概念 id'',
                             `creator` STRING COMMENT ''创建人 create_people'',
-                            `create_time` DATE COMMENT ''创建时间 create_time'',
+                            `create_time` TIMESTAMP(3) COMMENT ''创建时间 create_time'',
                             `modifier` STRING COMMENT ''修改人 update_people'',
                             `modification_time` TIMESTAMP(3) COMMENT ''修改时间 update_time'',
                             `old_id` INT COMMENT ''老ID old_id'',
@@ -87,7 +89,7 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
                             `avionics_system_version` STRING COMMENT ''航电系统版本 avionics_system_version'',
                             `is_used` TINYINT COMMENT ''是否使用 is_used'',
                             `is_deleted` TINYINT COMMENT ''是否删除'',
-                            `used_time` DATE COMMENT ''使用时间 yyyy-MM-dd used_time'',
+                            `used_time` TIMESTAMP(3) COMMENT ''使用时间 yyyy-MM-dd used_time'',
                             `icd_version_id` STRING COMMENT ''icd_version_id'',
                             PRIMARY KEY (`id`) NOT ENFORCED
                         ) WITH (
@@ -99,7 +101,7 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
                             ''table-name'' = ''{4}''               -- 表名
                         );
                         """,
-                humanMachineProperties.getProperty("tidb.url.humanMachine"),
+                JdbcSinkUtil.TIDB_DATABASE_HUMAN_MACHINE,
                 humanMachineProperties.getProperty("tidb.driverName"),
                 humanMachineProperties.getProperty("tidb.username"),
                 humanMachineProperties.getProperty("tidb.password"),
