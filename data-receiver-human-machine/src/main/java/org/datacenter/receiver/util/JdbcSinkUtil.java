@@ -1,6 +1,5 @@
 package org.datacenter.receiver.util;
 
-import lombok.Getter;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.datacenter.model.base.TiDBDatabase;
@@ -12,9 +11,14 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @description : TiDB持久化Util
  */
 public class JdbcSinkUtil {
-    public static final String TIDB_DATABASE_HUMAN_MACHINE =
+    public static final String TIDB_URL_HUMAN_MACHINE =
             humanMachineProperties.getProperty("tidb.url.base") +
                     TiDBDatabase.HUMAN_MACHINE.getName() +
+                    humanMachineProperties.getProperty("tidb.url.suffix");
+
+    public static final String TIDB_URL_FLIGHT_PLAN =
+            humanMachineProperties.getProperty("tidb.url.base") +
+                    TiDBDatabase.FLIGHT_PLAN.getName() +
                     humanMachineProperties.getProperty("tidb.url.suffix");
 
     public static JdbcExecutionOptions getTiDBJdbcExecutionOptions() {

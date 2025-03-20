@@ -11,7 +11,10 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
+import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
+import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -83,10 +86,13 @@ public class PersonnelAgent extends BaseAgent {
             log.info("Start truncating personnel info table.");
             Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
             Connection connection = DriverManager.getConnection(
-                    humanMachineProperties.getProperty("tidb.url.humanMachine"),
+                    JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
                     humanMachineProperties.getProperty("tidb.username"),
                     humanMachineProperties.getProperty("tidb.password"));
-            connection.prepareStatement("TRUNCATE TABLE `personnel_info`;").execute();
+            connection.prepareStatement("TRUNCATE TABLE " +
+                            TiDBDatabase.HUMAN_MACHINE.getName() +
+                            TiDBTable.PERSONNEL_INFO.getName())
+                    .execute();
             connection.close();
             log.info("Truncate personnel info table successfully.");
         } catch (SQLException | ClassNotFoundException e) {

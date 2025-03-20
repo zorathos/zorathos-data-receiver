@@ -1,12 +1,10 @@
 package org.datacenter.receiver.equipment;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.table.types.DataType;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
@@ -110,7 +108,7 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                             ''table-name'' = ''{4}''               -- 表名
                         );
                         """,
-                JdbcSinkUtil.TIDB_DATABASE_HUMAN_MACHINE,
+                JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
                 humanMachineProperties.getProperty("tidb.driverName"),
                 humanMachineProperties.getProperty("tidb.username"),
                 humanMachineProperties.getProperty("tidb.password"),
