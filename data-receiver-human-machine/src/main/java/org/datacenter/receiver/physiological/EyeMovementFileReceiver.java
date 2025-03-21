@@ -2,6 +2,8 @@ package org.datacenter.receiver.physiological;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.connector.file.src.FileSource;
@@ -13,6 +15,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.config.physiological.EyeMovementFileReceiverConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.physiological.EyeMovement;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
@@ -28,9 +31,11 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  */
 
 @Slf4j
+@Data
+@EqualsAndHashCode(callSuper = true)
 @SuppressWarnings("deprecation")
 public class EyeMovementFileReceiver extends BaseReceiver {
-    private static EyeMovementFileReceiverConfig config;
+    private EyeMovementFileReceiverConfig config;
 
     @Override
     public void prepare() {
@@ -150,7 +155,7 @@ public class EyeMovementFileReceiver extends BaseReceiver {
                     preparedStatement.setString(67, eyeMovement.getGyro());
                     preparedStatement.setString(68, eyeMovement.getAccel());
                     preparedStatement.setString(69, eyeMovement.getMag());
-                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(humanMachineProperties.getProperty("tidb.url.humanMachine")));
+                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PHYSIOLOGICAL));
 
         env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "FileSource")
                 .addSink(eyeMovementSink)
@@ -165,12 +170,14 @@ public class EyeMovementFileReceiver extends BaseReceiver {
 
     public static void main(String[] args) {
         ObjectMapper mapper = new ObjectMapper();
+        EyeMovementFileReceiverConfig config;
         try {
             config = mapper.readValue(args[0], EyeMovementFileReceiverConfig.class);
         } catch (JsonProcessingException e) {
             throw new ZorathosException(e, "Failed to parse EyeMovement config from json string");
         }
         EyeMovementFileReceiver receiver = new EyeMovementFileReceiver();
+        receiver.setConfig(config);
         receiver.run();
     }
 }
