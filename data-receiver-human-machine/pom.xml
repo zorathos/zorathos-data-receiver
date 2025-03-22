@@ -46,18 +46,36 @@
             <artifactId>flink-streaming-java</artifactId>
             <!-- Flink的所有依赖建议在生产环境中provided 这样打包fatjar的时候不会将flink的依赖打包进去 -->
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>flink-shaded-jackson</artifactId>
+                    <groupId>org.apache.flink</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-clients</artifactId>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>flink-shaded-jackson</artifactId>
+                    <groupId>org.apache.flink</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-runtime-web</artifactId>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>flink-shaded-jackson</artifactId>
+                    <groupId>org.apache.flink</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- flink connector 连接器 -->
@@ -115,11 +133,18 @@
             <artifactId>flink-sql-connector-mysql-cdc</artifactId>
         </dependency>
 
+        <!-- 需要把自带的shaded-jackson排除 然后用最新的 不然解析不了LocalDateTime -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-shaded-jackson</artifactId>
+        </dependency>
+
         <!-- flink CSV formatter -->
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-csv</artifactId>
         </dependency>
+
         <!-- flink依赖结束 -->
 
         <dependency>

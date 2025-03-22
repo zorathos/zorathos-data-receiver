@@ -1,21 +1,23 @@
 package org.datacenter.receiver.simulation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.file.src.FileSource;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.formats.csv.CsvReaderFormat;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.function.SerializableFunction;
+import org.apache.flink.util.function.SerializableSupplier;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
@@ -23,12 +25,15 @@ import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.AaTraj;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
+import org.datacenter.receiver.util.JavaTimeUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -48,7 +53,7 @@ public class AaTrajFileReceiver extends BaseReceiver {
         super.prepare();
         // 通过JDBC连接到AaTraj表 如果有和config.getSortieNumber()相同的记录就删除
         try {
-            log.info("Linking to table: {}.{} to prepare.", TiDBDatabase.SIMULATION.getName(), TiDBTable.AA_TRAJ.getName());
+            log.info("Linking to table: {}.{} for preparation.", TiDBDatabase.SIMULATION.getName(), TiDBTable.AA_TRAJ.getName());
             Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
             Connection connection = DriverManager.getConnection(
                     JdbcSinkUtil.TIDB_URL_SIMULATION,
@@ -84,19 +89,50 @@ public class AaTrajFileReceiver extends BaseReceiver {
             connection.close();
             log.info("Preparation finished.");
         } catch (SQLException | ClassNotFoundException e) {
-            throw new ZorathosException(e, "Error occurs while truncating personnel database.");
+            throw new ZorathosException(e, "Error occurs while preparing the AaTraj table.");
         }
     }
 
     @Override
     public void start() {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
-        SerializableFunction<CsvMapper, CsvSchema> schemaGenerator = mapper ->
-                mapper.schemaFor(AaTraj.class)
-                        // 有头
-                        .withHeader()
-                        .withoutQuoteChar();
-        CsvReaderFormat<AaTraj> csvReaderFormat = CsvReaderFormat.forSchema(CsvMapper::new, schemaGenerator, TypeInformation.of(AaTraj.class));
+        // 列解析需要手动指定列顺序
+        SerializableFunction<CsvMapper, CsvSchema> schemaGenerator =  mapper -> CsvSchema.builder()
+                .addColumn("aircraftId")
+                .addColumn("messageTime")
+                .addColumn("satelliteGuidanceTime")
+                .addColumn("localTime")
+                .addColumn("messageSequenceNumber")
+                .addColumn("weaponId")
+                .addColumn("pylonId")
+                .addColumn("weaponType")
+                .addColumn("targetId")
+                .addColumn("longitude")
+                .addColumn("latitude")
+                .addColumn("altitude")
+                .addColumn("missileTargetDistance")
+                .addColumn("missileSpeed")
+                .addColumn("interceptionStatus")
+                .addColumn("nonInterceptionReason")
+                .addColumn("seekerAzimuth")
+                .addColumn("seekerElevation")
+                .addColumn("targetTspiStatus")
+                .addColumn("commandMachineStatus")
+                .addColumn("groundAngleSatisfactionFlag")
+                .addColumn("zeroCrossingFlag")
+                .setUseHeader(true)
+                .setColumnSeparator(',')
+                .setLineSeparator("\n")
+                .build();
+        CsvReaderFormat<AaTraj> csvReaderFormat = CsvReaderFormat.forSchema(
+                (SerializableSupplier<CsvMapper>) () -> {
+                    CsvMapper csvMapper = new CsvMapper();
+                    csvMapper.registerModule(new JavaTimeModule());
+                    return csvMapper;
+                },
+                schemaGenerator,
+                TypeInformation.of(AaTraj.class)
+        );
         FileSource<AaTraj> fileSource = FileSource.forRecordStreamFormat(csvReaderFormat, new Path(config.getUrl())).build();
 
         SinkFunction<AaTraj> sinkFunction = JdbcSink.sink("""
@@ -109,12 +145,15 @@ public class AaTrajFileReceiver extends BaseReceiver {
                         );
                         """,
                 (preparedStatement, aaTraj) -> {
+                    String sortieNumber = config.getSortieNumber();
+                    // 字符串转localDate sortieNumber.split("_")[0]
+                    LocalDate localDate = LocalDate.parse(sortieNumber.split("_")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
                     // 注意 sortieNumber 是从配置里面来的 csv里面没有
-                    preparedStatement.setString(1, config.getSortieNumber());
+                    preparedStatement.setString(1, sortieNumber);
                     preparedStatement.setString(2, aaTraj.getAircraftId());
-                    preparedStatement.setTime(3, Time.valueOf(aaTraj.getMessageTime()));
-                    preparedStatement.setTime(4, Time.valueOf(aaTraj.getSatelliteGuidanceTime()));
-                    preparedStatement.setTime(5, Time.valueOf(aaTraj.getLocalTime()));
+                    preparedStatement.setTime(3, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getMessageTime())));
+                    preparedStatement.setTime(4, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getSatelliteGuidanceTime())));
+                    preparedStatement.setTime(5, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getLocalTime())));
                     preparedStatement.setLong(6, aaTraj.getMessageSequenceNumber());
                     preparedStatement.setString(7, aaTraj.getWeaponId());
                     preparedStatement.setString(8, aaTraj.getPylonId());
@@ -136,8 +175,9 @@ public class AaTrajFileReceiver extends BaseReceiver {
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SIMULATION));
 
-        env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "file-source")
-                .addSink(sinkFunction)
+        DataStreamSource<AaTraj> aaTrajDs = env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "file-source");
+
+        aaTrajDs.addSink(sinkFunction)
                 .name("AaTraj File Sink");
 
         try {
@@ -147,14 +187,13 @@ public class AaTrajFileReceiver extends BaseReceiver {
         }
     }
 
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
-        ObjectMapper mapper = new ObjectMapper();
-        SimulationReceiverConfig config;
-        try {
-            config = mapper.readValue(args[0], SimulationReceiverConfig.class);
-        } catch (JsonProcessingException e) {
-            throw new ZorathosException(e, "Error occurs while converting simulation receiver config to json string.");
-        }
+        ParameterTool parameterTool = ParameterTool.fromArgs(args);
+        SimulationReceiverConfig config = SimulationReceiverConfig.builder()
+                .url(parameterTool.getRequired("url"))
+                .sortieNumber(parameterTool.getRequired("sortie_number"))
+                .build();
         AaTrajFileReceiver receiver = new AaTrajFileReceiver();
         receiver.setConfig(config);
         receiver.run();

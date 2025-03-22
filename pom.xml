@@ -43,6 +43,7 @@
         <flink-connector-jdbc.version>3.2.0-1.19</flink-connector-jdbc.version>
         <flink-mysql-cdc.version>3.3.0</flink-mysql-cdc.version>
         <kafka-clients.version>3.9.0</kafka-clients.version>
+        <flink-shaded-jackson.version>2.18.2-20.0</flink-shaded-jackson.version>
         <!-- jackson-core和jackson-xml已经在zorathos的对应包里引入 不用重复引入了 如果需要使用自己版本的jackson记得exclude -->
 
         <mysql-connector-j.version>8.0.33</mysql-connector-j.version>
@@ -185,6 +186,13 @@
                 <groupId>org.apache.flink</groupId>
                 <artifactId>flink-csv</artifactId>
                 <version>${flink.version}</version>
+            </dependency>
+
+            <!-- 需要把自带的shaded-jackson排除 然后用最新的 不然解析不了LocalDateTime -->
+            <dependency>
+                <groupId>org.apache.flink</groupId>
+                <artifactId>flink-shaded-jackson</artifactId>
+                <version>${flink-shaded-jackson.version}</version>
             </dependency>
 
             <!-- flink依赖结束 -->
@@ -356,8 +364,6 @@
                             <artifactSet>
                                 <excludes>
                                     <exclude>com.google.code.findbugs:jsr305</exclude>
-                                    <exclude>org.slf4j:*</exclude>
-                                    <exclude>log4j:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <filters>
@@ -371,55 +377,11 @@
                                         <exclude>META-INF/*.RSA</exclude>
                                     </excludes>
                                 </filter>
-                                <!-- 过滤lombok -->
-                                <filter>
-                                    <artifact>org.projectlombok:lombok</artifact>
-                                    <excludes>
-                                        <exclude>**/*</exclude>
-                                    </excludes>
-                                </filter>
                             </filters>
-                            <transformers combine.children="append">
+                            <transformers>
                                 <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer">
-                                </transformer>
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.apache.kafka</pattern>
-                                    <shadedPattern>
-                                        com.ververica.cdc.connectors.shaded.org.apache.kafka
-                                    </shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.antlr</pattern>
-                                    <shadedPattern>
-                                        com.ververica.cdc.connectors.shaded.org.antlr
-                                    </shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.fasterxml</pattern>
-                                    <shadedPattern>
-                                        com.ververica.cdc.connectors.shaded.com.fasterxml
-                                    </shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.google</pattern>
-                                    <shadedPattern>
-                                        com.ververica.cdc.connectors.shaded.com.google
-                                    </shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.esri.geometry</pattern>
-                                    <shadedPattern>com.ververica.cdc.connectors.shaded.com.esri.geometry</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.zaxxer</pattern>
-                                    <shadedPattern>
-                                        com.ververica.cdc.connectors.shaded.com.zaxxer
-                                    </shadedPattern>
-                                </relocation>
-                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
