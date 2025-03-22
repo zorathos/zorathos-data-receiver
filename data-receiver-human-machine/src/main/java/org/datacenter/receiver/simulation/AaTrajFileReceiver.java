@@ -134,7 +134,7 @@ public class AaTrajFileReceiver extends BaseReceiver {
                 TypeInformation.of(AaTraj.class)
         );
         FileSource<AaTraj> fileSource = FileSource.forRecordStreamFormat(csvReaderFormat, new Path(config.getUrl())).build();
-
+        String sortieNumber = config.getSortieNumber();
         SinkFunction<AaTraj> sinkFunction = JdbcSink.sink("""
                         INSERT INTO `aa_traj` (
                             sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, pylon_id, weapon_type, target_id, 
@@ -145,7 +145,7 @@ public class AaTrajFileReceiver extends BaseReceiver {
                         );
                         """,
                 (preparedStatement, aaTraj) -> {
-                    String sortieNumber = config.getSortieNumber();
+
                     // 字符串转localDate sortieNumber.split("_")[0]
                     LocalDate localDate = LocalDate.parse(sortieNumber.split("_")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
                     // 注意 sortieNumber 是从配置里面来的 csv里面没有
@@ -178,12 +178,6 @@ public class AaTrajFileReceiver extends BaseReceiver {
 
         env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "AaTraj file source")
                 .returns(AaTraj.class)
-                // 将 LocalTime 转成时间戳
-//                .map(sortie -> {
-//                    sortie.setLocalTime(sortie.getLocalTime());
-//                    return sortie;
-//                })
-//                .print()
                 .addSink(sinkFunction)
                 .name("AaTraj File Sink");
 

@@ -35,6 +35,7 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -112,9 +113,9 @@ public class TimeTest {
                     LocalDate localDate = LocalDate.parse("20250303_五_01_ACT-3_邱陈_J16_07#02".split("_")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
                     preparedStatement.setString(1, "20250303_五_01_ACT-3_邱陈_J16_07#02");
                     // 将 LocalTime 转成 Unix 时间戳（毫秒）
-                    preparedStatement.setLong(2, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, simpleSortie.getMessageTime()));
-                    preparedStatement.setLong(3, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, simpleSortie.getSatelliteGuidanceTime()));
-                    preparedStatement.setLong(4, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, simpleSortie.getLocalTime()));
+                    preparedStatement.setTime(2, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, simpleSortie.getMessageTime())));
+                    preparedStatement.setTime(3, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, simpleSortie.getSatelliteGuidanceTime())));
+                    preparedStatement.setTime(4, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, simpleSortie.getLocalTime())));
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(),
                 JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SIMULATION)
@@ -122,12 +123,6 @@ public class TimeTest {
 
         env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "file-source")
                 .returns(SimpleSortie.class)
-                // 将 LocalTime 转成时间戳
-//                .map(sortie -> {
-//                    sortie.setLocalTime(sortie.getLocalTime());
-//                    return sortie;
-//                })
-//                .print()
                 .addSink(sinkFunction)
                 .name("SimpleSortie File Sink");
 
