@@ -13,7 +13,7 @@ import org.apache.flink.formats.csv.CsvReaderFormat;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.function.SerializableFunction;
@@ -97,7 +97,7 @@ public class AaTrajFileReceiver extends BaseReceiver {
     public void start() {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         // 列解析需要手动指定列顺序
-        SerializableFunction<CsvMapper, CsvSchema> schemaGenerator =  mapper -> CsvSchema.builder()
+        SerializableFunction<CsvMapper, CsvSchema> schemaGenerator = mapper -> CsvSchema.builder()
                 .addColumn("aircraftId")
                 .addColumn("messageTime")
                 .addColumn("satelliteGuidanceTime")
@@ -151,9 +151,10 @@ public class AaTrajFileReceiver extends BaseReceiver {
                     // 注意 sortieNumber 是从配置里面来的 csv里面没有
                     preparedStatement.setString(1, sortieNumber);
                     preparedStatement.setString(2, aaTraj.getAircraftId());
-                    preparedStatement.setTime(3, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getMessageTime())));
-                    preparedStatement.setTime(4, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getSatelliteGuidanceTime())));
-                    preparedStatement.setTime(5, new Time(JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getLocalTime())));
+                    // LocalTime解析不了 全部用Unix时间戳 Long型
+                    preparedStatement.setLong(3, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getMessageTime()));
+                    preparedStatement.setLong(4, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getSatelliteGuidanceTime()));
+                    preparedStatement.setLong(5, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getLocalTime()));
                     preparedStatement.setLong(6, aaTraj.getMessageSequenceNumber());
                     preparedStatement.setString(7, aaTraj.getWeaponId());
                     preparedStatement.setString(8, aaTraj.getPylonId());
@@ -175,10 +176,17 @@ public class AaTrajFileReceiver extends BaseReceiver {
                 },
                 JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SIMULATION));
 
-        DataStreamSource<AaTraj> aaTrajDs = env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "file-source");
-
-        aaTrajDs.addSink(sinkFunction)
+        env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "AaTraj file source")
+                .returns(AaTraj.class)
+                // 将 LocalTime 转成时间戳
+//                .map(sortie -> {
+//                    sortie.setLocalTime(sortie.getLocalTime());
+//                    return sortie;
+//                })
+//                .print()
+                .addSink(sinkFunction)
                 .name("AaTraj File Sink");
+
 
         try {
             env.execute("AaTraj File Receiver");
