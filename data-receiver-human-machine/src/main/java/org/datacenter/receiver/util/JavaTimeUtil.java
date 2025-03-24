@@ -11,8 +11,9 @@ import java.time.ZoneOffset;
  * @description : java时间转换为SQL时间工具类
  */
 public class JavaTimeUtil {
+
     /**
-     * 将LocalTime转换为Unix时间戳
+     * 将LocalTime转换为Unix时间戳 提供给 {@link java.sql.Time} 的构造方法
      *
      * @param time 消息时间
      * @return Unix时间戳

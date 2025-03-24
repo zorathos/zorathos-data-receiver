@@ -2,11 +2,11 @@ package org.datacenter.receiver.crew;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.connector.jdbc.JdbcSink;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
+import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.personnel.PersonnelAgent;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
@@ -28,7 +28,6 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @description : 人员数据Kafka接收器
  */
 @Slf4j
-@SuppressWarnings("deprecation")
 public class PersonnelKafkaReceiver extends BaseReceiver {
 
     private final PersonnelAgent personnelAgent;
@@ -67,8 +66,8 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         DataStreamSource<PersonnelInfo> kafkaSourceDS =
                 DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.personnel")), PersonnelInfo.class);
         // 投递到数据库 写sql时使用upsert语法
-        SinkFunction<PersonnelInfo> sinkFunction = JdbcSink.sink(
-                """
+        Sink<PersonnelInfo> sink = JdbcSink.<PersonnelInfo>builder()
+                .withQueryStatement("""
                         INSERT INTO `personnel_info` (
                             unit_code, unit, personal_identifier, name, position, appointment_date, native_place, family_background,
                             education_level, birthday, enlistment_date, rating_date, graduate_college, graduation_date, military_rank,
@@ -91,8 +90,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                             last_parachute_time_land = VALUES(last_parachute_time_land), last_parachute_time_water = VALUES(last_parachute_time_water),
                             modification_time = VALUES(modification_time), total_time_history = VALUES(total_time_history), total_time_current_year = VALUES(total_time_current_year),
                             total_teaching_time_history = VALUES(total_teaching_time_history);
-                        """,
-                (JdbcStatementBuilder<PersonnelInfo>) (preparedStatement, personnelInfo) -> {
+                        """, (JdbcStatementBuilder<PersonnelInfo>) (preparedStatement, personnelInfo) -> {
                     preparedStatement.setString(1, personnelInfo.getUnitCode());
                     preparedStatement.setString(2, personnelInfo.getUnit());
                     preparedStatement.setString(3, personnelInfo.getPersonalIdentifier());
@@ -132,11 +130,11 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(37, personnelInfo.getTotalTimeHistory());
                     preparedStatement.setString(38, personnelInfo.getTotalTimeCurrentYear());
                     preparedStatement.setString(39, personnelInfo.getTotalTeachingTimeHistory());
-                },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(),
-                JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.HUMAN_MACHINE)
-        );
-        kafkaSourceDS.addSink(sinkFunction);
+                })
+                .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
+                .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.HUMAN_MACHINE));
+
+        kafkaSourceDS.sinkTo(sink).name("Personnel kafka sink.");
         try {
             env.execute();
         } catch (Exception e) {

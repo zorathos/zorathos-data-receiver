@@ -1,11 +1,11 @@
 package org.datacenter.receiver.sorties;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.connector.jdbc.JdbcSink;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
+import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.agent.sorties.SortiesBatchAgent;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
@@ -23,7 +23,6 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @author : [wangminan]
  * @description : 从Kafka中接收架次批数据写入TiDB
  */
-@SuppressWarnings("deprecation")
 @Slf4j
 public class SortiesBatchKafkaReceiver extends BaseReceiver {
 
@@ -62,22 +61,26 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
         DataStreamSource<SortiesBatch> kafkaSourceDS =
                 DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.sortiesBatch")), SortiesBatch.class);
 
-        SinkFunction<SortiesBatch> sinkFunction = JdbcSink.sink("""
-                        INSERT INTO `sorties_batch` (
-                            `id`, `batch_number`
-                        ) VALUES (
-                            ?, ?
-                        ) ON DUPLICATE KEY UPDATE
-                            batch_number = VALUES(batch_number);
-                        """,
-                (JdbcStatementBuilder<SortiesBatch>) (preparedStatement, sortiesBatch) -> {
-                    preparedStatement.setString(1, sortiesBatch.getId());
-                    preparedStatement.setString(2, sortiesBatch.getBatchNumber());
-                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
+        Sink<SortiesBatch> sinkFunction = JdbcSink.<SortiesBatch>builder()
+                .withQueryStatement("""
+                                INSERT INTO `sorties_batch` (
+                                    `id`, `batch_number`
+                                ) VALUES (
+                                    ?, ?
+                                ) ON DUPLICATE KEY UPDATE
+                                    batch_number = VALUES(batch_number);
+                                """,
+                        (JdbcStatementBuilder<SortiesBatch>) (preparedStatement, sortiesBatch) -> {
+                            preparedStatement.setString(1, sortiesBatch.getId());
+                            preparedStatement.setString(2, sortiesBatch.getBatchNumber());
+                        })
+                .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
+                .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
 
-        kafkaSourceDS.addSink(sinkFunction);
+
+        kafkaSourceDS.sinkTo(sinkFunction).name("SortiesBatch Kafka Sinker");
         try {
-            env.execute("SortiesBatchKafkaReceiver");
+            env.execute("SortiesBatch Kafka Receiver");
         } catch (Exception e) {
             throw new ZorathosException(e, "Encounter error when executing SortiesBatchKafkaReceiver.");
         }

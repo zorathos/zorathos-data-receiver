@@ -57,6 +57,8 @@ public class FlightPlanAgent extends BaseAgent {
             if (prepared) {
                 // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
                 running = true;
+                // 0. 刷新Cookie
+                PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies();
                 // 1. 获取飞行计划根XML并解析
                 List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(receiverConfig);
                 // 所有日期都已导入完成

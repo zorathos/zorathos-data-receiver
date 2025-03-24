@@ -6,13 +6,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.connector.file.src.FileSource;
-import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
+import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.formats.csv.CsvReaderFormat;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.datacenter.config.physiological.EyeMovementFileReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
@@ -23,8 +23,6 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Time;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * @author : ningaocheng
  * @description :  眼动数据文件接收器
@@ -33,7 +31,6 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuppressWarnings("deprecation")
 public class EyeMovementFileReceiver extends BaseReceiver {
     private EyeMovementFileReceiverConfig config;
 
@@ -47,19 +44,20 @@ public class EyeMovementFileReceiver extends BaseReceiver {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         CsvReaderFormat<EyeMovement> csvFormat = CsvReaderFormat.forPojo(EyeMovement.class);
         FileSource<EyeMovement> fileSource = FileSource.forRecordStreamFormat(csvFormat, new Path(config.getUrl())).build();
-        SinkFunction<EyeMovement> eyeMovementSink = JdbcSink.sink(
-                """
+
+        Sink<EyeMovement> sink = JdbcSink.<EyeMovement>builder()
+                .withQueryStatement("""
                         INSERT INTO eye_movement (
-                                    record_name, user_name, valid_ratio, time_of_day, video_time, recording_time_stamp, gaze_velocity, serial_send, serial_receive,
-                                    udp_send, udp_receive, event_label, annotation, validity_left, validity_right, pupil_position_left_x, pupil_position_left_y,
-                                    pupil_position_right_x, pupil_position_right_y, pupil_diameter_left_px, pupil_diameter_left_mm, pupil_diameter_right_px,
-                                    pupil_diameter_right_mm, openness_left, openness_right, eyelid_distance_left_px, eyelid_distance_left_mm, eyelid_distance_right_px,
-                                    eyelid_distance_right_mm, ipd, gaze_point_index, gaze_point_x, gaze_point_y, x_offset, y_offset, gaze_point_left_x, gaze_point_left_y,
-                                    gaze_point_right_x, gaze_point_right_y, gaze_origin_left_x, gaze_origin_left_y, gaze_origin_left_z, gaze_origin_right_x,
-                                    gaze_origin_right_y, gaze_origin_right_z, gaze_direction_left_x, gaze_direction_left_y, gaze_direction_left_z,
-                                    gaze_direction_right_x, gaze_direction_right_y, gaze_direction_right_z, fixation_index, fixation_duration, fixation_point_x,
-                                    fixation_point_y, saccade_index, saccade_duration, saccade_amplitude, saccade_velocity_average, saccade_velocity_peak,
-                                    invalid_index, invalid_duration, blink_index, blink_duration, blink_eye, quat_data, gyro, accel, mag
+                            record_name, user_name, valid_ratio, time_of_day, video_time, recording_time_stamp, gaze_velocity, serial_send, serial_receive,
+                            udp_send, udp_receive, event_label, annotation, validity_left, validity_right, pupil_position_left_x, pupil_position_left_y,
+                            pupil_position_right_x, pupil_position_right_y, pupil_diameter_left_px, pupil_diameter_left_mm, pupil_diameter_right_px,
+                            pupil_diameter_right_mm, openness_left, openness_right, eyelid_distance_left_px, eyelid_distance_left_mm, eyelid_distance_right_px,
+                            eyelid_distance_right_mm, ipd, gaze_point_index, gaze_point_x, gaze_point_y, x_offset, y_offset, gaze_point_left_x, gaze_point_left_y,
+                            gaze_point_right_x, gaze_point_right_y, gaze_origin_left_x, gaze_origin_left_y, gaze_origin_left_z, gaze_origin_right_x,
+                            gaze_origin_right_y, gaze_origin_right_z, gaze_direction_left_x, gaze_direction_left_y, gaze_direction_left_z,
+                            gaze_direction_right_x, gaze_direction_right_y, gaze_direction_right_z, fixation_index, fixation_duration, fixation_point_x,
+                            fixation_point_y, saccade_index, saccade_duration, saccade_amplitude, saccade_velocity_average, saccade_velocity_peak,
+                            invalid_index, invalid_duration, blink_index, blink_duration, blink_eye, quat_data, gyro, accel, mag
                         ) VALUES (
                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
@@ -155,10 +153,12 @@ public class EyeMovementFileReceiver extends BaseReceiver {
                     preparedStatement.setString(67, eyeMovement.getGyro());
                     preparedStatement.setString(68, eyeMovement.getAccel());
                     preparedStatement.setString(69, eyeMovement.getMag());
-                }, JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PHYSIOLOGICAL));
+                })
+                .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
+                .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PHYSIOLOGICAL));
 
         env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "FileSource")
-                .addSink(eyeMovementSink)
+                .sinkTo(sink)
                 .name("EyeMovement File Sink");
 
         try {

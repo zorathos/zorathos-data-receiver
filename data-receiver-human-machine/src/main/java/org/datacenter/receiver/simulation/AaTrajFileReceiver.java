@@ -5,17 +5,16 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.file.src.FileSource;
-import org.apache.flink.connector.jdbc.JdbcSink;
+import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.formats.csv.CsvReaderFormat;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.function.SerializableFunction;
 import org.apache.flink.util.function.SerializableSupplier;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
@@ -25,7 +24,6 @@ import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.AaTraj;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
-import org.datacenter.receiver.util.JavaTimeUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Connection;
@@ -44,7 +42,6 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuppressWarnings("deprecation")
 public class AaTrajFileReceiver extends BaseReceiver {
     private SimulationReceiverConfig config;
 
@@ -133,52 +130,55 @@ public class AaTrajFileReceiver extends BaseReceiver {
                 schemaGenerator,
                 TypeInformation.of(AaTraj.class)
         );
+
         FileSource<AaTraj> fileSource = FileSource.forRecordStreamFormat(csvReaderFormat, new Path(config.getUrl())).build();
         String sortieNumber = config.getSortieNumber();
-        SinkFunction<AaTraj> sinkFunction = JdbcSink.sink("""
-                        INSERT INTO `aa_traj` (
-                            sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, pylon_id, weapon_type, target_id, 
-                            longitude, latitude, altitude, missile_target_distance, missile_speed, interception_status, non_interception_reason, seeker_azimuth, seeker_elevation, 
-                            target_tspi_status, command_machine_status, ground_angle_satisfaction_flag, zero_crossing_flag
-                        ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                        );
-                        """,
-                (preparedStatement, aaTraj) -> {
+        Sink<AaTraj> sinkFunction = JdbcSink.<AaTraj>builder()
+                .withQueryStatement("""
+                                INSERT INTO `aa_traj` (
+                                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, pylon_id, weapon_type, target_id, 
+                                    longitude, latitude, altitude, missile_target_distance, missile_speed, interception_status, non_interception_reason, seeker_azimuth, seeker_elevation, 
+                                    target_tspi_status, command_machine_status, ground_angle_satisfaction_flag, zero_crossing_flag
+                                ) VALUES (
+                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                );
+                                """,
+                        (preparedStatement, aaTraj) -> {
 
-                    // 字符串转localDate sortieNumber.split("_")[0]
-                    LocalDate localDate = LocalDate.parse(sortieNumber.split("_")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
-                    // 注意 sortieNumber 是从配置里面来的 csv里面没有
-                    preparedStatement.setString(1, sortieNumber);
-                    preparedStatement.setString(2, aaTraj.getAircraftId());
-                    // LocalTime解析不了 全部用Unix时间戳 Long型
-                    preparedStatement.setLong(3, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getMessageTime()));
-                    preparedStatement.setLong(4, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getSatelliteGuidanceTime()));
-                    preparedStatement.setLong(5, JavaTimeUtil.convertLocalTimeToUnixTimestamp(localDate, aaTraj.getLocalTime()));
-                    preparedStatement.setLong(6, aaTraj.getMessageSequenceNumber());
-                    preparedStatement.setString(7, aaTraj.getWeaponId());
-                    preparedStatement.setString(8, aaTraj.getPylonId());
-                    preparedStatement.setString(9, aaTraj.getWeaponType());
-                    preparedStatement.setString(10, aaTraj.getTargetId());
-                    preparedStatement.setString(11, aaTraj.getLongitude());
-                    preparedStatement.setString(12, aaTraj.getLatitude());
-                    preparedStatement.setString(13, aaTraj.getAltitude());
-                    preparedStatement.setString(14, aaTraj.getMissileTargetDistance());
-                    preparedStatement.setString(15, aaTraj.getMissileSpeed());
-                    preparedStatement.setString(16, aaTraj.getInterceptionStatus());
-                    preparedStatement.setString(17, aaTraj.getNonInterceptionReason());
-                    preparedStatement.setString(18, aaTraj.getSeekerAzimuth());
-                    preparedStatement.setString(19, aaTraj.getSeekerElevation());
-                    preparedStatement.setString(20, aaTraj.getTargetTspiStatus());
-                    preparedStatement.setString(21, aaTraj.getCommandMachineStatus());
-                    preparedStatement.setString(22, aaTraj.getGroundAngleSatisfactionFlag());
-                    preparedStatement.setString(23, aaTraj.getZeroCrossingFlag());
-                },
-                JdbcSinkUtil.getTiDBJdbcExecutionOptions(), JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SIMULATION));
+                            // 字符串转localDate sortieNumber.split("_")[0]
+                            LocalDate localDate = LocalDate.parse(sortieNumber.split("_")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            // 注意 sortieNumber 是从配置里面来的 csv里面没有
+                            preparedStatement.setString(1, sortieNumber);
+                            preparedStatement.setString(2, aaTraj.getAircraftId());
+                            // LocalTime解析不了 全部用Unix时间戳 Long型
+                            preparedStatement.setTime(3, Time.valueOf(aaTraj.getMessageTime()));
+                            preparedStatement.setTime(4, Time.valueOf(aaTraj.getSatelliteGuidanceTime()));
+                            preparedStatement.setTime(5, Time.valueOf(aaTraj.getLocalTime()));
+                            preparedStatement.setLong(6, aaTraj.getMessageSequenceNumber());
+                            preparedStatement.setString(7, aaTraj.getWeaponId());
+                            preparedStatement.setString(8, aaTraj.getPylonId());
+                            preparedStatement.setString(9, aaTraj.getWeaponType());
+                            preparedStatement.setString(10, aaTraj.getTargetId());
+                            preparedStatement.setString(11, aaTraj.getLongitude());
+                            preparedStatement.setString(12, aaTraj.getLatitude());
+                            preparedStatement.setString(13, aaTraj.getAltitude());
+                            preparedStatement.setString(14, aaTraj.getMissileTargetDistance());
+                            preparedStatement.setString(15, aaTraj.getMissileSpeed());
+                            preparedStatement.setString(16, aaTraj.getInterceptionStatus());
+                            preparedStatement.setString(17, aaTraj.getNonInterceptionReason());
+                            preparedStatement.setString(18, aaTraj.getSeekerAzimuth());
+                            preparedStatement.setString(19, aaTraj.getSeekerElevation());
+                            preparedStatement.setString(20, aaTraj.getTargetTspiStatus());
+                            preparedStatement.setString(21, aaTraj.getCommandMachineStatus());
+                            preparedStatement.setString(22, aaTraj.getGroundAngleSatisfactionFlag());
+                            preparedStatement.setString(23, aaTraj.getZeroCrossingFlag());
+                        })
+                .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
+                .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SIMULATION));
 
         env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), "AaTraj file source")
                 .returns(AaTraj.class)
-                .addSink(sinkFunction)
+                .sinkTo(sinkFunction)
                 .name("AaTraj File Sink");
 
 
