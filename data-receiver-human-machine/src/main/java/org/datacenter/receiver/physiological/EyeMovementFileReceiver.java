@@ -1,12 +1,11 @@
 package org.datacenter.receiver.physiological;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.file.src.FileSource;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
@@ -168,14 +167,17 @@ public class EyeMovementFileReceiver extends BaseReceiver {
         }
     }
 
+    /**
+     * 输入参数形式 --url "s3://bucket-name/path/to/file.csv"
+     * @param args 入参
+     */
     public static void main(String[] args) {
-        ObjectMapper mapper = new ObjectMapper();
-        EyeMovementFileReceiverConfig config;
-        try {
-            config = mapper.readValue(args[0], EyeMovementFileReceiverConfig.class);
-        } catch (JsonProcessingException e) {
-            throw new ZorathosException(e, "Failed to parse EyeMovement config from json string");
-        }
+        ParameterTool parameterTool = ParameterTool.fromArgs(args);
+
+        EyeMovementFileReceiverConfig config = EyeMovementFileReceiverConfig.builder()
+                .url(parameterTool.getRequired("url"))
+                .build();
+
         EyeMovementFileReceiver receiver = new EyeMovementFileReceiver();
         receiver.setConfig(config);
         receiver.run();

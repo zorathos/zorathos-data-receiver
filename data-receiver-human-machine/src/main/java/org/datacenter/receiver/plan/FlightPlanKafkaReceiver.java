@@ -1,7 +1,5 @@
 package org.datacenter.receiver.plan;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
@@ -10,7 +8,6 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
-import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
@@ -38,12 +35,11 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     private final FlightPlanAgent flightPlanAgent;
 
-    public FlightPlanKafkaReceiver(FlightPlanReceiverConfig receiverConfig) {
+    public FlightPlanKafkaReceiver() {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
-        this.flightPlanAgent = new FlightPlanAgent(receiverConfig);
-        this.receiverConfig = receiverConfig;
+        this.flightPlanAgent = new FlightPlanAgent();
     }
 
     @Override
@@ -242,16 +238,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
     }
 
     public static void main(String[] args) {
-        ObjectMapper mapper = new ObjectMapper();
-        FlightPlanReceiverConfig receiverConfig;
-        try {
-            receiverConfig = mapper.readValue(args[0], FlightPlanReceiverConfig.class);
-        } catch (JsonProcessingException e) {
-            throw new ZorathosException(e, "Error occurs while converting flight plan receiver config to json string.");
-        }
-        if (receiverConfig != null) {
-            FlightPlanKafkaReceiver receiver = new FlightPlanKafkaReceiver(receiverConfig);
-            receiver.run();
-        }
+        FlightPlanKafkaReceiver receiver = new FlightPlanKafkaReceiver();
+        receiver.run();
     }
 }

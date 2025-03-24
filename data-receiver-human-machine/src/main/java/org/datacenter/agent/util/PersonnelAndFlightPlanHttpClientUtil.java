@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
-import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
@@ -80,7 +79,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig) {
+    public static List<FlightPlanRoot> getFlightRoots() {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = localCookiesCache;
         // 获取今天日期 以yyyy-MM-dd输出

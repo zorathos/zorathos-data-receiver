@@ -34,6 +34,12 @@ public class JdbcSinkUtil {
                 .build();
     }
 
+    /**
+     * AtLeastOnceSink
+     * TiDB不支持XA语法 仅在内部使用XA事务
+     * @param database 数据库
+     * @return JdbcConnectionOptions
+     */
     public static JdbcConnectionOptions getTiDBJdbcConnectionOptions(TiDBDatabase database) {
         return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                 .withUrl(humanMachineProperties.get("tidb.url.base") + database.getName() + humanMachineProperties.get("tidb.url.suffix"))

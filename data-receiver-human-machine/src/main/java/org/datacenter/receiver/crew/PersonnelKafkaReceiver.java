@@ -1,8 +1,8 @@
 package org.datacenter.receiver.crew;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -17,7 +17,6 @@ import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
-import java.io.IOException;
 import java.sql.Date;
 import java.util.List;
 
@@ -144,18 +143,17 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     /**
      * 被flink调用的主函数
+     * 参数输入形式为 --queryString &xm=xxx&ym=xxx&dm=xxx 需要是符合Http的Get接口输入的形式 用于拼接 注意 单位代码已经被拼接 不需要重复声明
      *
      * @param args 参数 第一个为接收器参数 第二个为持久化器参数
      */
     public static void main(String[] args) {
-        ObjectMapper mapper = new ObjectMapper();
-        PersonnelReceiverConfig receiverConfig;
+        ParameterTool parameterTool = ParameterTool.fromArgs(args);
 
-        try {
-            receiverConfig = mapper.readValue(args[0], PersonnelReceiverConfig.class);
-        } catch (IOException e) {
-            throw new ZorathosException(e, "Error occurs while converting personnel receiver config to json string.");
-        }
+        PersonnelReceiverConfig receiverConfig = PersonnelReceiverConfig.builder()
+                .queryString(parameterTool.getRequired("queryString"))
+                .build();
+
         if (receiverConfig != null) {
             PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver(receiverConfig);
             personnelKafkaReceiver.run();
