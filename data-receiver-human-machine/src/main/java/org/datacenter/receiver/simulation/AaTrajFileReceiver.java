@@ -10,12 +10,10 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.AaTraj;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-
 
 
 /**
@@ -25,19 +23,18 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class AaTrajFileReceiver extends SimulationBaseReceiver <AaTraj>{
+public class AaTrajFileReceiver extends SimulationBaseReceiver<AaTraj> {
 
     @Override
     public void prepare() {
         table = TiDBTable.AA_TRAJ;
         modelClass = AaTraj.class;
         super.prepare();
-
     }
 
     @Override
     protected SerializableFunction<CsvMapper, CsvSchema> getSchemaGenerator() {
-        SerializableFunction<CsvMapper, CsvSchema> schemaGenerator = mapper -> CsvSchema.builder()
+        return mapper -> CsvSchema.builder()
                 .addColumn("aircraftId")
                 .addColumn("messageTime")
                 .addColumn("satelliteGuidanceTime")
@@ -64,24 +61,23 @@ public class AaTrajFileReceiver extends SimulationBaseReceiver <AaTraj>{
                 .setColumnSeparator(',')
                 .setLineSeparator("\n")
                 .build();
-        return schemaGenerator;
     }
 
     @Override
     protected String getInsertQuery() {
         return """
-                                INSERT INTO `aa_traj` (
-                                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, pylon_id, weapon_type, target_id, 
-                                    longitude, latitude, altitude, missile_target_distance, missile_speed, interception_status, non_interception_reason, seeker_azimuth, seeker_elevation, 
-                                    target_tspi_status, command_machine_status, ground_angle_satisfaction_flag, zero_crossing_flag
-                                ) VALUES (
-                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                                );
-                                """;
+                INSERT INTO `aa_traj` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, pylon_id, weapon_type, target_id, 
+                    longitude, latitude, altitude, missile_target_distance, missile_speed, interception_status, non_interception_reason, seeker_azimuth, seeker_elevation, 
+                    target_tspi_status, command_machine_status, ground_angle_satisfaction_flag, zero_crossing_flag
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, AaTraj data) throws SQLException {
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, AaTraj data, String sortieNumber) throws SQLException {
         // 字符串转localDate sortieNumber.split("_")[0]
 //        LocalDate localDate = LocalDate.parse(sortieNumber.split("_")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
         // 注意 sortieNumber 是从配置里面来的 csv里面没有
@@ -119,10 +115,9 @@ public class AaTrajFileReceiver extends SimulationBaseReceiver <AaTraj>{
     // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        SimulationReceiverConfig config = SimulationReceiverConfig.builder()
-                .url(parameterTool.getRequired("url"))
-                .sortieNumber(parameterTool.getRequired("sortie_number"))
-                .build();
+        SimulationReceiverConfig config = new SimulationReceiverConfig(
+                parameterTool.getRequired("url"),
+                parameterTool.getRequired("sortie_number"));
         AaTrajFileReceiver receiver = new AaTrajFileReceiver();
         receiver.setConfig(config);
         receiver.run();
