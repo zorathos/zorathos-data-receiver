@@ -34,7 +34,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 @Slf4j
-public class TimeTest {
+public class    TimeTest {
 
     @Data
     @NoArgsConstructor
