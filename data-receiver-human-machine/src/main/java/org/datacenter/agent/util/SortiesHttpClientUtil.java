@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
+import org.datacenter.model.sorties.response.SortiesBatchResponse;
+import org.datacenter.model.sorties.response.SortiesResponse;
 
 import java.io.IOException;
 import java.net.URI;
@@ -51,8 +53,7 @@ public class SortiesHttpClientUtil {
                     .uri(new URI(url))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            return mapper.readValue(response.body(), mapper.getTypeFactory()
-                    .constructCollectionType(List.class, SortiesBatch.class));
+            return mapper.readValue(response.body(), SortiesBatchResponse.class).getData();
         } catch (URISyntaxException | IOException | InterruptedException e) {
             throw new ZorathosException(e);
         }
@@ -77,8 +78,7 @@ public class SortiesHttpClientUtil {
                         .uri(new URI(url))
                         .build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                sortiesList.addAll(mapper.readValue(response.body(), mapper.getTypeFactory()
-                        .constructCollectionType(List.class, Sorties.class)));
+                sortiesList.addAll(mapper.readValue(response.body(), SortiesResponse.class).getData());
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 throw new ZorathosException(e);
             }

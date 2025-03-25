@@ -42,7 +42,7 @@
         <kafka-flink-connector.version>3.4.0-1.20</kafka-flink-connector.version>
         <flink-connector-jdbc.version>3.2.0-1.19</flink-connector-jdbc.version>
         <flink-mysql-cdc.version>3.3.0</flink-mysql-cdc.version>
-        <kafka-clients.version>3.9.0</kafka-clients.version>
+        <kafka-clients.version>4.0.0</kafka-clients.version>
         <flink-shaded-jackson.version>2.18.2-20.0</flink-shaded-jackson.version>
         <!-- jackson-core和jackson-xml已经在zorathos的对应包里引入 不用重复引入了 如果需要使用自己版本的jackson记得exclude -->
 
@@ -52,7 +52,7 @@
         <commons-lang3.version>3.17.0</commons-lang3.version>
 
         <!-- UT -->
-        <junit-jupiter.version>5.12.0</junit-jupiter.version>
+        <junit-jupiter.version>5.12.1</junit-jupiter.version>
         <mockito.version>5.16.0</mockito.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <testFailureIgnore>true</testFailureIgnore>
