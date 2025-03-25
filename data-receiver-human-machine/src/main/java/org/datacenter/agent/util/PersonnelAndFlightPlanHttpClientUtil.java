@@ -212,9 +212,8 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     JdbcSinkUtil.TIDB_URL_FLIGHT_PLAN,
                     humanMachineProperties.getProperty("tidb.username"),
                     humanMachineProperties.getProperty("tidb.password"));
-            ResultSet resultSet = connection.prepareStatement("select * from " +
-                            TiDBDatabase.FLIGHT_PLAN.getName() +
-                            TiDBTable.FLIGHT_PLAN_ROOT.getName())
+            ResultSet resultSet = connection
+                        .prepareStatement("SELECT * FROM " + TiDBTable.FLIGHT_PLAN_ROOT.getName())
                     .executeQuery();
             List<LocalDate> flightDates = new ArrayList<>();
             while (resultSet.next()) {

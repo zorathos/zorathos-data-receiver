@@ -89,9 +89,8 @@ public class PersonnelAgent extends BaseAgent {
                     JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
                     humanMachineProperties.getProperty("tidb.username"),
                     humanMachineProperties.getProperty("tidb.password"));
-            connection.prepareStatement("TRUNCATE TABLE " +
-                            TiDBDatabase.HUMAN_MACHINE.getName() +
-                            TiDBTable.PERSONNEL_INFO.getName())
+            connection
+                    .prepareStatement("TRUNCATE TABLE " + TiDBTable.PERSONNEL_INFO.getName())
                     .execute();
             connection.close();
             log.info("Truncate personnel info table successfully.");
