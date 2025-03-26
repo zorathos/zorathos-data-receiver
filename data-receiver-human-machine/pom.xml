@@ -133,6 +133,11 @@
             <artifactId>flink-sql-connector-mysql-cdc</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.doris</groupId>
+            <artifactId>flink-doris-connector-1.20</artifactId>
+        </dependency>
+
         <!-- 需要把自带的shaded-jackson排除 然后用最新的 不然解析不了LocalDateTime -->
         <dependency>
             <groupId>org.apache.flink</groupId>
@@ -150,6 +155,17 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
+        </dependency>
+
+        <!-- Apache commons tool -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
         </dependency>
     </dependencies>
 </project>

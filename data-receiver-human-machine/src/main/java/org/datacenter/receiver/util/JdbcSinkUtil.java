@@ -12,22 +12,22 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  */
 public class JdbcSinkUtil {
     public static final String TIDB_URL_HUMAN_MACHINE =
-            humanMachineProperties.getProperty("tidb.url.base") +
+            humanMachineProperties.getProperty("tidb.url.prefix") +
                     TiDBDatabase.HUMAN_MACHINE.getName() +
                     humanMachineProperties.getProperty("tidb.url.suffix");
 
     public static final String TIDB_URL_FLIGHT_PLAN =
-            humanMachineProperties.getProperty("tidb.url.base") +
+            humanMachineProperties.getProperty("tidb.url.prefix") +
                     TiDBDatabase.FLIGHT_PLAN.getName() +
                     humanMachineProperties.getProperty("tidb.url.suffix");
 
     public static final String TIDB_URL_SIMULATION =
-            humanMachineProperties.getProperty("tidb.url.base") +
+            humanMachineProperties.getProperty("tidb.url.prefix") +
                     TiDBDatabase.SIMULATION.getName() +
                     humanMachineProperties.getProperty("tidb.url.suffix");
 
     public static final String TIDB_URL_SORTIES =
-            humanMachineProperties.getProperty("tidb.url.base") +
+            humanMachineProperties.getProperty("tidb.url.prefix") +
                     TiDBDatabase.SORTIES.getName() +
                     humanMachineProperties.getProperty("tidb.url.suffix");
 
@@ -47,7 +47,7 @@ public class JdbcSinkUtil {
      */
     public static JdbcConnectionOptions getTiDBJdbcConnectionOptions(TiDBDatabase database) {
         return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                .withUrl(humanMachineProperties.get("tidb.url.base") + database.getName() + humanMachineProperties.get("tidb.url.suffix"))
+                .withUrl(humanMachineProperties.get("tidb.url.prefix") + database.getName() + humanMachineProperties.get("tidb.url.suffix"))
                 .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
                 .withUsername(humanMachineProperties.getProperty("tidb.username"))
                 .withPassword(humanMachineProperties.getProperty("tidb.password"))

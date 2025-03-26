@@ -41,6 +41,7 @@
         <flink.version>1.20.1</flink.version>
         <kafka-flink-connector.version>3.4.0-1.20</kafka-flink-connector.version>
         <flink-connector-jdbc.version>3.2.0-1.19</flink-connector-jdbc.version>
+        <flink-doris-connector.version>25.0.0</flink-doris-connector.version>
         <flink-mysql-cdc.version>3.3.0</flink-mysql-cdc.version>
         <kafka-clients.version>4.0.0</kafka-clients.version>
         <flink-shaded-jackson.version>2.18.2-20.0</flink-shaded-jackson.version>
@@ -50,6 +51,7 @@
         <minio.version>8.5.17</minio.version>
         <lettuce.version>6.5.5.RELEASE</lettuce.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
+        <commons-pool2.verson>2.12.1</commons-pool2.verson>
 
         <!-- UT -->
         <junit-jupiter.version>5.12.1</junit-jupiter.version>
@@ -179,6 +181,12 @@
                 <version>${flink-mysql-cdc.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.apache.doris</groupId>
+                <artifactId>flink-doris-connector-1.20</artifactId>
+                <version>${flink-doris-connector.version}</version>
+            </dependency>
+
             <!-- Flink CSV formatter -->
             <dependency>
                 <groupId>org.apache.flink</groupId>
@@ -221,11 +229,17 @@
                 <version>${lettuce.version}</version>
             </dependency>
 
-            <!-- Commons Lang3 -->
+            <!-- Apache commons tool -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-pool2</artifactId>
+                <version>${commons-pool2.verson}</version>
             </dependency>
 
             <!-- 单元测试依赖 -->
