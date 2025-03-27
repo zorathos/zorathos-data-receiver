@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.SaTgt;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -55,14 +56,14 @@ public class SaTgtFileReceiver extends SimulationBaseReceiver<SaTgt> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `sa_tgt` (
-    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, equipment_type, equipment_number, target_azimuth, 
-    target_elevation, target_slant_range, channel_number, target_batch_number
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?
-);
-""";
+                INSERT INTO `sa_tgt` (
+                    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, equipment_type, equipment_number, target_azimuth, 
+                    target_elevation, target_slant_range, channel_number, target_batch_number
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

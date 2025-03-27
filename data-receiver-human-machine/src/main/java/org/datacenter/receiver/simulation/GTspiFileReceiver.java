@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.GTspi;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -57,14 +58,14 @@ public class GTspiFileReceiver extends SimulationBaseReceiver<GTspi> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `g_tspi` (
-    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, camp_type, equipment_type, equipment_id, status, 
-    north_angle, longitude, latitude, altitude, decoy_position_id
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `g_tspi` (
+                    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, camp_type, equipment_type, equipment_id, status, 
+                    north_angle, longitude, latitude, altitude, decoy_position_id
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

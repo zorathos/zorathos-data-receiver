@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.Command;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -52,12 +53,12 @@ public class CommandFileReceiver extends SimulationBaseReceiver<Command> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `command` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, command_type, command_id, command_content, response_sequence_number
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `command` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, command_type, command_id, command_content, response_sequence_number
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

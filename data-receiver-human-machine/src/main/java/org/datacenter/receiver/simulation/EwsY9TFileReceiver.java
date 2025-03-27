@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.EwsY9T;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -56,15 +57,15 @@ public class EwsY9TFileReceiver extends SimulationBaseReceiver<EwsY9T> {
 
     @Override
     protected String getInsertQuery() {
-        return"""
-INSERT INTO `ews_y9t` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, jamming_azimuth, jamming_frequency_count, jamming_type, jamming_band, 
-    jamming_direction, jamming_status, jamming_elevation, jamming_start_frequency, jamming_end_frequency
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?
-);
-""" ;
+        return """
+                INSERT INTO `ews_y9t` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, jamming_azimuth, jamming_frequency_count, jamming_type, jamming_band, 
+                    jamming_direction, jamming_status, jamming_elevation, jamming_start_frequency, jamming_end_frequency
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

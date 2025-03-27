@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.EoState;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -50,13 +51,13 @@ public class EoStateFileReceiver extends SimulationBaseReceiver<EoState> {
 
     @Override
     protected String getInsertQuery() {
-        return"""
-INSERT INTO `eo_state` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, working_mode, power_status, standby_status
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
-);
-""" ;
+        return """
+                INSERT INTO `eo_state` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, working_mode, power_status, standby_status
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

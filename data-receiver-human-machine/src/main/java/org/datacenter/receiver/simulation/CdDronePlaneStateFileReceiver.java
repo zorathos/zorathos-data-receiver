@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.CdDronePlaneState;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -57,14 +58,14 @@ public class CdDronePlaneStateFileReceiver extends SimulationBaseReceiver<CdDron
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `cd_drone_plane_state` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, true_angle_of_attack, mach_number, normal_load_factor, indicated_airspeed, 
-    field_elevation, radio_altitude, remaining_fuel, manual_respawn, parameter_setting_status
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `cd_drone_plane_state` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, true_angle_of_attack, mach_number, normal_load_factor, indicated_airspeed, 
+                    field_elevation, radio_altitude, remaining_fuel, manual_respawn, parameter_setting_status
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

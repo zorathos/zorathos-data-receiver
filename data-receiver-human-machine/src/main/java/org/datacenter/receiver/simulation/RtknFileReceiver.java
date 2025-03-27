@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.Rtkn;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -70,16 +71,16 @@ public class RtknFileReceiver extends SimulationBaseReceiver<Rtkn> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `rtkn` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, target_id, intercepted_weapon_id, 
-    hit_result, miss_reason, miss_distance, matching_failure_reason, ground_defense_equipment_type, ground_defense_equipment_id, ground_defense_equipment_type1, ground_defense_equipment_id1, 
-    ground_defense_equipment_type2, ground_defense_equipment_id2, ground_defense_equipment_type3, ground_defense_equipment_id3, jamming_effective, jamming, afterburner, head_on, heading, pitch
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `rtkn` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, target_id, intercepted_weapon_id, 
+                    hit_result, miss_reason, miss_distance, matching_failure_reason, ground_defense_equipment_type, ground_defense_equipment_id, ground_defense_equipment_type1, ground_defense_equipment_id1, 
+                    ground_defense_equipment_type2, ground_defense_equipment_id2, ground_defense_equipment_type3, ground_defense_equipment_id3, jamming_effective, jamming, afterburner, head_on, heading, pitch
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

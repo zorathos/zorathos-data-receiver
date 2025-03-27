@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.EwsKJ500;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -54,14 +55,14 @@ public class EwsKJ500FileReceiver extends SimulationBaseReceiver<EwsKJ500> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `ews_kj500` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, azimuth_start_angle, sector_reference, sector_type, sector_number, 
-    action_code, azimuth_end_angle
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?
-);
-""";
+                INSERT INTO `ews_kj500` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, azimuth_start_angle, sector_reference, sector_type, sector_number, 
+                    action_code, azimuth_end_angle
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?
+                );
+                """;
     }
 
     @Override

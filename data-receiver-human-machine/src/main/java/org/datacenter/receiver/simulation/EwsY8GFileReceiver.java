@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.EwsY8G;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -58,14 +59,14 @@ public class EwsY8GFileReceiver extends SimulationBaseReceiver<EwsY8G> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `ews_y8g` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, x_band_jamming_elevation, c_band_jamming_elevation, c_band_jamming_azimuth, s_band_jamming_elevation, 
-    s_band_jamming_azimuth, l_band_jamming_elevation, l_band_jamming_azimuth, u_band_jamming_azimuth, jamming_status, x_band_jamming_azimuth_angle
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `ews_y8g` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, x_band_jamming_elevation, c_band_jamming_elevation, c_band_jamming_azimuth, s_band_jamming_elevation, 
+                    s_band_jamming_azimuth, l_band_jamming_elevation, l_band_jamming_azimuth, u_band_jamming_azimuth, jamming_status, x_band_jamming_azimuth_angle
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

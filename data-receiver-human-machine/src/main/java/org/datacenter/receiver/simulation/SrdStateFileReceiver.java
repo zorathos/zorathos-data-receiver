@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.SrdState;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -55,14 +56,14 @@ public class SrdStateFileReceiver extends SimulationBaseReceiver<SrdState> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `srd_state` (
-    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, camp_type, equipment_type, equipment_number, power_on, 
-    emitter_frequency_band, decoy_blink_period, antenna_pointing
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?
-);
-""";
+                INSERT INTO `srd_state` (
+                    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, camp_type, equipment_type, equipment_number, power_on, 
+                    emitter_frequency_band, decoy_blink_period, antenna_pointing
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?
+                );
+                """;
     }
 
     @Override

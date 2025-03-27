@@ -80,7 +80,7 @@ public class MinioUtil {
     /**
      * 上传文件
      *
-     * @param url  文件路径
+     * @param url         文件路径
      * @param inputStream 输入流
      */
     public static void upload(String url, InputStream inputStream) {

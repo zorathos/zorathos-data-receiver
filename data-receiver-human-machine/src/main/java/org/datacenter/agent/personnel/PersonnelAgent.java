@@ -11,7 +11,6 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
-import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.receiver.util.JdbcSinkUtil;
@@ -60,25 +59,25 @@ public class PersonnelAgent extends BaseAgent {
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-            if (prepared) {
-                // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
-                // 1. 清空原有库表数据 用jdbc
-                truncatePersonnelInfoTable();
-                // 这时候才可以拉起Flink任务
-                running = true;
-                // 2. 拉取人员数据
-                List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
-                // 3. 转发到Kafka
-                try {
-                    String personnelInfosInJson = mapper.writeValueAsString(personnelInfos);
-                    KafkaUtil.sendMessage(humanMachineProperties
-                            .getProperty("kafka.topic.personnel"), personnelInfosInJson);
-                } catch (JsonProcessingException e) {
-                    throw new ZorathosException(e, "Error occurs while converting personnel infos to json string.");
-                }
-            }
-        },
-        0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
+                    if (prepared) {
+                        // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
+                        // 1. 清空原有库表数据 用jdbc
+                        truncatePersonnelInfoTable();
+                        // 这时候才可以拉起Flink任务
+                        running = true;
+                        // 2. 拉取人员数据
+                        List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
+                        // 3. 转发到Kafka
+                        try {
+                            String personnelInfosInJson = mapper.writeValueAsString(personnelInfos);
+                            KafkaUtil.sendMessage(humanMachineProperties
+                                    .getProperty("kafka.topic.personnel"), personnelInfosInJson);
+                        } catch (JsonProcessingException e) {
+                            throw new ZorathosException(e, "Error occurs while converting personnel infos to json string.");
+                        }
+                    }
+                },
+                0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
     }
 
     private void truncatePersonnelInfoTable() {

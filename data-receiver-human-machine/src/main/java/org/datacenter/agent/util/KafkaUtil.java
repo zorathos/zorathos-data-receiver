@@ -48,7 +48,7 @@ public class KafkaUtil {
                 log.info("Kafka topic already exists: {}", topic);
             }
         } catch (InterruptedException | ExecutionException e) {
-            throw new ZorathosException(e, "Failed to create topic " + topic +" in Kafka.");
+            throw new ZorathosException(e, "Failed to create topic " + topic + " in Kafka.");
         }
     }
 

@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.RdrState;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -52,12 +53,12 @@ public class RdrStateFileReceiver extends SimulationBaseReceiver<RdrState> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `rdr_state` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, working_mode, air_sea_scan_ratio, power_status, emission_status
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `rdr_state` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, working_mode, air_sea_scan_ratio, power_status, emission_status
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

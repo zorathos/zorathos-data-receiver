@@ -52,11 +52,12 @@ public class DataReceiverUtil {
 
     /**
      * 创建Flink的Kafka数据源
-     * @param env 执行环境
+     *
+     * @param env    执行环境
      * @param topics 主题
-     * @param clazz 泛型
+     * @param clazz  泛型
+     * @param <T>    泛型
      * @return 数据源
-     * @param <T> 泛型
      */
     public static <T> DataStreamSource<T> getKafkaSourceDS(StreamExecutionEnvironment env, List<String> topics, Class<T> clazz) {
         // 开始从kafka获取数据

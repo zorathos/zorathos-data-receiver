@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.EwsYZ8;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -56,14 +57,14 @@ public class EwsYZ8FileReceiver extends SimulationBaseReceiver<EwsYZ8> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `ews_yz8` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, working_status, omnidirectional_detection_q1, omnidirectional_detection_q2, precise_direction_finding_j1, 
-    precise_direction_finding_j2, precise_direction_finding_j3, high_gain_g1, high_gain_g2
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?
-);
-""";
+                INSERT INTO `ews_yz8` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, working_status, omnidirectional_detection_q1, omnidirectional_detection_q2, precise_direction_finding_j1, 
+                    precise_direction_finding_j2, precise_direction_finding_j3, high_gain_g1, high_gain_g2
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

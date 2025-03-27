@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.Tgt;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -89,19 +90,19 @@ public class TgtFileReceiver extends SimulationBaseReceiver<Tgt> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `tgt` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, target_count, identifier1, sensor1, pitch1, azimuth1, slant_range1, 
-    identifier2, sensor2, pitch2, azimuth2, slant_range2, identifier3, sensor3, pitch3, azimuth3, slant_range3, identifier4, sensor4, pitch4, azimuth4, slant_range4, 
-    identifier5, sensor5, pitch5, azimuth5, slant_range5, identifier6, sensor6, pitch6, azimuth6, slant_range6, identifier7, sensor7, pitch7, azimuth7, slant_range7, 
-    identifier8, sensor8, pitch8, azimuth8, slant_range8
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `tgt` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, target_count, identifier1, sensor1, pitch1, azimuth1, slant_range1, 
+                    identifier2, sensor2, pitch2, azimuth2, slant_range2, identifier3, sensor3, pitch3, azimuth3, slant_range3, identifier4, sensor4, pitch4, azimuth4, slant_range4, 
+                    identifier5, sensor5, pitch5, azimuth5, slant_range5, identifier6, sensor6, pitch6, azimuth6, slant_range6, identifier7, sensor7, pitch7, azimuth7, slant_range7, 
+                    identifier8, sensor8, pitch8, azimuth8, slant_range8
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

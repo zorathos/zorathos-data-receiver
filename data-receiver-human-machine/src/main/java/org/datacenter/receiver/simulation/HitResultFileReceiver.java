@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.HitResult;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -50,13 +51,13 @@ public class HitResultFileReceiver extends SimulationBaseReceiver<HitResult> {
 
     @Override
     protected String getInsertQuery() {
-        return"""
-INSERT INTO `hit_result` (
-    sortie_number, launcher_id, target_id, weapon_type, weapon_id, launch_time, end_time, hit_result
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?
-);
-""" ;
+        return """
+                INSERT INTO `hit_result` (
+                    sortie_number, launcher_id, target_id, weapon_type, weapon_id, launch_time, end_time, hit_result
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

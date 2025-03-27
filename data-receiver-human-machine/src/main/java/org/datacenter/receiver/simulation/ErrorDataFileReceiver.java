@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.ErrorData;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -50,12 +51,12 @@ public class ErrorDataFileReceiver extends SimulationBaseReceiver<ErrorData> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `error_data` (
-    sortie_number, sender_id, message_time, local_time, message_sequence_number, message_id, message_length, error_message
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `error_data` (
+                    sortie_number, sender_id, message_time, local_time, message_sequence_number, message_id, message_length, error_message
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

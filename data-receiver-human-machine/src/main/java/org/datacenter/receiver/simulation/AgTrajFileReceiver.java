@@ -6,18 +6,17 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.Csv
 import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
-
 import org.datacenter.model.simulation.AgTraj;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-public class AgTrajFileReceiver extends SimulationBaseReceiver<AgTraj>{
+public class AgTrajFileReceiver extends SimulationBaseReceiver<AgTraj> {
     @Override
     public void prepare() {
         table = TiDBTable.AG_TRAJ;
-        modelClass =AgTraj.class;
+        modelClass = AgTraj.class;
         super.prepare();
     }
 
@@ -60,16 +59,16 @@ public class AgTrajFileReceiver extends SimulationBaseReceiver<AgTraj>{
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `ag_traj` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, longitude, latitude,
-    altitude, heading, pitch, north_speed, sky_speed, east_speed, seeker_id, interception_flag, termination_flag, intercepting_member_id,
-    intercepting_equipment_id, intercepting_equipment_type, launcher_id, seeker_azimuth_center, seeker_pitch_center, target_id, missile_target_distance
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `ag_traj` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, longitude, latitude,
+                    altitude, heading, pitch, north_speed, sky_speed, east_speed, seeker_id, interception_flag, termination_flag, intercepting_member_id,
+                    intercepting_equipment_id, intercepting_equipment_type, launcher_id, seeker_azimuth_center, seeker_pitch_center, target_id, missile_target_distance
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

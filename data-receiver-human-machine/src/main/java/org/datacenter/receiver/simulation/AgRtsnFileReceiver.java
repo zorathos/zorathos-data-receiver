@@ -6,18 +6,17 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.Csv
 import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
-
 import org.datacenter.model.simulation.AgRtsn;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-public class AgRtsnFileReceiver extends SimulationBaseReceiver<AgRtsn>{
+public class AgRtsnFileReceiver extends SimulationBaseReceiver<AgRtsn> {
     @Override
     public void prepare() {
         table = TiDBTable.AG_RTSN;
-        modelClass =AgRtsn.class;
+        modelClass = AgRtsn.class;
         super.prepare();
     }
 
@@ -70,19 +69,19 @@ public class AgRtsnFileReceiver extends SimulationBaseReceiver<AgRtsn>{
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `ag_rtsn` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_pylon_id, weapon_type, number_of_missiles_released, 
-    aircraft_ground_speed, aircraft_longitude, aircraft_latitude, aircraft_altitude, aircraft_heading, aircraft_pitch, aircraft_roll, aircraft_angle_of_attack, aircraft_north_speed, 
-    aircraft_vertical_speed, aircraft_east_speed, north_wind_speed, vertical_wind_speed, east_wind_speed, target_longitude, target_latitude, target_altitude, target_distance, 
-    seeker_head_number, target_coordinate_validity, target_azimuth_elevation_validity, target_elevation_angle, target_azimuth_angle, impact_angle_validity, entry_angle, 
-    impact_angle, direction_validity
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `ag_rtsn` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_pylon_id, weapon_type, number_of_missiles_released, 
+                    aircraft_ground_speed, aircraft_longitude, aircraft_latitude, aircraft_altitude, aircraft_heading, aircraft_pitch, aircraft_roll, aircraft_angle_of_attack, aircraft_north_speed, 
+                    aircraft_vertical_speed, aircraft_east_speed, north_wind_speed, vertical_wind_speed, east_wind_speed, target_longitude, target_latitude, target_altitude, target_distance, 
+                    seeker_head_number, target_coordinate_validity, target_azimuth_elevation_validity, target_elevation_angle, target_azimuth_angle, impact_angle_validity, entry_angle, 
+                    impact_angle, direction_validity
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

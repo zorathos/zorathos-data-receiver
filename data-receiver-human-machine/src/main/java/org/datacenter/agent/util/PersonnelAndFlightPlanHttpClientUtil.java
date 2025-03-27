@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
-import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlanRoot;
@@ -121,7 +120,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             PlanCode planCode = new PlanCode();
 
             try (HttpClient client = HttpClient.newHttpClient()) {
-                String url = host +"/FXDT/BindJHxx?rq" + flightDate.getDate().toString() + "&dwdm=90121&_=1742546210611";
+                String url = host + "/FXDT/BindJHxx?rq" + flightDate.getDate().toString() + "&dwdm=90121&_=1742546210611";
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
                         .header("Cookie", formattedCookies)
@@ -213,7 +212,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     humanMachineProperties.getProperty("tidb.username"),
                     humanMachineProperties.getProperty("tidb.password"));
             ResultSet resultSet = connection
-                        .prepareStatement("SELECT * FROM " + TiDBTable.FLIGHT_PLAN_ROOT.getName())
+                    .prepareStatement("SELECT * FROM " + TiDBTable.FLIGHT_PLAN_ROOT.getName())
                     .executeQuery();
             List<LocalDate> flightDates = new ArrayList<>();
             while (resultSet.next()) {

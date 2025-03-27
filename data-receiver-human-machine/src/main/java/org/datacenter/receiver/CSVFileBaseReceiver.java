@@ -22,9 +22,9 @@ import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
+
 import java.io.Serial;
 import java.io.Serializable;
-
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -36,7 +36,7 @@ import java.sql.SQLException;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
-public abstract class CSVFileBaseReceiver<T,C extends BaseReceiverConfig> extends BaseReceiver implements Serializable {
+public abstract class CSVFileBaseReceiver<T, C extends BaseReceiverConfig> extends BaseReceiver implements Serializable {
     @Serial
     private static final long serialVersionUID = 1231445L;
     protected TiDBDatabase database;
@@ -49,8 +49,6 @@ public abstract class CSVFileBaseReceiver<T,C extends BaseReceiverConfig> extend
     @Override
     public void prepare() {
         super.prepare();
-
-
     }
 
     // 定义抽象方法：获取CSV列定义

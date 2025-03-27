@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.IrMsl;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -52,12 +53,12 @@ public class IrMslFileReceiver extends SimulationBaseReceiver<IrMsl> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `ir_msl` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, seeker_azimuth, seeker_elevation, weapon_type, interception_flag
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `ir_msl` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, seeker_azimuth, seeker_elevation, weapon_type, interception_flag
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

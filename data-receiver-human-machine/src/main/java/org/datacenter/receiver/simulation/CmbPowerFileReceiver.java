@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.CmbPower;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -53,14 +54,14 @@ public class CmbPowerFileReceiver extends SimulationBaseReceiver<CmbPower> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `cmb_power` (
-    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, available_missile_count, available_target_channel_count, training_mode, allow_missile_reset, 
-    auto_respawn
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?
-);
-""";
+                INSERT INTO `cmb_power` (
+                    sortie_number, ground_defense_id, message_time, satellite_guidance_time, local_time, message_sequence_number, available_missile_count, available_target_channel_count, training_mode, allow_missile_reset, 
+                    auto_respawn
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?
+                );
+                """;
     }
 
     @Override

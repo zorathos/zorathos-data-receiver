@@ -169,6 +169,7 @@ public class EyeMovementFileReceiver extends BaseReceiver {
 
     /**
      * 输入参数形式 --url "s3://bucket-name/path/to/file.csv"
+     *
      * @param args 入参
      */
     public static void main(String[] args) {

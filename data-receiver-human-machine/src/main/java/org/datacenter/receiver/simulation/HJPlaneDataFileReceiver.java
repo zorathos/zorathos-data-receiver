@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.HJPlaneData;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -54,15 +55,15 @@ public class HJPlaneDataFileReceiver extends SimulationBaseReceiver<HJPlaneData>
 
     @Override
     protected String getInsertQuery() {
-        return"""
-INSERT INTO `hj_plane_data` (
-    sortie_number, batch_number, device_number, flight_control_number, local_time, message_time, message_sequence_number, longitude, latitude, altitude, 
-    ground_speed, vertical_speed, heading
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?
-);
-""" ;
+        return """
+                INSERT INTO `hj_plane_data` (
+                    sortie_number, batch_number, device_number, flight_control_number, local_time, message_time, message_sequence_number, longitude, latitude, altitude, 
+                    ground_speed, vertical_speed, heading
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?
+                );
+                """;
     }
 
     @Override

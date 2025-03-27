@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.PL17Traj;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -67,17 +68,17 @@ public class PL17TrajFileReceiver extends SimulationBaseReceiver<PL17Traj> {
 
     @Override
     protected String getInsertQuery() {
-        return"""
-INSERT INTO `pl17_traj` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, pylon_id, weapon_type, target_id, 
-    longitude, latitude, altitude, missile_target_distance, missile_speed, interception_status, non_interception_reason, seeker_azimuth, seeker_elevation, 
-    target_tspi_status, command_machine_status, ground_angle_satisfaction_flag, zero_crossing_flag, distance_interception_flag, speed_interception_flag, angle_interception_flag
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?
-);
-""" ;
+        return """
+                INSERT INTO `pl17_traj` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, pylon_id, weapon_type, target_id, 
+                    longitude, latitude, altitude, missile_target_distance, missile_speed, interception_status, non_interception_reason, seeker_azimuth, seeker_elevation, 
+                    target_tspi_status, command_machine_status, ground_angle_satisfaction_flag, zero_crossing_flag, distance_interception_flag, speed_interception_flag, angle_interception_flag
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

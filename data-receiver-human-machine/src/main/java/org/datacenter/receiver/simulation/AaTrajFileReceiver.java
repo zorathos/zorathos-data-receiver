@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.AaTraj;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;

@@ -10,9 +10,9 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.PlanePro;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Time;
 
 
 /**
@@ -48,12 +48,12 @@ public class PlaneProFileReceiver extends SimulationBaseReceiver<PlanePro> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `plane_pro` (
-    sortie_number, aircraft_id, aircraft_callsign, aircraft_code_name, red_blue_affiliation, flight_batch
-) VALUES (
-    ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `plane_pro` (
+                    sortie_number, aircraft_id, aircraft_callsign, aircraft_code_name, red_blue_affiliation, flight_batch
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

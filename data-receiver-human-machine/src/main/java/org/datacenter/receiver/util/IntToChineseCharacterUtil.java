@@ -30,7 +30,8 @@ public class IntToChineseCharacterUtil {
             case 18 -> "十八";
             case 19 -> "十九";
             case 20 -> "二十";
-            default -> throw new ZorathosException("Plane number of sorties out of range: " + number + ", must between 1-20.");
+            default ->
+                    throw new ZorathosException("Plane number of sorties out of range: " + number + ", must between 1-20.");
         };
     }
 }

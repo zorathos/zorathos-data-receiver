@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.PL17Rtkn;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -62,14 +63,14 @@ public class PL17RtknFileReceiver extends SimulationBaseReceiver<PL17Rtkn> {
     @Override
     protected String getInsertQuery() {
         return """
-INSERT INTO `pl17_rtkn` (
-    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, target_id, target_real_or_virtual, 
-    hit_result, miss_reason, miss_distance, matching_failure_reason, jamming_effective, jamming, afterburner, head_on, heading, pitch
-) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-);
-""";
+                INSERT INTO `pl17_rtkn` (
+                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, target_id, target_real_or_virtual, 
+                    hit_result, miss_reason, miss_distance, matching_failure_reason, jamming_effective, jamming, afterburner, head_on, heading, pitch
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                );
+                """;
     }
 
     @Override

@@ -42,6 +42,7 @@ public class JdbcSinkUtil {
     /**
      * AtLeastOnceSink
      * TiDB不支持XA语法 仅在内部使用XA事务
+     *
      * @param database 数据库
      * @return JdbcConnectionOptions
      */
