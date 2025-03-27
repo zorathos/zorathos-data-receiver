@@ -52,6 +52,7 @@
         <lettuce.version>6.5.5.RELEASE</lettuce.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-pool2.verson>2.12.1</commons-pool2.verson>
+        <druid.version>1.2.24</druid.version>
 
         <!-- UT -->
         <junit-jupiter.version>5.12.1</junit-jupiter.version>
@@ -240,6 +241,13 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-pool2</artifactId>
                 <version>${commons-pool2.verson}</version>
+            </dependency>
+
+            <!-- 数据库连接池与MySQL语法解析 -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid</artifactId>
+                <version>${druid.version}</version>
             </dependency>
 
             <!-- 单元测试依赖 -->
