@@ -2,11 +2,13 @@ package org.datacenter.receiver.sorties;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.sorties.SortiesBatchAgent;
+import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
@@ -27,12 +29,14 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class SortiesBatchKafkaReceiver extends BaseReceiver {
 
     private final SortiesBatchAgent sortiesBatchAgent;
+    private final SortiesBatchReceiverConfig receiverConfig;
 
-    public SortiesBatchKafkaReceiver() {
+    public SortiesBatchKafkaReceiver(SortiesBatchReceiverConfig receiverConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
-        this.sortiesBatchAgent = new SortiesBatchAgent();
+        this.receiverConfig = receiverConfig;
+        this.sortiesBatchAgent = new SortiesBatchAgent(receiverConfig);
     }
 
 
@@ -86,8 +90,17 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
         }
     }
 
+    /**
+     * 主函数
+     * @param args 入参 --sortiesBatchUrl xxx --sortiesBatchJson xxx
+     */
     public static void main(String[] args) {
-        SortiesBatchKafkaReceiver receiver = new SortiesBatchKafkaReceiver();
+        ParameterTool params = ParameterTool.fromArgs(args);
+        SortiesBatchReceiverConfig receiverConfig = SortiesBatchReceiverConfig.builder()
+                .sortiesBatchUrl(params.getRequired("sortiesBatchUrl"))
+                .sortiesBatchJson(params.getRequired("sortiesBatchJson"))
+                .build();
+        SortiesBatchKafkaReceiver receiver = new SortiesBatchKafkaReceiver(receiverConfig);
         receiver.run();
     }
 }

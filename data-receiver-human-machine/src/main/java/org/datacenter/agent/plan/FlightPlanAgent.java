@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
+import org.datacenter.config.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.plan.FlightPlanRoot;
 
@@ -31,10 +33,15 @@ public class FlightPlanAgent extends BaseAgent {
 
     private final ObjectMapper mapper;
     private ScheduledExecutorService scheduler;
+    private PersonnelAndPlanLoginConfig loginConfig;
+    private FlightPlanReceiverConfig flightPlanReceiverConfig;
 
-    public FlightPlanAgent() {
+    public FlightPlanAgent(PersonnelAndPlanLoginConfig loginConfig,
+                           FlightPlanReceiverConfig flightPlanReceiverConfig) {
         super();
         this.mapper = new ObjectMapper();
+        this.loginConfig = loginConfig;
+        this.flightPlanReceiverConfig = flightPlanReceiverConfig;
     }
 
     @Override
@@ -55,9 +62,9 @@ public class FlightPlanAgent extends BaseAgent {
                 // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
                 running = true;
                 // 0. 刷新Cookie
-                PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies();
+                PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
                 // 1. 获取飞行计划根XML并解析
-                List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots();
+                List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig);
                 // 所有日期都已导入完成
                 if (flightPlans.isEmpty()) {
                     return;

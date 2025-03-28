@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
+import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -45,23 +47,15 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         mapper = new ObjectMapper();
     }
 
-    private static final String host = humanMachineProperties.getProperty("agent.personnelAndFlightPlan.host");
-
     /**
      * 登录人员与装备系统 一共有三条cookie 通过逗号分隔
      */
-    public static void loginAndGetCookies() {
-        String url = host + "/home/login";
+    public static void loginAndGetCookies(PersonnelAndPlanLoginConfig loginConfig) {
+        String url = loginConfig.getLoginUrl();
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(
-                            "{" +
-                                    "userInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.login.username") + "\"," +
-                                    "grbsInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.login.username") + "\"," +
-                                    "passwordInput:\"" + humanMachineProperties.getProperty("agent.personnelAndFlightPlan.login.password") + "\"" +
-                                    "}"
-                    ))
+                    .POST(HttpRequest.BodyPublishers.ofString(loginConfig.getLoginJson()))
                     .uri(new URI(url))
                     .build();
             // 同步的请求
@@ -78,7 +72,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlanRoot> getFlightRoots() {
+    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig) {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = localCookiesCache;
         // 获取今天日期 以yyyy-MM-dd输出
@@ -88,7 +82,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         List<FlightDate> flightDates;
         try (HttpClient client = HttpClient.newHttpClient()) {
             // 1.1 先从系统接口获取飞行日期列表
-            String url = host + "/fxjh/getfxrq?from=1970-01-01&to=" + today + "&dwdm=90121";
+            String url = receiverConfig.getFlightDateUrl();
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
                     .header("Cookie", formattedCookies)
@@ -117,10 +111,10 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         List<FlightPlanRoot> flightPlans = new ArrayList<>();
         for (FlightDate flightDate : flightDates) {
             // 2.1. 从任务系统获取所有计划编号 任务编号要走别的系统 等现场调试
-            PlanCode planCode = new PlanCode();
+            PlanCode planCode;
 
             try (HttpClient client = HttpClient.newHttpClient()) {
-                String url = host + "/FXDT/BindJHxx?rq" + flightDate.getDate().toString() + "&dwdm=90121&_=1742546210611";
+                String url = receiverConfig.getFlightCodeUrl();
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
                         .header("Cookie", formattedCookies)
@@ -137,7 +131,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             // 2.2 获取所有飞行计划
             try (HttpClient client = HttpClient.newHttpClient()) {
                 // 90121是个常量
-                String url = host + "/fxdt/getxml?jhbh=" + planCode.getCode();
+                String url = receiverConfig.getFlightXmlUrl();
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
                         .header("Cookie", formattedCookies)
@@ -166,8 +160,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         String formattedCookies = localCookiesCache;
         List<PersonnelInfo> personnelInfos;
         try (HttpClient client = HttpClient.newHttpClient()) {
-            String url = host + "/fxy/bindfxylb?dwdm=90121" +
-                    receiverConfig.getQueryString();
+            String url = receiverConfig.getPersonnelUrl();
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
                     .header("Cookie", formattedCookies)

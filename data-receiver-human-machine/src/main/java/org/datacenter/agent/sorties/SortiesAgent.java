@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.SortiesHttpClientUtil;
+import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
+import org.datacenter.config.sorties.SortiesReceiverConfig;
 import org.datacenter.model.sorties.Sorties;
 
 import java.util.List;
@@ -23,9 +25,13 @@ public class SortiesAgent extends BaseAgent {
 
     private final ObjectMapper mapper;
     private ScheduledExecutorService scheduler;
+    private final SortiesBatchReceiverConfig batchReceiverConfig;
+    private final SortiesReceiverConfig sortiesReceiverConfig;
 
-    public SortiesAgent() {
+    public SortiesAgent(SortiesBatchReceiverConfig batchReceiverConfig, SortiesReceiverConfig sortiesReceiverConfig) {
         super();
+        this.batchReceiverConfig = batchReceiverConfig;
+        this.sortiesReceiverConfig = sortiesReceiverConfig;
         this.mapper = new ObjectMapper();
     }
 
@@ -47,7 +53,7 @@ public class SortiesAgent extends BaseAgent {
                 // 可以起flink任务
                 running = true;
                 // 1. 通过接口获取所有SortiesBatch
-                List<Sorties> sortiesList = SortiesHttpClientUtil.getSortiesList();
+                List<Sorties> sortiesList = SortiesHttpClientUtil.getSortiesList(batchReceiverConfig, sortiesReceiverConfig);
                 // 2. 转发到Kafka
                 try {
                     String sortiesListInJson = mapper.writeValueAsString(sortiesList);

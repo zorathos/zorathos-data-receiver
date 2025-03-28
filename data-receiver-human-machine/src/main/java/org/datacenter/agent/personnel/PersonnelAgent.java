@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
+import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
@@ -38,9 +39,11 @@ public class PersonnelAgent extends BaseAgent {
     private final ObjectMapper mapper;
     private final PersonnelReceiverConfig receiverConfig;
     private ScheduledExecutorService scheduler;
+    private PersonnelAndPlanLoginConfig loginConfig;
 
-    public PersonnelAgent(PersonnelReceiverConfig receiverConfig) {
+    public PersonnelAgent(PersonnelAndPlanLoginConfig loginConfig, PersonnelReceiverConfig receiverConfig) {
         super();
+        this.loginConfig = loginConfig;
         this.receiverConfig = receiverConfig;
         this.mapper = new ObjectMapper();
     }
@@ -61,6 +64,8 @@ public class PersonnelAgent extends BaseAgent {
         scheduler.scheduleAtFixedRate(() -> {
                     if (prepared) {
                         // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
+                        // 0. 刷新Cookie
+                        PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
                         // 1. 清空原有库表数据 用jdbc
                         truncatePersonnelInfoTable();
                         // 这时候才可以拉起Flink任务

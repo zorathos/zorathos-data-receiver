@@ -8,6 +8,7 @@ import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.personnel.PersonnelAgent;
+import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.personnel.PersonnelReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
@@ -30,14 +31,17 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class PersonnelKafkaReceiver extends BaseReceiver {
 
     private final PersonnelAgent personnelAgent;
+    private final PersonnelAndPlanLoginConfig loginConfig;
+    private final PersonnelReceiverConfig receiverConfig;
 
-    public PersonnelKafkaReceiver(PersonnelReceiverConfig receiverConfig) {
+    public PersonnelKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig, PersonnelReceiverConfig receiverConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
+        this.loginConfig = loginConfig;
         this.receiverConfig = receiverConfig;
         // 2. 初始化人员Agent
-        this.personnelAgent = new PersonnelAgent(receiverConfig);
+        this.personnelAgent = new PersonnelAgent(loginConfig, receiverConfig);
     }
 
     @Override
@@ -143,20 +147,20 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     /**
      * 被flink调用的主函数
-     * 参数输入形式为 --queryString &xm=xxx&ym=xxx&dm=xxx 需要是符合Http的Get接口输入的形式 用于拼接 注意 单位代码已经被拼接 不需要重复声明
+     * 参数输入形式为 --loginUrl xxx --loginJson xxx --personnelUrl xxx
      *
      * @param args 参数 第一个为接收器参数 第二个为持久化器参数
      */
     public static void main(String[] args) {
-        ParameterTool parameterTool = ParameterTool.fromArgs(args);
-
-        PersonnelReceiverConfig receiverConfig = PersonnelReceiverConfig.builder()
-                .queryString(parameterTool.getRequired("queryString"))
+        ParameterTool params = ParameterTool.fromArgs(args);
+        PersonnelAndPlanLoginConfig loginConfig = PersonnelAndPlanLoginConfig.builder()
+                .loginUrl(params.getRequired("loginUrl"))
+                .loginJson(params.getRequired("loginJson"))
                 .build();
-
-        if (receiverConfig != null) {
-            PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver(receiverConfig);
-            personnelKafkaReceiver.run();
-        }
+        PersonnelReceiverConfig receiverConfig = PersonnelReceiverConfig.builder()
+                .personnelUrl(params.getRequired("personnelUrl"))
+                .build();
+        PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver(loginConfig, receiverConfig);
+        personnelKafkaReceiver.run();
     }
 }

@@ -1,6 +1,8 @@
 package org.datacenter.agent.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
+import org.datacenter.config.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
@@ -37,19 +39,13 @@ public class SortiesHttpClientUtil {
      *
      * @return 架次批数据
      */
-    public static List<SortiesBatch> getSortiesBatches() {
-        String url = host + "/task/dataAsset/queryAllBatches";
+    public static List<SortiesBatch> getSortiesBatches(SortiesBatchReceiverConfig receiverConfig) {
+        String url = receiverConfig.getSortiesBatchUrl();
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
                     .header("Content-Type", "application/json")
                     // 请求体是固定的 就这两个参数
-                    .POST(HttpRequest.BodyPublishers.ofString("""
-                            {
-                                "acmiTimeEnd": "",
-                                "acmiTimeStart":""
-                            
-                            }
-                            """))
+                    .POST(HttpRequest.BodyPublishers.ofString(receiverConfig.getSortiesBatchJson()))
                     .uri(new URI(url))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -64,12 +60,13 @@ public class SortiesHttpClientUtil {
      *
      * @return 架次信息
      */
-    public static List<Sorties> getSortiesList() {
+    public static List<Sorties> getSortiesList(SortiesBatchReceiverConfig sortiesBatchReceiverConfig,
+                                               SortiesReceiverConfig sortiesReceiverConfig) {
         List<Sorties> sortiesList = new ArrayList<>();
         // 拿着batch号去找对应的sorties
-        List<SortiesBatch> sortiesBatchList = SortiesHttpClientUtil.getSortiesBatches();
+        List<SortiesBatch> sortiesBatchList = SortiesHttpClientUtil.getSortiesBatches(sortiesBatchReceiverConfig);
         for (SortiesBatch sortiesBatch : sortiesBatchList) {
-            String url = host + "/task/dataAsset/querySortiesByBatchId?batchId=" + sortiesBatch.getId();
+            String url = sortiesReceiverConfig.getSortiesBaseUrl() + "?batchId=" + sortiesBatch.getId();
             try (HttpClient client = HttpClient.newHttpClient()) {
                 HttpRequest request = HttpRequest.newBuilder()
                         .header("Content-Type", "application/json")

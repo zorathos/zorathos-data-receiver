@@ -101,8 +101,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
 
         // 2. 获取到架次后拿着sortie的armType作为weaponNumber入参 icdVersion作为icd入参 查数据资产列表接口 获取资产列表
         log.info("Fetching asset list from web interface, armType: {}, icdVersion: {}.", armType, icdVersion);
-        String assetListUrl = humanMachineProperties.getProperty("receiver.asset.host") + "/datahandle/asset/getObjectifyAsset?" +
-                "weaponModel=" + armType +
+        String assetListUrl = config.getAssetListBaseUrl() +
+                "?weaponModel=" + armType +
                 "&icd" + icdVersion;
         List<AssetSummary> assetList;
         try (HttpClient client = HttpClient.newHttpClient()) {
@@ -123,8 +123,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
         // 3. 根据资产ID查资产配置信息接口
         for (AssetSummary asset : assetList) {
             Long assetId = asset.getId();
-            String url = humanMachineProperties.getProperty("receiver.asset.host") +
-                    "/datahandle/asset/getAssetValidConfig?id=" + assetId;
+            String url = config.getAssetConfigBaseUrl() + "?id=" + assetId;
             try (HttpClient client = HttpClient.newHttpClient()) {
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
@@ -186,6 +185,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 } else {
                     throw new ZorathosException("No table found for %s.%s".formatted(dbName, tableName));
                 }
+                dorisConn.close();
             } catch (SQLException e) {
                 throw new ZorathosException(e, "Error occurs while connecting to doris database.");
             }
@@ -469,11 +469,17 @@ public class AssetJdbcReceiver extends BaseReceiver {
     /**
      * 接收数据资产数据
      *
-     * @param args 接收参数 格式为 --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02 --feNodes 127.0.0.1:8030 --username root --password 123456
+     * @param args 接收参数 格式为
+     *        --assetListBaseUrl http://192.168.10.100:8088/datahandle/asset/getObjectifyAsset
+     *        --assetConfigBaseUrl http://192.168.10.100:8088/datahandle/asset/getAssetValidConfig
+     *        --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02
+     *        --feNodes 127.0.0.1:8030 --username root --password 123456
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
         AssetReceiverConfig config = AssetReceiverConfig.builder()
+                .assetListBaseUrl(params.getRequired("assetListBaseUrl"))
+                .assetConfigBaseUrl(params.getRequired("assetConfigBaseUrl"))
                 .sortieNumber(params.getRequired("sortieNumber"))
                 .feNodes(params.getRequired("feNodes"))
                 .username(params.getRequired("username"))

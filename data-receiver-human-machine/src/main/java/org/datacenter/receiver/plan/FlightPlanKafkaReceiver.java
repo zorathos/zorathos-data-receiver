@@ -2,12 +2,15 @@ package org.datacenter.receiver.plan;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
+import org.datacenter.config.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
@@ -34,12 +37,15 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     private final FlightPlanAgent flightPlanAgent;
+    private PersonnelAndPlanLoginConfig loginConfig;
+    private FlightPlanReceiverConfig flightPlanReceiverConfig;
 
-    public FlightPlanKafkaReceiver() {
+    public FlightPlanKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig,
+                                   FlightPlanReceiverConfig flightPlanReceiverConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
-        this.flightPlanAgent = new FlightPlanAgent();
+        this.flightPlanAgent = new FlightPlanAgent(loginConfig, flightPlanReceiverConfig);
     }
 
     @Override
@@ -237,8 +243,25 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
         }
     }
 
+    /**
+     * 主函数
+     * @param args 输入参数
+     *        --loginUrl http://xxxx --loginJson {xx: xx} --flightDateUrl http://xxxx
+     *        --flightCodeUrl http://xxxx --flightXmlUrl http://xxxx
+     */
     public static void main(String[] args) {
-        FlightPlanKafkaReceiver receiver = new FlightPlanKafkaReceiver();
+        ParameterTool params = ParameterTool.fromArgs(args);
+        // 1. 加载配置
+        PersonnelAndPlanLoginConfig loginConfig = PersonnelAndPlanLoginConfig.builder()
+                .loginUrl(params.getRequired("loginUrl"))
+                .loginJson(params.getRequired("loginJson"))
+                .build();
+        FlightPlanReceiverConfig flightPlanReceiverConfig = FlightPlanReceiverConfig.builder()
+                .flightDateUrl(params.getRequired("flightDateUrl"))
+                .flightCodeUrl(params.getRequired("flightCodeUrl"))
+                .flightXmlUrl(params.getRequired("flightXmlUrl"))
+                .build();
+        FlightPlanKafkaReceiver receiver = new FlightPlanKafkaReceiver(loginConfig, flightPlanReceiverConfig);
         receiver.run();
     }
 }
