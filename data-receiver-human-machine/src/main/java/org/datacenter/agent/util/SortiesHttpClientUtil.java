@@ -27,11 +27,9 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class SortiesHttpClientUtil {
 
     private static final ObjectMapper mapper;
-    private static final String host;
 
     static {
         mapper = new ObjectMapper();
-        host = humanMachineProperties.getProperty("agent.sorties.host");
     }
 
     /**

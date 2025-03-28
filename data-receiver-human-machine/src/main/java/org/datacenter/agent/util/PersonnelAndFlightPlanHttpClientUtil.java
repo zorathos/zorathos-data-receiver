@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.personnel.PersonnelReceiverConfig;
+import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;

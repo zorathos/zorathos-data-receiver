@@ -1,10 +1,12 @@
 package org.datacenter.receiver.equipment;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.datacenter.config.equipment.EquipmentInfoReceiverConfig;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
@@ -18,6 +20,12 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  */
 @Slf4j
 public class EquipmentInfoCdcReceiver extends BaseReceiver {
+
+    private final EquipmentInfoReceiverConfig config;
+
+    public EquipmentInfoCdcReceiver(EquipmentInfoReceiverConfig config) {
+        this.config = config;
+    }
 
     @Override
     public void prepare() {
@@ -65,12 +73,12 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                     'jdbc.properties.useSSL' = 'false' -- 不使用SSL
                 );
                 """.formatted(
-                humanMachineProperties.getProperty("receiver.equipment.mysql.host"),
-                humanMachineProperties.getProperty("receiver.equipment.mysql.port"),
-                humanMachineProperties.get("receiver.equipment.mysql.username"),
-                humanMachineProperties.get("receiver.equipment.mysql.password"),
-                humanMachineProperties.getProperty("receiver.equipment.mysql.database"),
-                humanMachineProperties.getProperty("receiver.equipment.mysql.equipmentInfo.table")
+                config.getHost(),
+                config.getPort(),
+                config.getUsername(),
+                config.getPassword(),
+                config.getDatabase(),
+                config.getPassword()
         );
 
         tableEnv.executeSql(sourceSql);
@@ -130,7 +138,16 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
     }
 
     public static void main(String[] args) {
-        EquipmentInfoCdcReceiver receiver = new EquipmentInfoCdcReceiver();
+        ParameterTool params = ParameterTool.fromArgs(args);
+        EquipmentInfoReceiverConfig config = EquipmentInfoReceiverConfig.builder()
+                .host(params.getRequired("host"))
+                .port(params.getRequired("port"))
+                .database(params.getRequired("database"))
+                .username(params.getRequired("username"))
+                .password(params.getRequired("password"))
+                .table(params.getRequired("table"))
+                .build();
+        EquipmentInfoCdcReceiver receiver = new EquipmentInfoCdcReceiver(config);
         receiver.run();
     }
 }

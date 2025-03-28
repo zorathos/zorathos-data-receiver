@@ -9,7 +9,7 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.personnel.PersonnelAgent;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.personnel.PersonnelReceiverConfig;
+import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;

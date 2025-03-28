@@ -10,7 +10,7 @@ import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.personnel.PersonnelReceiverConfig;
+import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
