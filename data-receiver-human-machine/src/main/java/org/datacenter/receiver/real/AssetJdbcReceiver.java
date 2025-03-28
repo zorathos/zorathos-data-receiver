@@ -1,11 +1,21 @@
 package org.datacenter.receiver.real;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.dialect.doris.parser.DorisStatementParser;
+import com.alibaba.druid.sql.dialect.starrocks.ast.statement.StarRocksCreateTableStatement;
+import com.alibaba.druid.util.JdbcConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.table.api.StatementSet;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.datacenter.config.real.AssetReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
@@ -16,6 +26,7 @@ import org.datacenter.model.real.AssetTableProperty;
 import org.datacenter.model.real.response.AssetTableConfigResult;
 import org.datacenter.model.real.response.DataAssetResponse;
 import org.datacenter.receiver.BaseReceiver;
+import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 import org.datacenter.receiver.util.TiDBConnectionPool;
 
@@ -32,6 +43,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -44,13 +57,17 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @Slf4j
 public class AssetJdbcReceiver extends BaseReceiver {
 
-    private String sortieName;
+    private AssetReceiverConfig config;
+    private String sortieNumber;
     private String sortieId;
     private String batchId;
     private ObjectMapper mapper = new ObjectMapper();
-    // 本次读取过程中用到的 资产-资产表配置 二元组本地缓存 这个pair的list肉眼可见的会占用很大的内存
-    private List<MutablePair<AssetSummary, List<AssetTableConfig>>> assetResultList = new ArrayList<>();
+    // 本次读取过程中用到的 资产-资产表配置-DorisDDL triple本地缓存 这个pair的list肉眼可见的会占用很大的内存
+    private List<MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement>> assetResultList = new ArrayList<>();
 
+    /**
+     * 准备阶段中需要完成 资产描述接入与目标库建表
+     */
     @Override
     public void prepare() {
         super.prepare();
@@ -58,15 +75,15 @@ public class AssetJdbcReceiver extends BaseReceiver {
         String armType;
         String icdVersion;
         try {
-            log.info("Fetching sortie data from database, sortieName: {}.", sortieName);
+            log.info("Fetching sortie data from database, sortieNumber: {}.", config.getSortieNumber());
             Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
             Connection sortiesConn = DriverManager.getConnection(
                     JdbcSinkUtil.TIDB_URL_SORTIES,
                     humanMachineProperties.getProperty("tidb.username"),
                     humanMachineProperties.getProperty("tidb.password"));
-            String sql = "SELECT * FROM `%s` WHERE sortieName = ?".formatted(TiDBTable.SORTIES.getName());
+            String sql = "SELECT * FROM `%s` WHERE sortieNumber = ?".formatted(TiDBTable.SORTIES.getName());
             PreparedStatement preparedStatement = sortiesConn.prepareStatement(sql);
-            preparedStatement.setString(1, sortieName);
+            preparedStatement.setString(1, config.getSortieNumber());
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 sortieId = resultSet.getString("sortie_id");
@@ -74,8 +91,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 armType = resultSet.getString("arm_type");
                 icdVersion = resultSet.getString("icd_version");
             } else {
-                log.error("No sortie data found for sortieName: {}.", sortieName);
-                throw new ZorathosException("No sortie data found for sortieName: " + sortieName);
+                log.error("No sortie data found for sortieNumber: {}.", config.getSortieNumber());
+                throw new ZorathosException("No sortie data found for sortieNumber: " + config.getSortieNumber());
             }
             sortiesConn.close();
         } catch (SQLException | ClassNotFoundException e) {
@@ -118,29 +135,59 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 // 使用objectMapper 序列化返回列表
                 String responseBody = response.body();
                 AssetTableConfigResult result = mapper.readValue(responseBody, AssetTableConfigResult.class);
-                assetResultList.add(new MutablePair<>(asset, result.getResult()));
+                assetResultList.add(new MutableTriple<>(asset, result.getResult(), new StarRocksCreateTableStatement()));
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 throw new ZorathosException(e, "Error occurs while fetching asset config.");
             }
         }
 
         // 4.0 初始化TiDB连接池
-        TiDBConnectionPool pool = new TiDBConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);
+        TiDBConnectionPool tidbPool = new TiDBConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);
 
-        // 4. 把既有数据写入数据库
-        for (MutablePair<AssetSummary, List<AssetTableConfig>> assetSummaryListMutablePair : assetResultList) {
-            AssetSummary summary = assetSummaryListMutablePair.getKey();
-            sinkAssetSummary(pool, summary);
+        for (MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair : assetResultList) {
+            // 4.1 把既有数据写入数据库
+            AssetSummary summary = assetConfigPair.getLeft();
+            sinkAssetSummary(tidbPool, summary);
             // 入库AssetTableConfig 以 AssetTableModel 和 AssetTableProperty 分别入库
             // 虽然这事情很荒谬 但我们确实只取第一个元素
-            AssetTableConfig assetTableConfig = assetSummaryListMutablePair.getValue().getFirst();
+            AssetTableConfig assetTableConfig = assetConfigPair.getMiddle().getFirst();
             // 先入库AssetTableModel
             AssetTableModel assetTableModel = assetTableConfig.getAssetModel();
-            sinkAssetTableModel(pool, assetTableModel);
+            sinkAssetTableModel(tidbPool, assetTableModel);
             // 再入库AssetTableProperty
             List<AssetTableProperty> propertyList = assetTableConfig.getPropertyList();
             for (AssetTableProperty assetTableProperty : propertyList) {
-                sinkAssetTableProperty(pool, assetTableProperty);
+                sinkAssetTableProperty(tidbPool, assetTableProperty);
+            }
+
+
+            String dbName = assetConfigPair.getLeft().getDbName();
+            String tableName = assetConfigPair.getLeft().getFullName();
+
+            // 4.2 show create table 使用 druid 解 ddl 转发给TiDB
+            try {
+                Connection dorisConn = DriverManager.getConnection(
+                        "jdbc:mysql://%s/%s?useUnicode=true&characterEncoding=UTF-8&useSSL=false".formatted(config.getFeNodes(), dbName),
+                        config.getUsername(),
+                        config.getPassword()
+                );
+                String sql = "SHOW CREATE TABLE %s".formatted(tableName);
+                PreparedStatement preparedStatement = dorisConn.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                if (resultSet.next()) {
+                    String createTableSql = resultSet.getString("Create Table");
+                    log.info("Create table SQL for {}.{}: {}", dbName, tableName, createTableSql);
+                    DorisStatementParser dorisStatementParser = new DorisStatementParser(createTableSql);
+                    StarRocksCreateTableStatement sqlStatement =
+                            (StarRocksCreateTableStatement) dorisStatementParser.getSQLCreateTableParser().parseStatement();
+                    String tidbSql = dorisStatementToTiDBSql(tableName, sqlStatement);
+                    createTableInTiDB(tidbPool, tidbSql);
+                    assetConfigPair.setRight(sqlStatement);
+                } else {
+                    throw new ZorathosException("No table found for %s.%s".formatted(dbName, tableName));
+                }
+            } catch (SQLException e) {
+                throw new ZorathosException(e, "Error occurs while connecting to doris database.");
             }
         }
     }
@@ -272,47 +319,169 @@ public class AssetJdbcReceiver extends BaseReceiver {
         }
     }
 
+    private void createTableInTiDB(TiDBConnectionPool pool, String createTableDdl) {
+        Connection realConn = null;
+        try {
+            realConn = pool.getConnection();
+            PreparedStatement preparedStatement = realConn.prepareStatement(createTableDdl);
+            preparedStatement.execute();
+        } catch (Exception e) {
+            throw new ZorathosException(e, "Error occurs while sinking asset table model.");
+        } finally {
+            pool.returnConnection(realConn);
+        }
+    }
 
+
+    private String getColumnDefinitionsFromDorisStatement(StarRocksCreateTableStatement createTableStatement) {
+        return createTableStatement.getTableElementList().stream().map(
+                        tableElement -> {
+                            SQLColumnDefinition columnDefinition = (SQLColumnDefinition) tableElement;
+                            String columnName = columnDefinition.getName().getSimpleName();
+                            if (!columnName.equals("auto_id") && !columnName.equals("batch_id") && !columnName.equals("sortie_id")) {
+                                return tableElement.toString();
+                            }
+                            return null;
+                        }
+                ).filter(Objects::nonNull)
+                .collect(Collectors.joining(",\n"));
+    }
+
+    /**
+     * 基于Druid parser 强转 doris sql 为 tidb sql
+     *
+     * @param tableName            表名
+     * @param createTableStatement Doris的建表语句
+     * @return TiDB的建表语句
+     */
+    private String dorisStatementToTiDBSql(String tableName, StarRocksCreateTableStatement createTableStatement) {
+        String tidbSql = """
+                CREATE TABLE IF NOT EXISTS %s (
+                    auto_id BIGINT,
+                    batch_id VARCHAR(255),
+                    sortie_id VARCHAR(255),
+                    %s,
+                    PRIMARY KEY (auto_id, batch_id, sortie_id, code1)
+                );
+                """.formatted(
+                tableName,
+                getColumnDefinitionsFromDorisStatement(createTableStatement)
+        );
+
+        return SQLUtils.format(tidbSql, JdbcConstants.TIDB, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION);
+    }
+
+    private String dorisStatementToFlinkSqlSource(String sourceDbName, String sourceTableName,
+                                                  String flinkTableName, StarRocksCreateTableStatement createTableStatement) {
+        String tidbSql = """
+                CREATE TABLE IF NOT EXISTS %s (
+                    auto_id BIGINT,
+                    batch_id VARCHAR(255),
+                    sortie_id VARCHAR(255),
+                    %s,
+                    PRIMARY KEY (auto_id, batch_id, sortie_id, code1) NOT ENFORCED
+                )
+                'connector' = 'doris',
+                'fenodes' = '%s',
+                'table.identifier' = '%s',
+                'username' = '%s',
+                'password' = '%s'
+                """.formatted(
+                flinkTableName,
+                getColumnDefinitionsFromDorisStatement(createTableStatement),
+                config.getFeNodes(),
+                sourceDbName + "." + sourceTableName,
+                config.getUsername(),
+                config.getPassword()
+        );
+
+        return SQLUtils.format(tidbSql, JdbcConstants.TIDB, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION)
+                .replaceAll("VARCHAR\\(\\d+\\)", "STRING");
+    }
+
+    private String dorisStatementToFlinkSqlTarget(String targetTableName, String flinkTableName, StarRocksCreateTableStatement createTableStatement) {
+        String tidbSql = """
+                CREATE TABLE IF NOT EXISTS %s (
+                    auto_id BIGINT,
+                    batch_id VARCHAR(255),
+                    sortie_id VARCHAR(255),
+                    %s,
+                    PRIMARY KEY (auto_id, batch_id, sortie_id, code1) NOT ENFORCED
+                )
+                'connector' = 'jdbc',             -- 使用 JDBC 持久化
+                'url' = '%s',                     -- TiDB 主机名
+                'driver' = '%s',                  -- TiDB 端口
+                'username' = '%s',                -- TiDB 用户名
+                'password' = '%s',                -- TiDB 密码
+                'table-name' = '%s'               -- 表名
+                """.formatted(
+                flinkTableName,
+                getColumnDefinitionsFromDorisStatement(createTableStatement),
+                JdbcSinkUtil.TIDB_REAL_WORLD_FLIGHT,
+                humanMachineProperties.getProperty("tidb.driverName"),
+                humanMachineProperties.getProperty("tidb.username"),
+                humanMachineProperties.getProperty("tidb.password"),
+                targetTableName
+        );
+
+        return SQLUtils.format(tidbSql, JdbcConstants.TIDB, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION)
+                .replaceAll("VARCHAR\\(\\d+\\)", "STRING");
+    }
+
+
+    /**
+     * 数据库 多 source 多 sink
+     */
     @Override
     public void start() {
         // 4. 从Doris拉取数据入库
         log.info("Start to fetch real flight data from Doris and insert into database.");
-        /*
-        CREATE TABLE ACMI_002_tspi_0305 (
-            auto_id BIGINT,
-            batch_id VARCHAR(255),
-            sortie_id VARCHAR(255),
-            code1 BIGINT,
-            code2 BIGINT,
-            code3 VARCHAR(255),
-            code4 VARCHAR(255),
-            code5 VARCHAR(255),
-            code6 VARCHAR(255)
-        )
-        DUPLICATE KEY(auto_id, batch_id, sortie_id, code1)
-        DISTRIBUTED BY HASH(auto_id) BUCKETS 10
-        PROPERTIES (
-            "replication_num" = "1"
-        );
-         */
+        StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
+        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
+        StatementSet statementSet = tableEnv.createStatementSet();
+
         // 迭代遍历assetResultList
-        for (MutablePair<AssetSummary, List<AssetTableConfig>> assetConfigPair : assetResultList) {
-            String dbName = assetConfigPair.getKey().getDbName();
-            String tableName = assetConfigPair.getKey().getFullName();
+        for (int i = 0; i < assetResultList.size(); i++) {
+            MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair = assetResultList.get(i);
+            String dbName = assetConfigPair.getLeft().getDbName();
+            String tableName = assetConfigPair.getLeft().getFullName();
+            String flinkSource = "source_" + i;
+            String flinkTarget = "target_" + i;
+
+            String flinkSourceTable = dorisStatementToFlinkSqlSource(dbName, tableName, flinkSource, assetConfigPair.getRight());
+            String flinkTargetTable = dorisStatementToFlinkSqlTarget(tableName, flinkTarget, assetConfigPair.getRight());
+
+            tableEnv.executeSql(flinkSourceTable);
+            tableEnv.executeSql(flinkTargetTable);
+
+            Table sourceTable = tableEnv.from(flinkSource);
+            statementSet.addInsert(flinkTarget, sourceTable);
+        }
+
+        // 执行所有语句
+        try {
+            statementSet.execute();
+        } catch (Exception e) {
+            throw new ZorathosException(e, "Error occurs while executing statement set.");
         }
     }
 
     /**
      * 接收数据资产数据
      *
-     * @param args 接收参数 格式为 --sortieName 20250303_五_01_ACT-3_邱陈_J16_07#02
+     * @param args 接收参数 格式为 --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02 --feNodes 127.0.0.1:8030 --username root --password 123456
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
-        String sortieName = params.getRequired("sortieName");
-        log.info("Start receiver data assets with sortieName: {}", sortieName);
+        AssetReceiverConfig config = AssetReceiverConfig.builder()
+                .sortieNumber(params.getRequired("sortieNumber"))
+                .feNodes(params.getRequired("feNodes"))
+                .username(params.getRequired("username"))
+                .password(params.getRequired("password"))
+                .build();
+        log.info("Start receiver data assets with sortieNumber: {}", config.getSortieNumber());
         AssetJdbcReceiver assetJdbcReceiver = new AssetJdbcReceiver();
-        assetJdbcReceiver.setSortieName(sortieName);
+        assetJdbcReceiver.setConfig(config);
         assetJdbcReceiver.run();
     }
 }

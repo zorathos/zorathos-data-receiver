@@ -31,6 +31,11 @@ public class JdbcSinkUtil {
                     TiDBDatabase.SORTIES.getName() +
                     humanMachineProperties.getProperty("tidb.url.suffix");
 
+    public static final String TIDB_REAL_WORLD_FLIGHT =
+            humanMachineProperties.getProperty("tidb.url.prefix") +
+                    TiDBDatabase.REAL_WORLD_FLIGHT.getName() +
+                    humanMachineProperties.getProperty("tidb.url.suffix");
+
     public static JdbcExecutionOptions getTiDBJdbcExecutionOptions() {
         return JdbcExecutionOptions.builder()
                 .withBatchSize(Integer.parseInt(humanMachineProperties.getProperty("flink.jdbc.sinker.batchSize")))
