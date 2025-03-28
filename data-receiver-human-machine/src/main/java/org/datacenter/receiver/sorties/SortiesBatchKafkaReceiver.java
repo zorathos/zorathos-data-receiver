@@ -29,13 +29,11 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class SortiesBatchKafkaReceiver extends BaseReceiver {
 
     private final SortiesBatchAgent sortiesBatchAgent;
-    private final SortiesBatchReceiverConfig receiverConfig;
 
     public SortiesBatchKafkaReceiver(SortiesBatchReceiverConfig receiverConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
-        this.receiverConfig = receiverConfig;
         this.sortiesBatchAgent = new SortiesBatchAgent(receiverConfig);
     }
 

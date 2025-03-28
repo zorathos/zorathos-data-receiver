@@ -31,16 +31,12 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class SortiesKafkaReceiver extends BaseReceiver {
 
     private final SortiesAgent sortiesAgent;
-    private final SortiesBatchReceiverConfig batchReceiverConfig;
-    private final SortiesReceiverConfig sortiesReceiverConfig;
 
     public SortiesKafkaReceiver(SortiesBatchReceiverConfig batchReceiverConfig, SortiesReceiverConfig sortiesReceiverConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
-        this.batchReceiverConfig = new SortiesBatchReceiverConfig();
-        this.sortiesReceiverConfig = sortiesReceiverConfig;
-        this.sortiesAgent = new SortiesAgent(this.batchReceiverConfig, this.sortiesReceiverConfig);
+        this.sortiesAgent = new SortiesAgent(batchReceiverConfig, sortiesReceiverConfig);
     }
 
     @Override
@@ -163,7 +159,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                 .sortiesBatchJson(params.getRequired("sortiesBatchJson"))
                 .build();
         SortiesReceiverConfig sortiesReceiverConfig = SortiesReceiverConfig.builder()
-                .sortiesUrl(params.getRequired("sortiesUrl"))
+                .sortiesBaseUrl(params.getRequired("sortiesBaseUrl"))
                 .build();
         SortiesKafkaReceiver receiver = new SortiesKafkaReceiver(batchReceiverConfig, sortiesReceiverConfig);
         receiver.run();
