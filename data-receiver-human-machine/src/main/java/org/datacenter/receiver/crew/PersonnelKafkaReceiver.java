@@ -31,15 +31,11 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class PersonnelKafkaReceiver extends BaseReceiver {
 
     private final PersonnelAgent personnelAgent;
-    private final PersonnelAndPlanLoginConfig loginConfig;
-    private final PersonnelReceiverConfig receiverConfig;
 
     public PersonnelKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig, PersonnelReceiverConfig receiverConfig) {
         // 1. 加载配置 HumanMachineSysConfig.loadConfig();
         HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
         sysConfig.loadConfig();
-        this.loginConfig = loginConfig;
-        this.receiverConfig = receiverConfig;
         // 2. 初始化人员Agent
         this.personnelAgent = new PersonnelAgent(loginConfig, receiverConfig);
     }

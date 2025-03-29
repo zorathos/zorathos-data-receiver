@@ -37,8 +37,6 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     private final FlightPlanAgent flightPlanAgent;
-    private PersonnelAndPlanLoginConfig loginConfig;
-    private FlightPlanReceiverConfig flightPlanReceiverConfig;
 
     public FlightPlanKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig,
                                    FlightPlanReceiverConfig flightPlanReceiverConfig) {

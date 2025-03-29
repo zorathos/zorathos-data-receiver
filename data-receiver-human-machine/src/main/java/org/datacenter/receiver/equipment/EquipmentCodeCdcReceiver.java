@@ -20,7 +20,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @Slf4j
 public class EquipmentCodeCdcReceiver extends BaseReceiver {
 
-    private EquipmentCodeReceiverConfig config;
+    private final EquipmentCodeReceiverConfig config;
 
     public EquipmentCodeCdcReceiver(EquipmentCodeReceiverConfig config) {
         this.config = config;
