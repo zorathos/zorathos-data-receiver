@@ -78,7 +78,7 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                 config.getUsername(),
                 config.getPassword(),
                 config.getDatabase(),
-                config.getPassword()
+                config.getTable()
         );
 
         tableEnv.executeSql(sourceSql);
@@ -137,6 +137,11 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                 .executeInsert("equipment_info_target");
     }
 
+    /**
+     * 主函数
+     * @param args 入参
+     * --host 24.47.153.151  --port 3306 --username root --password 123456 --database basedb --table plane_code
+     */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
         EquipmentInfoReceiverConfig config = EquipmentInfoReceiverConfig.builder()
