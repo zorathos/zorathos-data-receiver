@@ -13,6 +13,7 @@ import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlanRoot;
+import org.datacenter.model.plan.response.FlightPlanResponse;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.io.IOException;
@@ -140,10 +141,10 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                         .build();
                 // 获取响应
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                // 响应体为一段XML
-                String xml = response.body();
+                // 获取响应体并解析
+                FlightPlanResponse planResponse = mapper.readValue(response.body(), FlightPlanResponse.class);
                 // 解析XML文件
-                FlightPlanRoot flightPlanRoot = FlightPlanRoot.fromXml(xml, planCode.getCode());
+                FlightPlanRoot flightPlanRoot = FlightPlanRoot.fromXml(planResponse.getXml(), planCode.getCode());
                 // 追加日期
                 flightPlanRoot.setFlightDate(flightDate.getDate());
                 // 我们不要架次号了

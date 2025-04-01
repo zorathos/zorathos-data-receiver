@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.IrMsl;
+import org.datacenter.receiver.simulation.base.SimulationReceiver;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,7 +24,7 @@ import java.sql.Time;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class IrMslFileReceiver extends SimulationBaseReceiver<IrMsl> {
+public class IrMslFileReceiver extends SimulationReceiver<IrMsl> {
 
     @Override
     public void prepare() {

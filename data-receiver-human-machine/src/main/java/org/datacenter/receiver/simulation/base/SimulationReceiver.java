@@ -1,4 +1,4 @@
-package org.datacenter.receiver.simulation;
+package org.datacenter.receiver.simulation.base;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -7,7 +7,7 @@ import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
-import org.datacenter.receiver.CSVFileBaseReceiver;
+import org.datacenter.receiver.CsvFileReceiver;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.io.Serial;
@@ -25,8 +25,8 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
+public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, SimulationReceiverConfig> implements Serializable {
 
-public abstract class SimulationBaseReceiver<T> extends CSVFileBaseReceiver<T, SimulationReceiverConfig> implements Serializable {
     @Serial
     private static final long serialVersionUID = 2345678L;
 

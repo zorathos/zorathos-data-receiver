@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.Sendto3DData;
+import org.datacenter.receiver.simulation.base.SimulationReceiver;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -22,7 +23,7 @@ import java.sql.SQLException;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class Sendto3DDataFileReceiver extends SimulationBaseReceiver<Sendto3DData> {
+public class Sendto3DDataFileReceiver extends SimulationReceiver<Sendto3DData> {
 
     @Override
     public void prepare() {

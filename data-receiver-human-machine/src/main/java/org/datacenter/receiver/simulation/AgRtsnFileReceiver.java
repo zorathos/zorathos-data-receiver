@@ -7,12 +7,13 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.AgRtsn;
+import org.datacenter.receiver.simulation.base.SimulationReceiver;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-public class AgRtsnFileReceiver extends SimulationBaseReceiver<AgRtsn> {
+public class AgRtsnFileReceiver extends SimulationReceiver<AgRtsn> {
     @Override
     public void prepare() {
         table = TiDBTable.AG_RTSN;

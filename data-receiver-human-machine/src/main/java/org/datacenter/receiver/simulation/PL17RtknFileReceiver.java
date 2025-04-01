@@ -10,6 +10,7 @@ import org.apache.flink.util.function.SerializableFunction;
 import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.PL17Rtkn;
+import org.datacenter.receiver.simulation.base.SimulationReceiver;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,7 +24,7 @@ import java.sql.Time;
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class PL17RtknFileReceiver extends SimulationBaseReceiver<PL17Rtkn> {
+public class PL17RtknFileReceiver extends SimulationReceiver<PL17Rtkn> {
 
     @Override
     public void prepare() {
