@@ -64,48 +64,30 @@ public class PersonnelAgent extends BaseAgent {
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-                    if (prepared) {
-                        // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
-                        // 0. 刷新Cookie
-                        PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
-                        // 1.1 清空原有库表数据 用jdbc
-                        truncatePersonnelInfoTable();
-                        // 1.2 准备 Kafka 的 consumer group并创建所有 topic
-                        KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.personnel"));
-                        // 这时候才可以拉起Flink任务
-                        running = true;
-                        log.info("Personnel agent is running.");
-                        // 2. 拉取人员数据
-                        List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
-                        // 3. 转发到Kafka
-                        try {
-                            String personnelInfosInJson = mapper.writeValueAsString(personnelInfos);
-                            KafkaUtil.sendMessage(humanMachineProperties
-                                    .getProperty("kafka.topic.personnel"), personnelInfosInJson);
-                        } catch (JsonProcessingException e) {
-                            throw new ZorathosException(e, "Error occurs while converting personnel infos to json string.");
-                        }
+            if (prepared) {
+                // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
+                // 0. 刷新Cookie
+                PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
+                // 1 准备 Kafka 的 consumer group并创建所有 topic
+                KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.personnel"));
+                // 这时候才可以拉起Flink任务
+                running = true;
+                log.info("Personnel agent is running.");
+                // 2. 拉取人员数据
+                List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
+                // 3. 转发到Kafka
+                for (PersonnelInfo personnelInfo : personnelInfos) {
+                    try {
+                        String personnelInfoInJson = mapper.writeValueAsString(personnelInfo);
+                        KafkaUtil.sendMessage(humanMachineProperties
+                                .getProperty("kafka.topic.personnel"), personnelInfoInJson);
+                    } catch (JsonProcessingException e) {
+                        throw new ZorathosException(e, "Error occurs while converting personnel infos to json string.");
                     }
-                },
-                0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
-    }
-
-    private void truncatePersonnelInfoTable() {
-        try {
-            log.info("Start truncating personnel info table.");
-            Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
-            Connection connection = DriverManager.getConnection(
-                    JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
-                    humanMachineProperties.getProperty("tidb.username"),
-                    humanMachineProperties.getProperty("tidb.password"));
-            connection
-                    .prepareStatement("TRUNCATE TABLE " + TiDBTable.PERSONNEL_INFO.getName())
-                    .execute();
-            connection.close();
-            log.info("Truncate personnel info table successfully.");
-        } catch (SQLException | ClassNotFoundException e) {
-            throw new ZorathosException(e, "Error occurs while truncating personnel database.");
-        }
+                }
+            }
+        },
+        0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
     }
 
     @Override

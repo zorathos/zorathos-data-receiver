@@ -260,7 +260,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
-        log.info("Parameters: {}", params);
+        log.info("Parameters: {}", params.toMap());
 
         String encodedLoginJson = params.getRequired("loginJson");
         String decodedLoginJson = new String(Base64.getDecoder().decode(encodedLoginJson));
