@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.dialect.doris.parser.DorisStatementParser;
 import com.alibaba.druid.sql.dialect.starrocks.ast.statement.StarRocksCreateTableStatement;
 import com.alibaba.druid.util.JdbcConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         super.prepare();
+        mapper.registerModule(new JavaTimeModule());
         // 1.  JDBC 根据架次号去查询架次数据
         String armType;
         String icdVersion;

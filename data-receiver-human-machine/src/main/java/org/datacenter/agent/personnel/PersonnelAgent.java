@@ -2,6 +2,7 @@ package org.datacenter.agent.personnel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -46,6 +47,7 @@ public class PersonnelAgent extends BaseAgent {
         this.loginConfig = loginConfig;
         this.receiverConfig = receiverConfig;
         this.mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
     }
 
     @Override
@@ -66,10 +68,13 @@ public class PersonnelAgent extends BaseAgent {
                         // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
                         // 0. 刷新Cookie
                         PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
-                        // 1. 清空原有库表数据 用jdbc
+                        // 1.1 清空原有库表数据 用jdbc
                         truncatePersonnelInfoTable();
+                        // 1.2 准备 Kafka 的 consumer group并创建所有 topic
+                        KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.personnel"));
                         // 这时候才可以拉起Flink任务
                         running = true;
+                        log.info("Personnel agent is running.");
                         // 2. 拉取人员数据
                         List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
                         // 3. 转发到Kafka

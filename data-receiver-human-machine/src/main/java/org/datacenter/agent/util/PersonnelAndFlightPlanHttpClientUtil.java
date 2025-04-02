@@ -3,7 +3,9 @@ package org.datacenter.agent.util;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
@@ -16,9 +18,7 @@ import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.model.plan.response.FlightPlanResponse;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -39,6 +40,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @description : 在本类中，我们调用HttpClient发送请求
  */
 @Slf4j
+@SuppressWarnings("deprecation")
 public class PersonnelAndFlightPlanHttpClientUtil {
     private static final ObjectMapper mapper;
 
@@ -46,6 +48,10 @@ public class PersonnelAndFlightPlanHttpClientUtil {
 
     static {
         mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
+        mapper.configure(JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION, true);
+        mapper.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
     }
 
     /**
@@ -62,13 +68,11 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             // 同步的请求
             localCookiesCache = client.send(request, HttpResponse.BodyHandlers.ofString())
                     .headers()
-                    .allValues("Set-Cookie")
-                    .stream()
-                    // 加上"; "结尾
-                    .map(cookie -> cookie + "; ")
-                    .reduce(String::concat)
-                    .orElseThrow();
-        } catch (URISyntaxException | IOException | InterruptedException e) {
+                    .firstValue("Set-Cookie")
+                    .orElseThrow((Supplier<Throwable>) () ->
+                            new ZorathosException("Login to personnel and plan system failed, please check your username and password."));
+            log.info("Login to personnel and flight plan system successfully, current cached cookies: {}.", localCookiesCache);
+        } catch (Throwable e) {
             throw new ZorathosException(e, "Encounter error while login to personnel and flight plan system.");
         }
     }
@@ -76,14 +80,13 @@ public class PersonnelAndFlightPlanHttpClientUtil {
     public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig) {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = localCookiesCache;
-        // 获取今天日期 以yyyy-MM-dd输出
-        String today = LocalDate.now().toString();
 
         // 1. 整理未入库飞行日期
         List<FlightDate> flightDates;
         try (HttpClient client = HttpClient.newHttpClient()) {
             // 1.1 先从系统接口获取飞行日期列表
             String url = receiverConfig.getFlightDateUrl();
+            log.info("Fetching flight dates from {}.", url);
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
                     .header("Cookie", formattedCookies)
@@ -92,10 +95,16 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     .build();
             // 获取响应
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                // 说明有问题 要把响应code打印出来
+                log.error("Error occurs while fetching flight date, response code: {}, response body: {}",
+                        response.statusCode(), response.body());
+                throw new ZorathosException("Error occurs while fetching flight dates.");
+            }
             // 使用objectMapper 序列化返回列表
             flightDates = mapper.readValue(response.body(), mapper.getTypeFactory()
                     .constructCollectionType(List.class, FlightDate.class));
-        } catch (URISyntaxException | IOException | InterruptedException e) {
+        } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while fetching flight dates.");
         }
 
@@ -108,14 +117,17 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             return new ArrayList<>();
         }
 
+        log.info("Found {} flight dates remain to be captured.", flightDates.size());
+
         // 2. 拿飞行日期列表拼字段 获取 计划编号 和 飞行计划 列表
         List<FlightPlanRoot> flightPlans = new ArrayList<>();
         for (FlightDate flightDate : flightDates) {
+            log.info("Fetching flight plan for date: {}.", flightDate.getDate());
             // 2.1. 从任务系统获取所有计划编号 任务编号要走别的系统 等现场调试
             PlanCode planCode;
 
             try (HttpClient client = HttpClient.newHttpClient()) {
-                String url = receiverConfig.getFlightCodeUrl();
+                String url = receiverConfig.getFlightCodeUrl() + flightDate.getDate().toString();
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
                         .header("Cookie", formattedCookies)
@@ -124,15 +136,22 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                         .build();
                 // 获取响应
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) {
+                    // 说明有问题 要把响应code打印出来
+                    log.error("Error occurs while fetching plan code, response code: {}, response body: {}",
+                            response.statusCode(), response.body());
+                    throw new ZorathosException("Error occurs while fetching plan code.");
+                }
                 planCode = mapper.readValue(response.body(), PlanCode.class);
-            } catch (URISyntaxException | IOException | InterruptedException e) {
+            } catch (Exception e) {
                 throw new ZorathosException(e, "Error occurs while fetching mission codes.");
             }
 
             // 2.2 获取所有飞行计划
             try (HttpClient client = HttpClient.newHttpClient()) {
+                log.info("Found plan code: {} for flight date: {}, fetching xml.", planCode.getCode(), flightDate.getDate());
                 // 90121是个常量
-                String url = receiverConfig.getFlightXmlUrl();
+                String url = receiverConfig.getFlightXmlUrl() + planCode.getCode();
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
                         .header("Cookie", formattedCookies)
@@ -141,6 +160,12 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                         .build();
                 // 获取响应
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) {
+                    // 说明有问题 要把响应code打印出来
+                    log.error("Error occurs while fetching flight plan, response code: {}, response body: {}",
+                            response.statusCode(), response.body());
+                    throw new ZorathosException("Error occurs while fetching flight plan.");
+                }
                 // 获取响应体并解析
                 FlightPlanResponse planResponse = mapper.readValue(response.body(), FlightPlanResponse.class);
                 // 解析XML文件
@@ -149,7 +174,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                 flightPlanRoot.setFlightDate(flightDate.getDate());
                 // 我们不要架次号了
                 flightPlans.add(flightPlanRoot);
-            } catch (URISyntaxException | IOException | InterruptedException e) {
+            } catch (Exception e) {
                 throw new ZorathosException(e, "Error occurs while fetching flight plans.");
             }
         }
@@ -173,13 +198,14 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             // 使用objectMapper 序列化返回列表
             personnelInfos = mapper.readValue(response.body(), mapper.getTypeFactory()
                     .constructCollectionType(List.class, PersonnelInfo.class));
-        } catch (URISyntaxException | IOException | InterruptedException e) {
+        } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while fetching personnel infos.");
         }
         return personnelInfos;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class FlightDate {
         /**
          * 飞行日期 FXRQ

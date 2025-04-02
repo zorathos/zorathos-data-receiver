@@ -1,6 +1,7 @@
 package org.datacenter.receiver.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
@@ -8,10 +9,12 @@ import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ExternalizedCheckpointRetention;
 import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.core.execution.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.kafka.common.config.SaslConfigs;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -62,20 +65,34 @@ public class DataReceiverUtil {
     public static <T> DataStreamSource<T> getKafkaSourceDS(StreamExecutionEnvironment env, List<String> topics, Class<T> clazz) {
         // 开始从kafka获取数据
         // 数据源
-        KafkaSource<T> kafkaSource = KafkaSource.<T>builder()
+        KafkaSourceBuilder<T> tKafkaSourceBuilder = KafkaSource.<T>builder()
                 .setBootstrapServers(humanMachineProperties.getProperty("kafka.bootstrap.servers"))
                 .setGroupId(humanMachineProperties.getProperty("kafka.consumer.group-id"))
                 .setTopics(topics)
-                .setValueOnlyDeserializer(new AbstractDeserializationSchema<T>() {
+                .setValueOnlyDeserializer(new AbstractDeserializationSchema<T>(clazz) {
                     @Override
                     public T deserialize(byte[] message) throws IOException {
+                        log.info("Receiving message from kafka with topics:{}.", topics);
                         ObjectMapper mapper = new ObjectMapper();
-                        // 根据泛型T进行转换
+                        mapper.registerModule(new JavaTimeModule());
                         return mapper.readValue(message, clazz);
                     }
                 })
-                .setStartingOffsets(OffsetsInitializer.latest())
-                .build();
+                // 这个位置有待商榷 确实会因为latest导致agent已经发了但是这边拿不到
+                .setStartingOffsets(OffsetsInitializer.timestamp(System.currentTimeMillis() -
+                        Long.parseLong(humanMachineProperties.getProperty("kafka.offset.timestamp"))));
+        // 判断是否需要开启SASL认证
+        if (Boolean.parseBoolean(humanMachineProperties.getProperty("kafka.security.enabled", "false"))) {
+            tKafkaSourceBuilder.setProperty("security.protocol",
+                    humanMachineProperties.getProperty("kafka.security.protocol", "SASL_PLAINTEXT"));
+            tKafkaSourceBuilder.setProperty(SaslConfigs.SASL_MECHANISM,
+                    humanMachineProperties.getProperty("kafka.sasl.mechanism", "PLAIN"));
+            tKafkaSourceBuilder.setProperty(SaslConfigs.SASL_JAAS_CONFIG,
+                    String.format("org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";",
+                            humanMachineProperties.getProperty("kafka.username"),
+                            humanMachineProperties.getProperty("kafka.password")));
+        }
+        KafkaSource<T> kafkaSource = tKafkaSourceBuilder.build();
         return env
                 .fromSource(kafkaSource,
                         WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(3)),

@@ -1,6 +1,7 @@
 package org.datacenter.agent.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
@@ -18,8 +19,6 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * @author : [wangminan]
  * @description : 架次信息用的HttpClient工具类
@@ -30,6 +29,7 @@ public class SortiesHttpClientUtil {
 
     static {
         mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
     }
 
     /**

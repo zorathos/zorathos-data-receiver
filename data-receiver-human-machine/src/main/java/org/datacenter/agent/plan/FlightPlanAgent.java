@@ -2,6 +2,7 @@ package org.datacenter.agent.plan;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -40,6 +41,7 @@ public class FlightPlanAgent extends BaseAgent {
                            FlightPlanReceiverConfig flightPlanReceiverConfig) {
         super();
         this.mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         this.loginConfig = loginConfig;
         this.flightPlanReceiverConfig = flightPlanReceiverConfig;
     }
@@ -59,23 +61,30 @@ public class FlightPlanAgent extends BaseAgent {
 
         scheduler.scheduleAtFixedRate(() -> {
             if (prepared) {
-                // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
-                running = true;
                 // 0. 刷新Cookie
                 PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
-                // 1. 获取飞行计划根XML并解析
+
+                // 1. 准备 Kafka 的 consumer group并创建所有 topic
+                KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot"));
+                running = true;
+                log.info("Flight plan agent is running.");
+
+                // 2. 获取飞行计划根XML并解析
                 List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig);
                 // 所有日期都已导入完成
                 if (flightPlans.isEmpty()) {
+                    log.info("All flight plans have been imported.");
                     return;
                 }
                 // 2. 转发到Kafka
-                try {
-                    String plansInJson = mapper.writeValueAsString(flightPlans);
-                    KafkaUtil.sendMessage(humanMachineProperties
-                            .getProperty("kafka.topic.flightPlanRoot"), plansInJson);
-                } catch (JsonProcessingException e) {
-                    throw new ZorathosException(e, "Error occurs while converting flight plans to json string.");
+                for (FlightPlanRoot flightPlan : flightPlans) {
+                    try {
+                        String flightPlanJson = mapper.writeValueAsString(flightPlan);
+                        KafkaUtil.sendMessage(humanMachineProperties
+                                .getProperty("kafka.topic.flightPlanRoot"), flightPlanJson);
+                    } catch (JsonProcessingException e) {
+                        throw new ZorathosException(e, "Error occurs while converting flight plans to json string.");
+                    }
                 }
             }
         }, 0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.flightPlan")), TimeUnit.MINUTES);

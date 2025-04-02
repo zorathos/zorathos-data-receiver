@@ -5,7 +5,7 @@ import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
@@ -25,6 +25,7 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Date;
+import java.util.Base64;
 import java.util.List;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
@@ -68,8 +69,10 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
-        DataStreamSource<FlightPlanRoot> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot")), FlightPlanRoot.class);
+
+        SingleOutputStreamOperator<FlightPlanRoot> kafkaSourceDS = DataReceiverUtil
+                .getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot")), FlightPlanRoot.class)
+                .returns(FlightPlanRoot.class);
 
         Sink<FlightPlanRoot> flightRootSink = JdbcSink.<FlightPlanRoot>builder()
                 .withQueryStatement(
@@ -94,7 +97,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                                     root_id, ver, title, timeline, t_mode, plane_num, flights_time, total_time, exit_time,
                                     sun_rise_time, sun_set_time, dark_time, dawn_time, dxthh, zhshh, dwsbxh
                                 ) VALUES (
-                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightHead>) (preparedStatement, flightHead) -> {
@@ -179,7 +182,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                                     is_leader_plane, formation_practice, number_of_formation, front_name, front_code, front_code_name, front_nick_name,
                                     front_property, back_name, back_code, back_code_name, back_nick_name, back_property, xsms, jkys, yxyl, wqgz, grfa
                                 ) VALUES (
-                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightPlan>) (preparedStatement, flightPlan) -> {
@@ -222,16 +225,23 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
 
         // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
         kafkaSourceDS.sinkTo(flightRootSink).name("Flight root sink");
-        kafkaSourceDS.map(FlightPlanRoot::getFlightHead).sinkTo(flightHeadSink).name("Flight head sink");
-        kafkaSourceDS.map(FlightPlanRoot::getFlightNotes).sinkTo(flightNotesSink).name("Flight notes sink");
+        kafkaSourceDS.map(FlightPlanRoot::getFlightHead)
+                .returns(FlightHead.class)
+                .sinkTo(flightHeadSink).name("Flight head sink");
+        kafkaSourceDS.map(FlightPlanRoot::getFlightNotes)
+                .returns(FlightNotes.class)
+                .sinkTo(flightNotesSink).name("Flight notes sink");
         kafkaSourceDS.flatMap((FlightPlanRoot root, Collector<FlightCmd> out) -> root.getFlightCommands()
                         .forEach(out::collect))
+                .returns(FlightCmd.class)
                 .sinkTo(flightCmdSink).name("Flight command sink");
         kafkaSourceDS.flatMap((FlightPlanRoot root, Collector<FlightTask> out) -> root.getFlightTasks()
                         .forEach(out::collect))
+                .returns(FlightTask.class)
                 .sinkTo(flightTaskSink).name("Flight task sink");
         kafkaSourceDS.flatMap((FlightPlanRoot root, Collector<FlightPlan> out) -> root.getFlightPlans()
                         .forEach(out::collect))
+                .returns(FlightPlan.class)
                 .sinkTo(flightPlanSink).name("Flight plan sink");
 
         try {
@@ -243,16 +253,22 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     /**
      * 主函数
+     *
      * @param args 输入参数
-     *        --loginUrl http://xxxx --loginJson {xx: xx} --flightDateUrl http://xxxx
-     *        --flightCodeUrl http://xxxx --flightXmlUrl http://xxxx
+     *             --loginUrl http://xxxx --loginJson eyxxx== --flightDateUrl http://xxxx
+     *             --flightCodeUrl http://xxxx --flightXmlUrl http://xxxx
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
+        log.info("Parameters: {}", params);
+
+        String encodedLoginJson = params.getRequired("loginJson");
+        String decodedLoginJson = new String(Base64.getDecoder().decode(encodedLoginJson));
+
         // 1. 加载配置
         PersonnelAndPlanLoginConfig loginConfig = PersonnelAndPlanLoginConfig.builder()
                 .loginUrl(params.getRequired("loginUrl"))
-                .loginJson(params.getRequired("loginJson"))
+                .loginJson(decodedLoginJson)
                 .build();
         FlightPlanReceiverConfig flightPlanReceiverConfig = FlightPlanReceiverConfig.builder()
                 .flightDateUrl(params.getRequired("flightDateUrl"))
