@@ -13,13 +13,8 @@ import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
-import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
-import org.datacenter.receiver.util.JdbcSinkUtil;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
