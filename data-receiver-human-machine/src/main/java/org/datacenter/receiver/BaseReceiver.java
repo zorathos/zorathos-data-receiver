@@ -37,6 +37,7 @@ public abstract class BaseReceiver {
      * @param baseAgent agent
      */
     protected void awaitAgentRunning(BaseAgent baseAgent) {
+        log.info("Waiting for agent to get in running status...");
         // 阻塞 直到Agent切换到running=true的状态 尽量用锁或者COUNTDOWNLATCH 不要在while里面加sleep
         CountDownLatch latch = new CountDownLatch(1);
         Timer timer = new Timer();
@@ -51,11 +52,25 @@ public abstract class BaseReceiver {
         }, 0, 1000)).start();
 
         try {
+            log.info("Main thread acknowledges that agent is started. Free up the latch.");
             latch.await();
             timer.cancel();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ZorathosException(e, "Thread was interrupted while waiting for personnel agent to be ready.");
+        }
+    }
+
+    /**
+     * 封装的agent停止方法
+     * @param agent agent
+     */
+    protected void agentShutdown(BaseAgent agent) {
+        try {
+            log.info("Agent shutting down. It could happened both in normal and abnormal cases.");
+            agent.stop();
+        } catch (Exception e) {
+            throw new ZorathosException(e, "Encounter error when stopping agent. You may need to check redis to delete the key manually.");
         }
     }
 }

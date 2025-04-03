@@ -41,7 +41,12 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         super.prepare();
-        sortiesBatchAgent.run();
+        Thread agentThread = new Thread(sortiesBatchAgent);
+        agentThread.setUncaughtExceptionHandler((thread, throwable) -> {
+            log.error("Sorties batch agent thread {} encountered an error: {}", thread.getName(), throwable.getMessage());
+            agentShutdown(sortiesBatchAgent);
+        });
+        agentThread.start();
         awaitAgentRunning(sortiesBatchAgent);
     }
 
@@ -49,12 +54,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
     public void start() {
         //shutdownhook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                log.info("Shutting down SortiesBatchKafkaReceiver...");
-                sortiesBatchAgent.stop();
-            } catch (Exception e) {
-                throw new ZorathosException(e, "Encounter error when stopping sorties batch agent. You may need to check minio to delete remote tmp file.");
-            }
+            agentShutdown(sortiesBatchAgent);
         }));
 
         // 开始从kafka获取数据

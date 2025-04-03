@@ -44,7 +44,13 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         super.prepare();
-        personnelAgent.run();
+        Thread agentThread = new Thread(personnelAgent);
+        agentThread.setUncaughtExceptionHandler((thread, throwable) -> {
+            log.error("Personnel agent thread {} encountered an error: {}", thread.getName(), throwable.getMessage());
+            // 这里可以添加一些清理操作，比如关闭连接等
+            agentShutdown(personnelAgent);
+        });
+        agentThread.start();
         awaitAgentRunning(personnelAgent);
     }
 
@@ -52,12 +58,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     public void start() {
         // shutdownhook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                log.info("Flight plan kafka receiver shutting down.");
-                personnelAgent.stop();
-            } catch (Exception e) {
-                throw new ZorathosException(e, "Encounter error when stopping personnel agent. You may need to check minio to delete remote tmp file.");
-            }
+            agentShutdown(personnelAgent);
         }));
 
         // 开始从kafka获取数据

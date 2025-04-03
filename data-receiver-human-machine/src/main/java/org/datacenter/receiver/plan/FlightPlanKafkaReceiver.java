@@ -50,7 +50,12 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         super.prepare();
-        flightPlanAgent.run();
+        Thread agentThread = new Thread(flightPlanAgent);
+        agentThread.setUncaughtExceptionHandler((thread, throwable) -> {
+            log.error("Flight plan agent thread {} encountered an error: {}", thread.getName(), throwable.getMessage());
+            agentShutdown(flightPlanAgent);
+        });
+        agentThread.start();
         awaitAgentRunning(flightPlanAgent);
     }
 
@@ -58,12 +63,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
     public void start() {
         // shutdownhook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                log.info("Flight plan kafka receiver shutting down.");
-                flightPlanAgent.stop();
-            } catch (Exception e) {
-                throw new ZorathosException(e, "Encounter error when stopping flight plan agent. You may need to check minio to delete remote tmp file.");
-            }
+            agentShutdown(flightPlanAgent);
         }));
 
         // 开始从kafka获取数据
