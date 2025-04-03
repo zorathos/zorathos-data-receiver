@@ -19,6 +19,7 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Timestamp;
+import java.util.Base64;
 import java.util.List;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
@@ -69,7 +70,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                         INSERT INTO sorties (
                             airplane_model, airplane_number, arm_type, batch_number, camp, camp_str, car_end_time, car_start_time, create_time, down_pilot, folder_id, folder_name, icd_version, interpolation, is_effective, is_effective_name, location, pilot, qx_id, remark, role, role_str, sky_time, sortie_id, sortie_number, source, stealth, stealth_str, subject, sync_system, sync_system_str, test_drive, test_drive_str, up_pilot
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                         ) ON DUPLICATE KEY UPDATE
                             airplane_model = VALUES(airplane_model),
                             airplane_number = VALUES(airplane_number),
@@ -111,9 +112,15 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(4, sorties.getBatchNumber());
                     preparedStatement.setLong(5, sorties.getCamp());
                     preparedStatement.setString(6, sorties.getCampStr());
-                    preparedStatement.setTimestamp(7, Timestamp.valueOf(sorties.getCarEndTime()));
-                    preparedStatement.setTimestamp(8, Timestamp.valueOf(sorties.getCarStartTime()));
-                    preparedStatement.setTimestamp(9, Timestamp.valueOf(sorties.getCreateTime()));
+                    preparedStatement.setTimestamp(7,
+                            sorties.getCarEndTime() == null ? null :
+                            Timestamp.valueOf(sorties.getCarEndTime()));
+                    preparedStatement.setTimestamp(8,
+                            sorties.getCarStartTime() == null ? null :
+                            Timestamp.valueOf(sorties.getCarStartTime()));
+                    preparedStatement.setTimestamp(9,
+                            sorties.getCreateTime() == null ? null :
+                            Timestamp.valueOf(sorties.getCreateTime()));
                     preparedStatement.setString(10, sorties.getDownPilot());
                     preparedStatement.setString(11, sorties.getFolderId());
                     preparedStatement.setString(12, sorties.getFolderName());
@@ -154,9 +161,14 @@ public class SortiesKafkaReceiver extends BaseReceiver {
 
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
+        log.info("Params: {}", params.toMap());
+
+        String encodedJson = params.getRequired("sortiesBatchJson");
+        String decodedJson = new String(Base64.getDecoder().decode(encodedJson));
+
         SortiesBatchReceiverConfig batchReceiverConfig = SortiesBatchReceiverConfig.builder()
                 .sortiesBatchUrl(params.getRequired("sortiesBatchUrl"))
-                .sortiesBatchJson(params.getRequired("sortiesBatchJson"))
+                .sortiesBatchJson(decodedJson)
                 .build();
         SortiesReceiverConfig sortiesReceiverConfig = SortiesReceiverConfig.builder()
                 .sortiesBaseUrl(params.getRequired("sortiesBaseUrl"))

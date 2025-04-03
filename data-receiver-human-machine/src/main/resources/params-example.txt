@@ -4,3 +4,5 @@
 --loginUrl http://127.0.0.1:8080/Home/Login --loginJson eyJ1c2VySW5wdXQiOiAidXNlciIsImdyYnNJbnB1dCI6ICJ1c2VyIiwicGFzc3dvcmRJbnB1dCI6ICIxMjM0NTYifQ== --personnelUrl http://127.0.0.1:8080/FXY/BindFxyLb?dwdm=90121
 批次
 --sortiesBatchUrl http://127.0.0.1:8080/task/dataAsset/queryAllBatches --sortiesBatchJson ewogICJhY21pVGltZUVuZCI6ICIiLAogICJhY21pVGltZVN0YXJ0IjogIiIKfQo=
+架次
+--sortiesBatchUrl http://127.0.0.1:8080/task/dataAsset/queryAllBatches --sortiesBatchJson ewogICJhY21pVGltZUVuZCI6ICIiLAogICJhY21pVGltZVN0YXJ0IjogIiIKfQo= --sortiesBaseUrl http://127.0.0.1:8080/task/dataAsset/querySortiesByBatchId

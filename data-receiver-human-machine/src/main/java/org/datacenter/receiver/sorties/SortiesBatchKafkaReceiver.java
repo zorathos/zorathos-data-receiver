@@ -17,6 +17,7 @@ import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
+import java.util.Base64;
 import java.util.List;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
@@ -94,9 +95,13 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
+        log.info("Params: {}", params.toMap());
+        String encodedJson = params.getRequired("sortiesBatchJson");
+        String decodedJson = new String(Base64.getDecoder().decode(encodedJson));
+
         SortiesBatchReceiverConfig receiverConfig = SortiesBatchReceiverConfig.builder()
                 .sortiesBatchUrl(params.getRequired("sortiesBatchUrl"))
-                .sortiesBatchJson(params.getRequired("sortiesBatchJson"))
+                .sortiesBatchJson(decodedJson)
                 .build();
         SortiesBatchKafkaReceiver receiver = new SortiesBatchKafkaReceiver(receiverConfig);
         receiver.run();

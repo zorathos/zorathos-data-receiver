@@ -60,8 +60,10 @@ public class SortiesAgent extends BaseAgent {
                     List<Sorties> sortiesList = SortiesHttpClientUtil.getSortiesList(batchReceiverConfig, sortiesReceiverConfig);
                     // 2. 转发到Kafka
                     try {
-                        String sortiesListInJson = mapper.writeValueAsString(sortiesList);
-                        KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sorties"), sortiesListInJson);
+                        for (Sorties sorties : sortiesList) {
+                            String sortiesInJson = mapper.writeValueAsString(sorties);
+                            KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sorties"), sortiesInJson);
+                        }
                     } catch (Exception e) {
                         throw new ZorathosException("Failed to send message to Kafka, error: " + e);
                     }

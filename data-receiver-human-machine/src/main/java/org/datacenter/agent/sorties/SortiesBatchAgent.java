@@ -57,8 +57,10 @@ public class SortiesBatchAgent extends BaseAgent {
                     List<SortiesBatch> flightBatchList = SortiesHttpClientUtil.getSortiesBatches(receiverConfig);
                     // 2. 转发到Kafka
                     try {
-                        String flightBatchListInJson = mapper.writeValueAsString(flightBatchList);
-                        KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sortiesBatch"), flightBatchListInJson);
+                        for (SortiesBatch sortiesBatch : flightBatchList) {
+                            String sortiesBatchInJson = mapper.writeValueAsString(sortiesBatch);
+                            KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sortiesBatch"), sortiesBatchInJson);
+                        }
                     } catch (Exception e) {
                         throw new ZorathosException("Failed to send message to Kafka, error: " + e);
                     }
