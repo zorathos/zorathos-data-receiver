@@ -29,7 +29,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
@@ -44,7 +43,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class PersonnelAndFlightPlanHttpClientUtil {
     private static final ObjectMapper mapper;
 
-    private static String localCookiesCache;
+    private static final String redisKey = "human-machine:personnel-and-flight-plan:cookie";
 
     static {
         mapper = new ObjectMapper();
@@ -66,12 +65,13 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                     .uri(new URI(url))
                     .build();
             // 同步的请求
-            localCookiesCache = client.send(request, HttpResponse.BodyHandlers.ofString())
+            String cookies = client.send(request, HttpResponse.BodyHandlers.ofString())
                     .headers()
                     .firstValue("Set-Cookie")
-                    .orElseThrow((Supplier<Throwable>) () ->
-                            new ZorathosException("Login to personnel and plan system failed, please check your username and password."));
-            log.info("Login to personnel and flight plan system successfully, current cached cookies: {}.", localCookiesCache);
+                    .orElseThrow(() -> new ZorathosException("Error occurs while login to personnel and flight plan system."));
+            // 需要上传这段Cookie到Redis
+            RedisUtil.set(redisKey, cookies);
+            log.info("Login to personnel and flight plan system successfully, current cached cookies: {}.", cookies);
         } catch (Throwable e) {
             throw new ZorathosException(e, "Encounter error while login to personnel and flight plan system.");
         }
@@ -79,7 +79,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
 
     public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig) {
         log.info("Trying to get flight plans from sys api.");
-        String formattedCookies = localCookiesCache;
+        String formattedCookies = RedisUtil.get(redisKey);
 
         // 1. 整理未入库飞行日期
         List<FlightDate> flightDates;
@@ -183,7 +183,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
 
     public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
         log.info("Trying to get personnel infos from sys api.");
-        String formattedCookies = localCookiesCache;
+        String formattedCookies = RedisUtil.get(redisKey);
         List<PersonnelInfo> personnelInfos;
         try (HttpClient client = HttpClient.newHttpClient()) {
             String url = receiverConfig.getPersonnelUrl();

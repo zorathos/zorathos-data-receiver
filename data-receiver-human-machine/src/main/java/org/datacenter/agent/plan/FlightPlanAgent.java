@@ -56,36 +56,45 @@ public class FlightPlanAgent extends BaseAgent {
         log.info("Flight plan agent start running, fetching data from flight agent system's xml interface and sending it to kafka.");
 
         if (scheduler == null) {
-            scheduler = Executors.newScheduledThreadPool(1);
+            scheduler = Executors.newScheduledThreadPool(1, r -> {
+                Thread t = new Thread(r);
+                t.setName("FlightPlanAgent");
+                return t;
+            });
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-            if (prepared) {
-                // 0. 刷新Cookie
-                PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
+            try {
+                if (prepared) {
+                    // 0. 刷新Cookie
+                    PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
 
-                // 1. 准备 Kafka 的 consumer group并创建所有 topic
-                KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot"));
-                running = true;
-                log.info("Flight plan agent is running.");
+                    // 1. 准备 Kafka 的 consumer group并创建所有 topic
+                    KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot"));
+                    running = true;
+                    log.info("Flight plan agent is running.");
 
-                // 2. 获取飞行计划根XML并解析
-                List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig);
-                // 所有日期都已导入完成
-                if (flightPlans.isEmpty()) {
-                    log.info("All flight plans have been imported.");
-                    return;
-                }
-                // 2. 转发到Kafka
-                for (FlightPlanRoot flightPlan : flightPlans) {
-                    try {
-                        String flightPlanJson = mapper.writeValueAsString(flightPlan);
-                        KafkaUtil.sendMessage(humanMachineProperties
-                                .getProperty("kafka.topic.flightPlanRoot"), flightPlanJson);
-                    } catch (JsonProcessingException e) {
-                        throw new ZorathosException(e, "Error occurs while converting flight plans to json string.");
+                    // 2. 获取飞行计划根XML并解析
+                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig);
+                    // 所有日期都已导入完成
+                    if (flightPlans.isEmpty()) {
+                        log.info("All flight plans have been imported.");
+                        return;
+                    }
+                    // 2. 转发到Kafka
+                    for (FlightPlanRoot flightPlan : flightPlans) {
+                        try {
+                            String flightPlanJson = mapper.writeValueAsString(flightPlan);
+                            KafkaUtil.sendMessage(humanMachineProperties
+                                    .getProperty("kafka.topic.flightPlanRoot"), flightPlanJson);
+                        } catch (JsonProcessingException e) {
+                            throw new ZorathosException(e, "Error occurs while converting flight plans to json string.");
+                        }
                     }
                 }
+            } catch (Exception e) {
+                log.error("Error caught by scheduler pool. Task will be stopped.");
+                stop();
             }
         }, 0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.flightPlan")), TimeUnit.MINUTES);
     }
@@ -93,6 +102,10 @@ public class FlightPlanAgent extends BaseAgent {
     @Override
     public void stop() {
         super.stop();
-        scheduler.shutdown();
+        try {
+            scheduler.shutdown();
+        } catch (Exception ex) {
+            log.error("Error shutting down scheduler", ex);
+        }
     }
 }

@@ -7,6 +7,7 @@ import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.SortiesHttpClientUtil;
 import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
+import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.SortiesBatch;
 
 import java.util.List;
@@ -48,18 +49,23 @@ public class SortiesBatchAgent extends BaseAgent {
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-            if (prepared) {
-                // 可以直接起flink
-                running = true;
-                // 1. 通过接口获取所有flightBatch
-                List<SortiesBatch> flightBatchList = SortiesHttpClientUtil.getSortiesBatches(receiverConfig);
-                // 2. 转发到Kafka
-                try {
-                    String flightBatchListInJson = mapper.writeValueAsString(flightBatchList);
-                    KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sortiesBatch"), flightBatchListInJson);
-                } catch (Exception e) {
-                    log.error("Failed to send message to Kafka, error: ", e);
+            try {
+                if (prepared) {
+                    // 可以直接起flink
+                    running = true;
+                    // 1. 通过接口获取所有flightBatch
+                    List<SortiesBatch> flightBatchList = SortiesHttpClientUtil.getSortiesBatches(receiverConfig);
+                    // 2. 转发到Kafka
+                    try {
+                        String flightBatchListInJson = mapper.writeValueAsString(flightBatchList);
+                        KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sortiesBatch"), flightBatchListInJson);
+                    } catch (Exception e) {
+                        throw new ZorathosException("Failed to send message to Kafka, error: " + e);
+                    }
                 }
+            } catch (ZorathosException e) {
+                log.error("Error caught by scheduler pool. Task will be stopped.");
+                stop();
             }
         }, 0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.sortiesBatch")), TimeUnit.SECONDS);
     }
@@ -67,6 +73,10 @@ public class SortiesBatchAgent extends BaseAgent {
     @Override
     public void stop() {
         super.stop();
-        scheduler.shutdown();
+        try {
+            scheduler.shutdown();
+        } catch (Exception ex) {
+            log.error("Error shutting down scheduler", ex);
+        }
     }
 }

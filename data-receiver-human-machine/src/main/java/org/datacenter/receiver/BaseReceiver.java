@@ -63,6 +63,7 @@ public abstract class BaseReceiver {
 
     /**
      * 封装的agent停止方法
+     * 由于agent一般使用了更深层的定时线程池 所以这玩意仅限能够捕获prepare阶段的异常 run阶段的异常要通过exit 1的方式来出发最外层的shutdownhook
      * @param agent agent
      */
     protected void agentShutdown(BaseAgent agent) {
