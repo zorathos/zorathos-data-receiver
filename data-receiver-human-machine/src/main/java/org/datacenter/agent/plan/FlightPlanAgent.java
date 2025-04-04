@@ -15,7 +15,7 @@ import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
-import org.datacenter.receiver.util.TiDBConnectionPool;
+import org.datacenter.receiver.util.MySQLDriverConnectionPool;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -40,7 +40,7 @@ public class FlightPlanAgent extends BaseAgent {
     private ScheduledExecutorService scheduler;
     private PersonnelAndPlanLoginConfig loginConfig;
     private FlightPlanReceiverConfig flightPlanReceiverConfig;
-    private TiDBConnectionPool tidbFlightPlanPool;
+    private MySQLDriverConnectionPool tidbFlightPlanPool;
 
     public FlightPlanAgent(PersonnelAndPlanLoginConfig loginConfig,
                            FlightPlanReceiverConfig flightPlanReceiverConfig) {
@@ -49,7 +49,7 @@ public class FlightPlanAgent extends BaseAgent {
         mapper.registerModule(new JavaTimeModule());
         this.loginConfig = loginConfig;
         this.flightPlanReceiverConfig = flightPlanReceiverConfig;
-        this.tidbFlightPlanPool = new TiDBConnectionPool(TiDBDatabase.FLIGHT_PLAN);
+        this.tidbFlightPlanPool = new MySQLDriverConnectionPool(TiDBDatabase.FLIGHT_PLAN);
     }
 
     @Override

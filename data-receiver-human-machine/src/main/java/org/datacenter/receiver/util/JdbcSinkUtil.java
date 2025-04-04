@@ -54,7 +54,7 @@ public class JdbcSinkUtil {
     public static JdbcConnectionOptions getTiDBJdbcConnectionOptions(TiDBDatabase database) {
         return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                 .withUrl(humanMachineProperties.get("tidb.url.prefix") + database.getName() + humanMachineProperties.get("tidb.url.suffix"))
-                .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
+                .withDriverName(humanMachineProperties.getProperty("tidb.mysql.driverName"))
                 .withUsername(humanMachineProperties.getProperty("tidb.username"))
                 .withPassword(humanMachineProperties.getProperty("tidb.password"))
                 .withConnectionCheckTimeoutSeconds(Integer.parseInt(humanMachineProperties.getProperty("tidb.connectionCheckTimeoutSeconds")))
@@ -64,7 +64,7 @@ public class JdbcSinkUtil {
     public static JdbcConnectionOptions getTiDBJdbcConnectionOptions(String url) {
         return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                 .withUrl(url)
-                .withDriverName(humanMachineProperties.getProperty("tidb.driverName"))
+                .withDriverName(humanMachineProperties.getProperty("tidb.mysql.driverName"))
                 .withUsername(humanMachineProperties.getProperty("tidb.username"))
                 .withPassword(humanMachineProperties.getProperty("tidb.password"))
                 .withConnectionCheckTimeoutSeconds(Integer.parseInt(humanMachineProperties.getProperty("tidb.connectionCheckTimeoutSeconds")))

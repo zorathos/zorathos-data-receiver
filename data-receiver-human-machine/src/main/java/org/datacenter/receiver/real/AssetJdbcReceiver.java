@@ -29,7 +29,7 @@ import org.datacenter.model.real.response.DataAssetResponse;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
-import org.datacenter.receiver.util.TiDBConnectionPool;
+import org.datacenter.receiver.util.MySQLDriverConnectionPool;
 
 import java.io.IOException;
 import java.net.URI;
@@ -65,8 +65,6 @@ public class AssetJdbcReceiver extends BaseReceiver {
     private ObjectMapper mapper = new ObjectMapper();
     // 本次读取过程中用到的 资产-资产表配置-DorisDDL triple本地缓存 这个pair的list肉眼可见的会占用很大的内存
     private List<MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement>> assetResultList = new ArrayList<>();
-    private TiDBConnectionPool sortieFlightPool = new TiDBConnectionPool(TiDBDatabase.SORTIES);
-    private TiDBConnectionPool tidbRealWorldFlightPool = new TiDBConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);
 
     /**
      * 准备阶段中需要完成 资产描述接入与目标库建表
@@ -75,121 +73,131 @@ public class AssetJdbcReceiver extends BaseReceiver {
     public void prepare() {
         super.prepare();
         mapper.registerModule(new JavaTimeModule());
-        // 1.  JDBC 根据架次号去查询架次数据
-        String armType;
-        String icdVersion;
+        // 0. 连接池准备
+        MySQLDriverConnectionPool sortieFlightPool = new MySQLDriverConnectionPool(TiDBDatabase.SORTIES);
+        MySQLDriverConnectionPool realWorldFlightPool = new MySQLDriverConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);
+
         try {
-            log.info("Fetching sortie data from database, sortieNumber: {}.", config.getSortieNumber());
-            Connection sortiesConn = sortieFlightPool.getConnection();
-            String sql = "SELECT * FROM `%s` WHERE sortieNumber = ?".formatted(TiDBTable.SORTIES.getName());
-            PreparedStatement preparedStatement = sortiesConn.prepareStatement(sql);
-            preparedStatement.setString(1, config.getSortieNumber());
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                sortieId = resultSet.getString("sortie_id");
-                batchId = resultSet.getString("batch_id");
-                armType = resultSet.getString("arm_type");
-                icdVersion = resultSet.getString("icd_version");
-            } else {
-                log.error("No sortie data found for sortieNumber: {}.", config.getSortieNumber());
-                throw new ZorathosException("No sortie data found for sortieNumber: " + config.getSortieNumber());
+            // 1.  JDBC 根据架次号去查询架次数据
+            String armType;
+            String icdVersion;
+            try {
+                Class.forName(humanMachineProperties.getProperty("tidb.mysql.driverName"));
+                log.info("Fetching sortie data from database, sortieNumber: {}.", config.getSortieNumber());
+                Connection sortiesConn = sortieFlightPool.getConnection();
+                String sql = "SELECT * FROM `%s` WHERE sortieNumber = ?".formatted(TiDBTable.SORTIES.getName());
+                PreparedStatement preparedStatement = sortiesConn.prepareStatement(sql);
+                preparedStatement.setString(1, config.getSortieNumber());
+                ResultSet resultSet = preparedStatement.executeQuery();
+                if (resultSet.next()) {
+                    sortieId = resultSet.getString("sortie_id");
+                    batchId = resultSet.getString("batch_id");
+                    armType = resultSet.getString("arm_type");
+                    icdVersion = resultSet.getString("icd_version");
+                } else {
+                    log.error("No sortie data found for sortieNumber: {}.", config.getSortieNumber());
+                    throw new ZorathosException("No sortie data found for sortieNumber: " + config.getSortieNumber());
+                }
+                sortieFlightPool.returnConnection(sortiesConn);
+            } catch (Exception e) {
+                throw new ZorathosException(e, "Error occurs while fetching sortie data from database.");
             }
-            sortiesConn.close();
-        } catch (Exception e) {
-            throw new ZorathosException(e, "Error occurs while fetching sortie data from database.");
-        }
 
-        // 2. 获取到架次后拿着sortie的armType作为weaponNumber入参 icdVersion作为icd入参 查数据资产列表接口 获取资产列表
-        log.info("Fetching asset list from web interface, armType: {}, icdVersion: {}.", armType, icdVersion);
-        String assetListUrl = config.getAssetListBaseUrl() +
-                "?weaponModel=" + armType +
-                "&icd" + icdVersion;
-        List<AssetSummary> assetList;
-        try (HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(new URI(assetListUrl))
-                    .build();
-            // 获取响应
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            // 使用objectMapper 序列化返回列表
-            String responseBody = response.body();
-            DataAssetResponse dataAssetResponse = mapper.readValue(responseBody, DataAssetResponse.class);
-            assetList = new ArrayList<>(dataAssetResponse.getResult());
-        } catch (URISyntaxException | IOException | InterruptedException e) {
-            throw new ZorathosException(e, "Error occurs while fetching asset list.");
-        }
-
-        // 3. 根据资产ID查资产配置信息接口
-        for (AssetSummary asset : assetList) {
-            Long assetId = asset.getId();
-            String url = config.getAssetConfigBaseUrl() + "?id=" + assetId;
+            // 2. 获取到架次后拿着sortie的armType作为weaponNumber入参 icdVersion作为icd入参 查数据资产列表接口 获取资产列表
+            log.info("Fetching asset list from web interface, armType: {}, icdVersion: {}.", armType, icdVersion);
+            String assetListUrl = config.getAssetListBaseUrl() +
+                    "?weaponModel=" + armType +
+                    "&icd" + icdVersion;
+            List<AssetSummary> assetList;
             try (HttpClient client = HttpClient.newHttpClient()) {
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
-                        .uri(new URI(url))
+                        .uri(new URI(assetListUrl))
                         .build();
                 // 获取响应
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 // 使用objectMapper 序列化返回列表
                 String responseBody = response.body();
-                AssetTableConfigResult result = mapper.readValue(responseBody, AssetTableConfigResult.class);
-                assetResultList.add(new MutableTriple<>(asset, result.getResult(), new StarRocksCreateTableStatement()));
+                DataAssetResponse dataAssetResponse = mapper.readValue(responseBody, DataAssetResponse.class);
+                assetList = new ArrayList<>(dataAssetResponse.getResult());
             } catch (URISyntaxException | IOException | InterruptedException e) {
-                throw new ZorathosException(e, "Error occurs while fetching asset config.");
-            }
-        }
-
-        // 4.0 落库
-        for (MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair : assetResultList) {
-            // 4.1 把既有数据写入数据库
-            AssetSummary summary = assetConfigPair.getLeft();
-            sinkAssetSummary(tidbRealWorldFlightPool, summary);
-            // 入库AssetTableConfig 以 AssetTableModel 和 AssetTableProperty 分别入库
-            // 虽然这事情很荒谬 但我们确实只取第一个元素
-            AssetTableConfig assetTableConfig = assetConfigPair.getMiddle().getFirst();
-            // 先入库AssetTableModel
-            AssetTableModel assetTableModel = assetTableConfig.getAssetModel();
-            sinkAssetTableModel(tidbRealWorldFlightPool, assetTableModel);
-            // 再入库AssetTableProperty
-            List<AssetTableProperty> propertyList = assetTableConfig.getPropertyList();
-            for (AssetTableProperty assetTableProperty : propertyList) {
-                sinkAssetTableProperty(tidbRealWorldFlightPool, assetTableProperty);
+                throw new ZorathosException(e, "Error occurs while fetching asset list.");
             }
 
-            String dbName = assetConfigPair.getLeft().getDbName();
-            String tableName = assetConfigPair.getLeft().getFullName();
-
-            // 4.2 show create table 使用 druid 解 ddl 转发给TiDB
-            try {
-                Connection dorisConn = DriverManager.getConnection(
-                        "jdbc:mysql://%s/%s?useUnicode=true&characterEncoding=UTF-8&useSSL=false".formatted(config.getFeNodes(), dbName),
-                        config.getUsername(),
-                        config.getPassword()
-                );
-                String sql = "SHOW CREATE TABLE %s".formatted(tableName);
-                PreparedStatement preparedStatement = dorisConn.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                if (resultSet.next()) {
-                    String createTableSql = resultSet.getString("Create Table");
-                    log.info("Create table SQL for {}.{}: {}", dbName, tableName, createTableSql);
-                    DorisStatementParser dorisStatementParser = new DorisStatementParser(createTableSql);
-                    StarRocksCreateTableStatement sqlStatement =
-                            (StarRocksCreateTableStatement) dorisStatementParser.getSQLCreateTableParser().parseStatement();
-                    String tidbSql = dorisStatementToTiDBSql(tableName, sqlStatement);
-                    createTableInTiDB(tidbRealWorldFlightPool, tidbSql);
-                    assetConfigPair.setRight(sqlStatement);
-                } else {
-                    throw new ZorathosException("No table found for %s.%s".formatted(dbName, tableName));
+            // 3. 根据资产ID查资产配置信息接口
+            for (AssetSummary asset : assetList) {
+                Long assetId = asset.getId();
+                String url = config.getAssetConfigBaseUrl() + "?id=" + assetId;
+                try (HttpClient client = HttpClient.newHttpClient()) {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .GET()
+                            .uri(new URI(url))
+                            .build();
+                    // 获取响应
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    // 使用objectMapper 序列化返回列表
+                    String responseBody = response.body();
+                    AssetTableConfigResult result = mapper.readValue(responseBody, AssetTableConfigResult.class);
+                    assetResultList.add(new MutableTriple<>(asset, result.getResult(), new StarRocksCreateTableStatement()));
+                } catch (URISyntaxException | IOException | InterruptedException e) {
+                    throw new ZorathosException(e, "Error occurs while fetching asset config.");
                 }
-                dorisConn.close();
-            } catch (SQLException e) {
-                throw new ZorathosException(e, "Error occurs while connecting to doris database.");
             }
+
+            // 4.0 落库
+            for (MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair : assetResultList) {
+                // 4.1 把既有数据写入数据库
+                AssetSummary summary = assetConfigPair.getLeft();
+                sinkAssetSummary(realWorldFlightPool, summary);
+                // 入库AssetTableConfig 以 AssetTableModel 和 AssetTableProperty 分别入库
+                // 虽然这事情很荒谬 但我们确实只取第一个元素
+                AssetTableConfig assetTableConfig = assetConfigPair.getMiddle().getFirst();
+                // 先入库AssetTableModel
+                AssetTableModel assetTableModel = assetTableConfig.getAssetModel();
+                sinkAssetTableModel(realWorldFlightPool, assetTableModel);
+                // 再入库AssetTableProperty
+                List<AssetTableProperty> propertyList = assetTableConfig.getPropertyList();
+                for (AssetTableProperty assetTableProperty : propertyList) {
+                    sinkAssetTableProperty(realWorldFlightPool, assetTableProperty);
+                }
+
+                String dbName = assetConfigPair.getLeft().getDbName();
+                String tableName = assetConfigPair.getLeft().getFullName();
+
+                // 4.2 show create table 使用 druid 解 ddl 转发给TiDB
+                try {
+                    Connection dorisConn = DriverManager.getConnection(
+                            "jdbc:mysql://%s/%s?useUnicode=true&characterEncoding=UTF-8&useSSL=false".formatted(config.getFeNodes(), dbName),
+                            config.getUsername(),
+                            config.getPassword()
+                    );
+                    String sql = "SHOW CREATE TABLE %s".formatted(tableName);
+                    PreparedStatement preparedStatement = dorisConn.prepareStatement(sql);
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    if (resultSet.next()) {
+                        String createTableSql = resultSet.getString("Create Table");
+                        log.info("Create table SQL for {}.{}: {}", dbName, tableName, createTableSql);
+                        DorisStatementParser dorisStatementParser = new DorisStatementParser(createTableSql);
+                        StarRocksCreateTableStatement sqlStatement =
+                                (StarRocksCreateTableStatement) dorisStatementParser.getSQLCreateTableParser().parseStatement();
+                        String tidbSql = dorisStatementToTiDBSql(tableName, sqlStatement);
+                        createTableInTiDB(realWorldFlightPool, tidbSql);
+                        assetConfigPair.setRight(sqlStatement);
+                    } else {
+                        throw new ZorathosException("No table found for %s.%s".formatted(dbName, tableName));
+                    }
+                    dorisConn.close();
+                } catch (SQLException e) {
+                    throw new ZorathosException(e, "Error occurs while connecting to doris database.");
+                }
+            }
+        } finally {
+            sortieFlightPool.closePool();
+            realWorldFlightPool.closePool();
         }
     }
 
-    private void sinkAssetSummary(TiDBConnectionPool pool, AssetSummary summary) {
+    private void sinkAssetSummary(MySQLDriverConnectionPool pool, AssetSummary summary) {
         Connection realConn = null;
         try {
             realConn = pool.getConnection();
@@ -242,7 +250,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
         }
     }
 
-    private void sinkAssetTableModel(TiDBConnectionPool pool, AssetTableModel model) {
+    private void sinkAssetTableModel(MySQLDriverConnectionPool pool, AssetTableModel model) {
         Connection realConn = null;
         try {
             realConn = pool.getConnection();
@@ -279,7 +287,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
         }
     }
 
-    private void sinkAssetTableProperty(TiDBConnectionPool pool, AssetTableProperty assetTableProperty) {
+    private void sinkAssetTableProperty(MySQLDriverConnectionPool pool, AssetTableProperty assetTableProperty) {
         Connection realConn = null;
         try {
             realConn = pool.getConnection();
@@ -316,7 +324,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
         }
     }
 
-    private void createTableInTiDB(TiDBConnectionPool pool, String createTableDdl) {
+    private void createTableInTiDB(MySQLDriverConnectionPool pool, String createTableDdl) {
         Connection realConn = null;
         try {
             realConn = pool.getConnection();
@@ -415,7 +423,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 flinkTableName,
                 getColumnDefinitionsFromDorisStatement(createTableStatement),
                 JdbcSinkUtil.TIDB_REAL_WORLD_FLIGHT,
-                humanMachineProperties.getProperty("tidb.driverName"),
+                humanMachineProperties.getProperty("tidb.mysql.driverName"),
                 humanMachineProperties.getProperty("tidb.username"),
                 humanMachineProperties.getProperty("tidb.password"),
                 targetTableName
@@ -431,11 +439,6 @@ public class AssetJdbcReceiver extends BaseReceiver {
      */
     @Override
     public void start() {
-        // shutdownhook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            tidbRealWorldFlightPool.closePool();
-        }));
-
         // 4. 从Doris拉取数据入库
         log.info("Start to fetch real flight data from Doris and insert into database.");
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();

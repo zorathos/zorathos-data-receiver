@@ -12,23 +12,19 @@ import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
-import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.model.plan.response.FlightPlanResponse;
-import org.datacenter.receiver.util.JdbcSinkUtil;
 import org.datacenter.receiver.util.RetryUtil;
-import org.datacenter.receiver.util.TiDBConnectionPool;
+import org.datacenter.receiver.util.MySQLDriverConnectionPool;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +85,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig, TiDBConnectionPool tidbFlightPlanPool) {
+    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig, MySQLDriverConnectionPool tidbFlightPlanPool) {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 
@@ -299,7 +295,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         private String code;
     }
 
-    private static List<LocalDate> getFlightDatesFromDB(TiDBConnectionPool tidbFlightPlanPool) {
+    private static List<LocalDate> getFlightDatesFromDB(MySQLDriverConnectionPool tidbFlightPlanPool) {
         try {
             log.info("Fetching data from flight_plan_root.");
             Connection connection = tidbFlightPlanPool.getConnection();

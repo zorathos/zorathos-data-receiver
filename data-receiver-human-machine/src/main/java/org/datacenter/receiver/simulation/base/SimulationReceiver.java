@@ -8,7 +8,7 @@ import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.receiver.CsvFileReceiver;
-import org.datacenter.receiver.util.TiDBConnectionPool;
+import org.datacenter.receiver.util.MySQLDriverConnectionPool;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -26,7 +26,7 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
 
     @Serial
     private static final long serialVersionUID = 2345678L;
-    private TiDBConnectionPool simulationConnectionPool = new TiDBConnectionPool(TiDBDatabase.SIMULATION);
+    private MySQLDriverConnectionPool simulationConnectionPool = new MySQLDriverConnectionPool(TiDBDatabase.SIMULATION);
 
     @Override
     public void prepare() {
@@ -64,7 +64,7 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
                     log.info("Create partition for table: {}.{}.", database.getName(), table.getName());
                 }
             }
-            connection.close();
+            simulationConnectionPool.returnConnection(connection);
             log.info("Preparation finished.");
         } catch (SQLException e) {
             throw new ZorathosException(e, "Error occurs while preparing the" + table.getName() + "table.");

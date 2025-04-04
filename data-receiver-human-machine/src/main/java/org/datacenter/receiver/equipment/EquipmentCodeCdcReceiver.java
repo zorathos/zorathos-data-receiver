@@ -108,7 +108,7 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
                 );
                 """.formatted(
                 JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
-                humanMachineProperties.getProperty("tidb.driverName"),
+                humanMachineProperties.getProperty("tidb.mysql.driverName"),
                 humanMachineProperties.getProperty("tidb.username"),
                 humanMachineProperties.getProperty("tidb.password"),
                 humanMachineProperties.getProperty("receiver.equipment.tidb.equipmentCode.table")
