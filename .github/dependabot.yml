@@ -22,3 +22,11 @@ updates:
     commit-message:
       # Prefix all commit messages with "maven: "
       prefix: "maven"
+    ignore:
+      # flink 忽略 2.0开头的版本 和 mysql 忽略 9和更高的版本
+      - dependency-name: "org.apache.flink:*"
+        versions: ["2.*"]
+      - dependency-name: "com.mysql:mysql-connector-j"
+        versions: ["9.*"]
+
+
