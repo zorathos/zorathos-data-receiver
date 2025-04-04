@@ -12,12 +12,14 @@ import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.model.plan.response.FlightPlanResponse;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 import org.datacenter.receiver.util.RetryUtil;
+import org.datacenter.receiver.util.TiDBConnectionPool;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -87,7 +89,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig) {
+    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig, TiDBConnectionPool tidbFlightPlanPool) {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 
@@ -132,7 +134,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
 
         // 1.2 从数据库拿已经有的飞行日期列表 把已经有的飞行日期从未入库飞行日期列表中移除
-        List<LocalDate> flightDatesFromDB = getFlightDatesFromDB();
+        List<LocalDate> flightDatesFromDB = getFlightDatesFromDB(tidbFlightPlanPool);
         flightDates.removeIf(flightDate -> flightDatesFromDB.contains(flightDate.getDate()));
 
         if (flightDates.isEmpty()) {
@@ -297,23 +299,19 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         private String code;
     }
 
-    private static List<LocalDate> getFlightDatesFromDB() {
+    private static List<LocalDate> getFlightDatesFromDB(TiDBConnectionPool tidbFlightPlanPool) {
         try {
             log.info("Fetching data from flight_plan_root.");
-            Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
-            Connection connection = DriverManager.getConnection(
-                    JdbcSinkUtil.TIDB_URL_FLIGHT_PLAN,
-                    humanMachineProperties.getProperty("tidb.username"),
-                    humanMachineProperties.getProperty("tidb.password"));
+            Connection connection = tidbFlightPlanPool.getConnection();
             ResultSet resultSet = connection
-                    .prepareStatement("SELECT * FROM " + TiDBTable.FLIGHT_PLAN_ROOT.getName())
+                    .prepareStatement("SELECT flight_date FROM " + TiDBTable.FLIGHT_PLAN_ROOT.getName())
                     .executeQuery();
             List<LocalDate> flightDates = new ArrayList<>();
             while (resultSet.next()) {
                 flightDates.add(resultSet.getDate("flight_date").toLocalDate());
             }
             return flightDates;
-        } catch (SQLException | ClassNotFoundException e) {
+        } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while truncating personnel database.");
         }
     }

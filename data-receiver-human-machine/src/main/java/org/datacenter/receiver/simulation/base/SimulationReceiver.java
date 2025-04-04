@@ -8,15 +8,12 @@ import org.datacenter.config.simulation.SimulationReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.receiver.CsvFileReceiver;
-import org.datacenter.receiver.util.JdbcSinkUtil;
+import org.datacenter.receiver.util.TiDBConnectionPool;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [ning]
@@ -29,6 +26,7 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
 
     @Serial
     private static final long serialVersionUID = 2345678L;
+    private TiDBConnectionPool simulationConnectionPool = new TiDBConnectionPool(TiDBDatabase.SIMULATION);
 
     @Override
     public void prepare() {
@@ -38,11 +36,7 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
         // 通过JDBC连接到对应j表 如果有和config.getSortieNumber()相同的记录就删除
         try {
             log.info("Linking to table: {}.{} for preparation.", database.getName(), table.getName());
-            Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
-            Connection connection = DriverManager.getConnection(
-                    JdbcSinkUtil.TIDB_URL_SIMULATION,
-                    humanMachineProperties.getProperty("tidb.username"),
-                    humanMachineProperties.getProperty("tidb.password"));
+            Connection connection = simulationConnectionPool.getConnection();
             String selectSql = """
                     SELECT COUNT(*) FROM `%s` WHERE `sortie_number` = ?;
                     """.formatted(table.getName());
@@ -72,7 +66,7 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
             }
             connection.close();
             log.info("Preparation finished.");
-        } catch (SQLException | ClassNotFoundException e) {
+        } catch (SQLException e) {
             throw new ZorathosException(e, "Error occurs while preparing the" + table.getName() + "table.");
         }
     }

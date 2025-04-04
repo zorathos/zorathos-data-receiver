@@ -13,7 +13,9 @@ import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
+import org.datacenter.receiver.util.TiDBConnectionPool;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -38,6 +40,7 @@ public class FlightPlanAgent extends BaseAgent {
     private ScheduledExecutorService scheduler;
     private PersonnelAndPlanLoginConfig loginConfig;
     private FlightPlanReceiverConfig flightPlanReceiverConfig;
+    private TiDBConnectionPool tidbFlightPlanPool;
 
     public FlightPlanAgent(PersonnelAndPlanLoginConfig loginConfig,
                            FlightPlanReceiverConfig flightPlanReceiverConfig) {
@@ -46,6 +49,7 @@ public class FlightPlanAgent extends BaseAgent {
         mapper.registerModule(new JavaTimeModule());
         this.loginConfig = loginConfig;
         this.flightPlanReceiverConfig = flightPlanReceiverConfig;
+        this.tidbFlightPlanPool = new TiDBConnectionPool(TiDBDatabase.FLIGHT_PLAN);
     }
 
     @Override
@@ -77,7 +81,7 @@ public class FlightPlanAgent extends BaseAgent {
                     log.info("Flight plan agent is running.");
 
                     // 2. 获取飞行计划根XML并解析
-                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig);
+                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig, tidbFlightPlanPool);
                     // 所有日期都已导入完成
                     if (flightPlans.isEmpty()) {
                         log.info("All flight plans have been imported.");
@@ -116,6 +120,7 @@ public class FlightPlanAgent extends BaseAgent {
         } catch (Exception ex) {
             log.error("Error shutting down scheduler", ex);
         }
+        tidbFlightPlanPool.closePool();
         System.exit(0);
     }
 }

@@ -65,6 +65,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
     private ObjectMapper mapper = new ObjectMapper();
     // 本次读取过程中用到的 资产-资产表配置-DorisDDL triple本地缓存 这个pair的list肉眼可见的会占用很大的内存
     private List<MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement>> assetResultList = new ArrayList<>();
+    private TiDBConnectionPool sortieFlightPool = new TiDBConnectionPool(TiDBDatabase.SORTIES);
+    private TiDBConnectionPool tidbRealWorldFlightPool = new TiDBConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);
 
     /**
      * 准备阶段中需要完成 资产描述接入与目标库建表
@@ -78,11 +80,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
         String icdVersion;
         try {
             log.info("Fetching sortie data from database, sortieNumber: {}.", config.getSortieNumber());
-            Class.forName(humanMachineProperties.getProperty("tidb.driverName"));
-            Connection sortiesConn = DriverManager.getConnection(
-                    JdbcSinkUtil.TIDB_URL_SORTIES,
-                    humanMachineProperties.getProperty("tidb.username"),
-                    humanMachineProperties.getProperty("tidb.password"));
+            Connection sortiesConn = sortieFlightPool.getConnection();
             String sql = "SELECT * FROM `%s` WHERE sortieNumber = ?".formatted(TiDBTable.SORTIES.getName());
             PreparedStatement preparedStatement = sortiesConn.prepareStatement(sql);
             preparedStatement.setString(1, config.getSortieNumber());
@@ -97,7 +95,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 throw new ZorathosException("No sortie data found for sortieNumber: " + config.getSortieNumber());
             }
             sortiesConn.close();
-        } catch (SQLException | ClassNotFoundException e) {
+        } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while fetching sortie data from database.");
         }
 
@@ -142,25 +140,22 @@ public class AssetJdbcReceiver extends BaseReceiver {
             }
         }
 
-        // 4.0 初始化TiDB连接池
-        TiDBConnectionPool tidbPool = new TiDBConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);
-
+        // 4.0 落库
         for (MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair : assetResultList) {
             // 4.1 把既有数据写入数据库
             AssetSummary summary = assetConfigPair.getLeft();
-            sinkAssetSummary(tidbPool, summary);
+            sinkAssetSummary(tidbRealWorldFlightPool, summary);
             // 入库AssetTableConfig 以 AssetTableModel 和 AssetTableProperty 分别入库
             // 虽然这事情很荒谬 但我们确实只取第一个元素
             AssetTableConfig assetTableConfig = assetConfigPair.getMiddle().getFirst();
             // 先入库AssetTableModel
             AssetTableModel assetTableModel = assetTableConfig.getAssetModel();
-            sinkAssetTableModel(tidbPool, assetTableModel);
+            sinkAssetTableModel(tidbRealWorldFlightPool, assetTableModel);
             // 再入库AssetTableProperty
             List<AssetTableProperty> propertyList = assetTableConfig.getPropertyList();
             for (AssetTableProperty assetTableProperty : propertyList) {
-                sinkAssetTableProperty(tidbPool, assetTableProperty);
+                sinkAssetTableProperty(tidbRealWorldFlightPool, assetTableProperty);
             }
-
 
             String dbName = assetConfigPair.getLeft().getDbName();
             String tableName = assetConfigPair.getLeft().getFullName();
@@ -182,7 +177,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
                     StarRocksCreateTableStatement sqlStatement =
                             (StarRocksCreateTableStatement) dorisStatementParser.getSQLCreateTableParser().parseStatement();
                     String tidbSql = dorisStatementToTiDBSql(tableName, sqlStatement);
-                    createTableInTiDB(tidbPool, tidbSql);
+                    createTableInTiDB(tidbRealWorldFlightPool, tidbSql);
                     assetConfigPair.setRight(sqlStatement);
                 } else {
                     throw new ZorathosException("No table found for %s.%s".formatted(dbName, tableName));
@@ -436,6 +431,11 @@ public class AssetJdbcReceiver extends BaseReceiver {
      */
     @Override
     public void start() {
+        // shutdownhook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            tidbRealWorldFlightPool.closePool();
+        }));
+
         // 4. 从Doris拉取数据入库
         log.info("Start to fetch real flight data from Doris and insert into database.");
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
@@ -472,10 +472,10 @@ public class AssetJdbcReceiver extends BaseReceiver {
      * 接收数据资产数据
      *
      * @param args 接收参数 格式为
-     *        --assetListBaseUrl http://192.168.10.100:8088/datahandle/asset/getObjectifyAsset
-     *        --assetConfigBaseUrl http://192.168.10.100:8088/datahandle/asset/getAssetValidConfig
-     *        --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02
-     *        --feNodes 127.0.0.1:8030 --username root --password 123456
+     *             --assetListBaseUrl http://192.168.10.100:8088/datahandle/asset/getObjectifyAsset
+     *             --assetConfigBaseUrl http://192.168.10.100:8088/datahandle/asset/getAssetValidConfig
+     *             --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02
+     *             --feNodes 127.0.0.1:8030 --username root --password 123456
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);

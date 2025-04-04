@@ -2,6 +2,8 @@ package org.datacenter.receiver.util;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 
 import java.sql.Connection;
@@ -13,6 +15,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  * @author : [wangminan]
  * @description : 连接到TiDB数据库连接池 (使用DruidDataSource实现)
  */
+@Slf4j
 public class TiDBConnectionPool {
     private final DruidDataSource dataSource;
 
@@ -48,6 +51,7 @@ public class TiDBConnectionPool {
         dataSource.setTimeBetweenEvictionRunsMillis(60000);
         dataSource.setMinEvictableIdleTimeMillis(300000);
 
+        log.info("TiDB connection pool for database: {} initialized", database.getName());
         // 设置实例
         instance = this;
     }
@@ -56,11 +60,11 @@ public class TiDBConnectionPool {
      * 获取数据库连接
      * 保持方法签名不变，但内部实现改为使用DruidDataSource
      */
-    public Connection getConnection() throws Exception {
+    public Connection getConnection() {
         try {
             return dataSource.getConnection();
         } catch (SQLException e) {
-            throw new Exception("获取数据库连接失败", e);
+            throw new ZorathosException(e);
         }
     }
 
@@ -74,6 +78,7 @@ public class TiDBConnectionPool {
                 connection.close();
             } catch (SQLException e) {
                 // 记录日志或者处理异常
+                log.error(e.getMessage());
             }
         }
     }
