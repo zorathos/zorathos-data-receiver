@@ -56,7 +56,7 @@
 
         <!-- UT -->
         <junit-jupiter.version>5.12.1</junit-jupiter.version>
-        <mockito.version>5.16.0</mockito.version>
+        <mockito.version>5.16.1</mockito.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <testFailureIgnore>true</testFailureIgnore>
         <skipUTs>false</skipUTs>
