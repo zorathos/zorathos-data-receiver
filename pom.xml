@@ -32,7 +32,7 @@
         <!-- maven插件 -->
 
         <!-- data-model的包里面不带lombok shade的时候排除掉了 要手动引入 -->
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <delombok.output.dir>${project.build.directory}/delombok</delombok.output.dir>
         <zorathos-data-model.version>0.0.11</zorathos-data-model.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
