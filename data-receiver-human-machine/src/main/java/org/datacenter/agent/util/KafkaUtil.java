@@ -25,6 +25,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class KafkaUtil {
     private static final Properties adminProps = new Properties();
     private static final Properties producerProps = new Properties();
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(humanMachineProperties.getProperty("agent.retries.kafka", "3"));
 
     static {
         // 通用配置
@@ -71,31 +72,39 @@ public class KafkaUtil {
     }
 
     public static void createTopicIfNotExists(String topic) {
-        try (AdminClient adminClient = AdminClient.create(adminProps)) {
-            Set<String> existingTopics = adminClient.listTopics().names().get();
-            if (!existingTopics.contains(topic)) {
-                NewTopic newTopic = new NewTopic(topic, 1, (short) 1);
-                adminClient.createTopics(Collections.singletonList(newTopic)).all().get();
-                log.info("Kafka topic created: {}", topic);
-            } else {
-                log.info("Kafka topic already exists: {}", topic);
+        RetryUtil.executeWithRetry(() -> {
+            try (AdminClient adminClient = AdminClient.create(adminProps)) {
+                Set<String> existingTopics = adminClient.listTopics().names().get();
+                if (!existingTopics.contains(topic)) {
+                    NewTopic newTopic = new NewTopic(topic, 1, (short) 1);
+                    adminClient.createTopics(Collections.singletonList(newTopic)).all().get();
+                    log.info("Kafka topic created: {}", topic);
+                } else {
+                    log.info("Kafka topic already exists: {}", topic);
+                }
+                return null;
+            } catch (InterruptedException | ExecutionException e) {
+                throw new ZorathosException(e, "Failed to create topic " + topic + " in Kafka.");
             }
-        } catch (InterruptedException | ExecutionException e) {
-            throw new ZorathosException(e, "Failed to create topic " + topic + " in Kafka.");
-        }
+        }, MAX_RETRY_COUNT, "Create Kafka Topic " + topic);
     }
 
     public static void sendMessage(String topic, String message) {
-        try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps)) {
-            createTopicIfNotExists(topic);
-            log.info("Sending message to kafka topic: {}", topic);
-            ProducerRecord<String, String> record = new ProducerRecord<>(topic, null, message);
-            producer.send(record, (metadata, exception) -> {
-                if (exception != null) {
-                    throw new ZorathosException(exception, "Failed to send message to Kafka.");
-                }
-            });
-            producer.flush();
-        }
+        RetryUtil.executeWithRetry(() -> {
+            try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps)) {
+                createTopicIfNotExists(topic);
+                log.info("Sending message to kafka topic: {}", topic);
+                ProducerRecord<String, String> record = new ProducerRecord<>(topic, null, message);
+                producer.send(record, (metadata, exception) -> {
+                    if (exception != null) {
+                        throw new ZorathosException(exception, "Failed to send message to Kafka.");
+                    }
+                }).get(); // 添加get()以确保消息发送完成并捕获异常
+                producer.flush();
+                return null;
+            } catch (ExecutionException | InterruptedException e) {
+                throw new ZorathosException(e, "Failed to send message to Kafka.");
+            }
+        }, MAX_RETRY_COUNT, "Send Kafka Message to topic " + topic);
     }
 }
