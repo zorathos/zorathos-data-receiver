@@ -111,5 +111,6 @@ public class PersonnelAgent extends BaseAgent {
         } catch (Exception ex) {
             log.error("Error shutting down scheduler", ex);
         }
+        System.exit(0);
     }
 }
