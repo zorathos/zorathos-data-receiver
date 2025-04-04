@@ -16,6 +16,8 @@ import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.plan.FlightPlanRoot;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -82,14 +84,21 @@ public class FlightPlanAgent extends BaseAgent {
                         return;
                     }
                     // 2. 转发到Kafka
-                    for (FlightPlanRoot flightPlan : flightPlans) {
-                        try {
-                            String flightPlanJson = mapper.writeValueAsString(flightPlan);
-                            KafkaUtil.sendMessage(humanMachineProperties
-                                    .getProperty("kafka.topic.flightPlanRoot"), flightPlanJson);
-                        } catch (JsonProcessingException e) {
-                            throw new ZorathosException(e, "Error occurs while converting flight plans to json string.");
-                        }
+                    List<CompletableFuture<Void>> futures = flightPlans.stream()
+                            .map(flightPlan -> CompletableFuture.runAsync(() -> {
+                                try {
+                                    String flightPlanInJson = mapper.writeValueAsString(flightPlan);
+                                    KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot"), flightPlanInJson);
+                                } catch (JsonProcessingException e) {
+                                    throw new ZorathosException(e, "Error occurred while converting flight plan to json.");
+                                }
+                            }))
+                            .toList();
+                    CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                    try {
+                        allFutures.join();
+                    } catch (CompletionException e) {
+                        throw new ZorathosException(e.getCause(), "Error in parallel processing of flight plan.");
                     }
                 }
             } catch (Exception e) {

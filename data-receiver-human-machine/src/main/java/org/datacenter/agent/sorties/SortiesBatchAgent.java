@@ -1,5 +1,6 @@
 package org.datacenter.agent.sorties;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,8 @@ import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.SortiesBatch;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -56,13 +59,21 @@ public class SortiesBatchAgent extends BaseAgent {
                     // 1. 通过接口获取所有flightBatch
                     List<SortiesBatch> flightBatchList = SortiesHttpClientUtil.getSortiesBatches(receiverConfig);
                     // 2. 转发到Kafka
+                    List<CompletableFuture<Void>> futures = flightBatchList.stream()
+                            .map(sortiesBatch -> CompletableFuture.runAsync(() -> {
+                                try {
+                                    String sortiesBatchInJson = mapper.writeValueAsString(sortiesBatch);
+                                    KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sortiesBatch"), sortiesBatchInJson);
+                                } catch (JsonProcessingException e) {
+                                    throw new ZorathosException(e, "Error occurred while converting sortiesBatch to json.");
+                                }
+                            }))
+                            .toList();
+                    CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
                     try {
-                        for (SortiesBatch sortiesBatch : flightBatchList) {
-                            String sortiesBatchInJson = mapper.writeValueAsString(sortiesBatch);
-                            KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sortiesBatch"), sortiesBatchInJson);
-                        }
-                    } catch (Exception e) {
-                        throw new ZorathosException("Failed to send message to Kafka, error: " + e);
+                        allFutures.join();
+                    } catch (CompletionException e) {
+                        throw new ZorathosException(e.getCause(), "Error in parallel processing of sortiesBatch.");
                     }
                 }
             } catch (ZorathosException e) {

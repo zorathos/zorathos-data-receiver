@@ -181,6 +181,12 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         return flightPlans;
     }
 
+    /**
+     * 获取人员信息 因为没有做分页所以肯定是以一个完整列表的形式返回
+     *
+     * @param receiverConfig 接收器配置
+     * @return 人员信息列表
+     */
     public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
         log.info("Trying to get personnel infos from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
