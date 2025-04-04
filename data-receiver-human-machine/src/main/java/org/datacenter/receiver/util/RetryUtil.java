@@ -1,4 +1,4 @@
-package org.datacenter.agent.util;
+package org.datacenter.receiver.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.exception.ZorathosException;
