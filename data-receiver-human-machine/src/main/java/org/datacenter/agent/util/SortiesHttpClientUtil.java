@@ -2,6 +2,7 @@ package org.datacenter.agent.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
@@ -10,22 +11,24 @@ import org.datacenter.model.sorties.SortiesBatch;
 import org.datacenter.model.sorties.response.SortiesBatchResponse;
 import org.datacenter.model.sorties.response.SortiesResponse;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
  * @description : 架次信息用的HttpClient工具类
  */
+@Slf4j
 public class SortiesHttpClientUtil {
 
     private static final ObjectMapper mapper;
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(humanMachineProperties.getProperty("agent.retries.http"));
 
     static {
         mapper = new ObjectMapper();
@@ -40,16 +43,35 @@ public class SortiesHttpClientUtil {
     public static List<SortiesBatch> getSortiesBatches(SortiesBatchReceiverConfig receiverConfig) {
         String url = receiverConfig.getSortiesBatchUrl();
         try (HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .header("Content-Type", "application/json")
-                    // 请求体是固定的 就这两个参数
-                    .POST(HttpRequest.BodyPublishers.ofString(receiverConfig.getSortiesBatchJson()))
-                    .uri(new URI(url))
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            return mapper.readValue(response.body(), SortiesBatchResponse.class).getData();
-        } catch (URISyntaxException | IOException | InterruptedException e) {
-            throw new ZorathosException(e);
+            return RetryUtil.executeHttpRequestWithRetry(
+                    () -> {
+                        try {
+                            return HttpRequest.newBuilder()
+                                    .header("Content-Type", "application/json")
+                                    .POST(HttpRequest.BodyPublishers.ofString(receiverConfig.getSortiesBatchJson()))
+                                    .uri(new URI(url))
+                                    .build();
+                        } catch (URISyntaxException e) {
+                            throw new ZorathosException(e, "Failed to create sorties batch URL");
+                        }
+                    },
+                    client,
+                    MAX_RETRY_COUNT,
+                    response -> {
+                        if (response.statusCode() != 200) {
+                            log.error("Error occurs while fetching sorties batches, response code: {}, response body: {}",
+                                    response.statusCode(), response.body());
+                            throw new ZorathosException("Error occurs while fetching sorties batches.");
+                        }
+                        try {
+                            return mapper.readValue(response.body(), SortiesBatchResponse.class).getData();
+                        } catch (Exception e) {
+                            throw new ZorathosException(e, "Error parsing sorties batch response");
+                        }
+                    }
+            );
+        } catch (Exception e) {
+            throw new ZorathosException(e, "Error occurs while fetching sorties batches.");
         }
     }
 
@@ -63,19 +85,40 @@ public class SortiesHttpClientUtil {
         List<Sorties> sortiesList = new ArrayList<>();
         // 拿着batch号去找对应的sorties
         List<SortiesBatch> sortiesBatchList = SortiesHttpClientUtil.getSortiesBatches(sortiesBatchReceiverConfig);
+
         for (SortiesBatch sortiesBatch : sortiesBatchList) {
-            String url = sortiesReceiverConfig.getSortiesBaseUrl() + "?batchId=" + sortiesBatch.getId();
+            final String url = sortiesReceiverConfig.getSortiesBaseUrl() + "?batchId=" + sortiesBatch.getId();
             try (HttpClient client = HttpClient.newHttpClient()) {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .header("Content-Type", "application/json")
-                        // 请求体是固定的 就这两个参数
-                        .GET()
-                        .uri(new URI(url))
-                        .build();
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                sortiesList.addAll(mapper.readValue(response.body(), SortiesResponse.class).getData());
-            } catch (URISyntaxException | IOException | InterruptedException e) {
-                throw new ZorathosException(e);
+                List<Sorties> batchSorties = RetryUtil.executeHttpRequestWithRetry(
+                        () -> {
+                            try {
+                                return HttpRequest.newBuilder()
+                                        .header("Content-Type", "application/json")
+                                        .GET()
+                                        .uri(new URI(url))
+                                        .build();
+                            } catch (URISyntaxException e) {
+                                throw new ZorathosException(e, "Failed to create sorties URL");
+                            }
+                        },
+                        client,
+                        MAX_RETRY_COUNT,
+                        response -> {
+                            if (response.statusCode() != 200) {
+                                log.error("Error occurs while fetching sorties, response code: {}, response body: {}",
+                                        response.statusCode(), response.body());
+                                throw new ZorathosException("Error occurs while fetching sorties.");
+                            }
+                            try {
+                                return mapper.readValue(response.body(), SortiesResponse.class).getData();
+                            } catch (Exception e) {
+                                throw new ZorathosException(e, "Error parsing sorties response");
+                            }
+                        }
+                );
+                sortiesList.addAll(batchSorties);
+            } catch (Exception e) {
+                throw new ZorathosException(e, "Error occurs while fetching sorties for batch: " + sortiesBatch.getId());
             }
         }
         return sortiesList;

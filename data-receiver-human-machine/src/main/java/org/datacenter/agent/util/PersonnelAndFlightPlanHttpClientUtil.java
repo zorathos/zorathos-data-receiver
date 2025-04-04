@@ -19,9 +19,9 @@ import org.datacenter.model.plan.response.FlightPlanResponse;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -42,8 +42,8 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 @SuppressWarnings("deprecation")
 public class PersonnelAndFlightPlanHttpClientUtil {
     private static final ObjectMapper mapper;
-
     private static final String redisKey = "human-machine:personnel-and-flight-plan:cookie";
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(humanMachineProperties.getProperty("agent.retries.http"));
 
     static {
         mapper = new ObjectMapper();
@@ -58,17 +58,26 @@ public class PersonnelAndFlightPlanHttpClientUtil {
      */
     public static void loginAndGetCookies(PersonnelAndPlanLoginConfig loginConfig) {
         String url = loginConfig.getLoginUrl();
+
         try (HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(loginConfig.getLoginJson()))
-                    .uri(new URI(url))
-                    .build();
-            // 同步的请求
-            String cookies = client.send(request, HttpResponse.BodyHandlers.ofString())
-                    .headers()
-                    .firstValue("Set-Cookie")
-                    .orElseThrow(() -> new ZorathosException("Error occurs while login to personnel and flight plan system."));
+            String cookies = RetryUtil.executeHttpRequestWithRetry(
+                    () -> {
+                        try {
+                            return HttpRequest.newBuilder()
+                                    .header("Content-Type", "application/json")
+                                    .POST(HttpRequest.BodyPublishers.ofString(loginConfig.getLoginJson()))
+                                    .uri(new URI(url))
+                                    .build();
+                        } catch (URISyntaxException e) {
+                            throw new ZorathosException(e, "Failed to create cookie URL");
+                        }
+                    },
+                    client,
+                    MAX_RETRY_COUNT,
+                    response -> response.headers()
+                            .firstValue("Set-Cookie")
+                            .orElseThrow(() -> new ZorathosException("Error occurs while login to personnel and flight plan system."))
+            );
             // 需要上传这段Cookie到Redis
             RedisUtil.set(redisKey, cookies);
             log.info("Login to personnel and flight plan system successfully, current cached cookies: {}.", cookies);
@@ -87,23 +96,36 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             // 1.1 先从系统接口获取飞行日期列表
             String url = receiverConfig.getFlightDateUrl();
             log.info("Fetching flight dates from {}.", url);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .GET()
-                    .header("Cookie", formattedCookies)
-                    .header("Set-Cookie", formattedCookies)
-                    .uri(new URI(url))
-                    .build();
-            // 获取响应
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 200) {
-                // 说明有问题 要把响应code打印出来
-                log.error("Error occurs while fetching flight date, response code: {}, response body: {}",
-                        response.statusCode(), response.body());
-                throw new ZorathosException("Error occurs while fetching flight dates.");
-            }
-            // 使用objectMapper 序列化返回列表
-            flightDates = mapper.readValue(response.body(), mapper.getTypeFactory()
-                    .constructCollectionType(List.class, FlightDate.class));
+
+            flightDates = RetryUtil.executeHttpRequestWithRetry(
+                    () -> {
+                        try {
+                            return HttpRequest.newBuilder()
+                                    .GET()
+                                    .header("Cookie", formattedCookies)
+                                    .header("Set-Cookie", formattedCookies)
+                                    .uri(new URI(url))
+                                    .build();
+                        } catch (URISyntaxException e) {
+                            throw new ZorathosException(e, "Failed to create flight date URL");
+                        }
+                    },
+                    client,
+                    MAX_RETRY_COUNT,
+                    response -> {
+                        if (response.statusCode() != 200) {
+                            log.error("Error occurs while fetching flight date, response code: {}, response body: {}",
+                                    response.statusCode(), response.body());
+                            throw new ZorathosException("Error occurs while fetching flight dates.");
+                        }
+                        try {
+                            return mapper.readValue(response.body(), mapper.getTypeFactory()
+                                    .constructCollectionType(List.class, FlightDate.class));
+                        } catch (Exception e) {
+                            throw new ZorathosException(e, "Error parsing flight date response");
+                        }
+                    }
+            );
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while fetching flight dates.");
         }
@@ -123,26 +145,40 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         List<FlightPlanRoot> flightPlans = new ArrayList<>();
         for (FlightDate flightDate : flightDates) {
             log.info("Fetching flight plan for date: {}.", flightDate.getDate());
-            // 2.1. 从任务系统获取所有计划编号 任务编号要走别的系统 等现场调试
+
+            // 2.1. 从任务系统获取所有计划编号
+            final String codeUrl = receiverConfig.getFlightCodeUrl() + flightDate.getDate().toString();
             PlanCode planCode;
 
             try (HttpClient client = HttpClient.newHttpClient()) {
-                String url = receiverConfig.getFlightCodeUrl() + flightDate.getDate().toString();
-                HttpRequest request = HttpRequest.newBuilder()
-                        .GET()
-                        .header("Cookie", formattedCookies)
-                        .header("Set-Cookie", formattedCookies)
-                        .uri(new URI(url))
-                        .build();
-                // 获取响应
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 200) {
-                    // 说明有问题 要把响应code打印出来
-                    log.error("Error occurs while fetching plan code, response code: {}, response body: {}",
-                            response.statusCode(), response.body());
-                    throw new ZorathosException("Error occurs while fetching plan code.");
-                }
-                planCode = mapper.readValue(response.body(), PlanCode.class);
+                planCode = RetryUtil.executeHttpRequestWithRetry(
+                        () -> {
+                            try {
+                                return HttpRequest.newBuilder()
+                                        .GET()
+                                        .header("Cookie", formattedCookies)
+                                        .header("Set-Cookie", formattedCookies)
+                                        .uri(new URI(codeUrl))
+                                        .build();
+                            } catch (URISyntaxException e) {
+                                throw new ZorathosException(e, "Failed to create plan code URL");
+                            }
+                        },
+                        client,
+                        MAX_RETRY_COUNT,
+                        response -> {
+                            if (response.statusCode() != 200) {
+                                log.error("Error occurs while fetching plan code, response code: {}, response body: {}",
+                                        response.statusCode(), response.body());
+                                throw new ZorathosException("Error occurs while fetching plan code.");
+                            }
+                            try {
+                                return mapper.readValue(response.body(), PlanCode.class);
+                            } catch (Exception e) {
+                                throw new ZorathosException(e, "Error parsing plan code response");
+                            }
+                        }
+                );
             } catch (Exception e) {
                 throw new ZorathosException(e, "Error occurs while fetching mission codes.");
             }
@@ -150,29 +186,42 @@ public class PersonnelAndFlightPlanHttpClientUtil {
             // 2.2 获取所有飞行计划
             try (HttpClient client = HttpClient.newHttpClient()) {
                 log.info("Found plan code: {} for flight date: {}, fetching xml.", planCode.getCode(), flightDate.getDate());
-                // 90121是个常量
-                String url = receiverConfig.getFlightXmlUrl() + planCode.getCode();
-                HttpRequest request = HttpRequest.newBuilder()
-                        .GET()
-                        .header("Cookie", formattedCookies)
-                        .header("Set-Cookie", formattedCookies)
-                        .uri(new URI(url))
-                        .build();
-                // 获取响应
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 200) {
-                    // 说明有问题 要把响应code打印出来
-                    log.error("Error occurs while fetching flight plan, response code: {}, response body: {}",
-                            response.statusCode(), response.body());
-                    throw new ZorathosException("Error occurs while fetching flight plan.");
-                }
-                // 获取响应体并解析
-                FlightPlanResponse planResponse = mapper.readValue(response.body(), FlightPlanResponse.class);
-                // 解析XML文件
-                FlightPlanRoot flightPlanRoot = FlightPlanRoot.fromXml(planResponse.getXml(), planCode.getCode());
-                // 追加日期
-                flightPlanRoot.setFlightDate(flightDate.getDate());
-                // 我们不要架次号了
+                final String xmlUrl = receiverConfig.getFlightXmlUrl() + planCode.getCode();
+                final LocalDate finalDate = flightDate.getDate();
+                final String finalCode = planCode.getCode();
+
+                FlightPlanRoot flightPlanRoot = RetryUtil.executeHttpRequestWithRetry(
+                        () -> {
+                            try {
+                                return HttpRequest.newBuilder()
+                                        .GET()
+                                        .header("Cookie", formattedCookies)
+                                        .header("Set-Cookie", formattedCookies)
+                                        .uri(new URI(xmlUrl))
+                                        .build();
+                            } catch (URISyntaxException e) {
+                                throw new ZorathosException(e, "Failed to create flight XML URL");
+                            }
+                        },
+                        client,
+                        MAX_RETRY_COUNT,
+                        response -> {
+                            if (response.statusCode() != 200) {
+                                log.error("Error occurs while fetching flight plan, response code: {}, response body: {}",
+                                        response.statusCode(), response.body());
+                                throw new ZorathosException("Error occurs while fetching flight plan.");
+                            }
+                            try {
+                                FlightPlanResponse planResponse = mapper.readValue(response.body(), FlightPlanResponse.class);
+                                FlightPlanRoot root = FlightPlanRoot.fromXml(planResponse.getXml(), finalCode);
+                                root.setFlightDate(finalDate);
+                                return root;
+                            } catch (Exception e) {
+                                throw new ZorathosException(e, "Error parsing flight plan response");
+                            }
+                        }
+                );
+
                 flightPlans.add(flightPlanRoot);
             } catch (Exception e) {
                 throw new ZorathosException(e, "Error occurs while fetching flight plans.");
@@ -190,24 +239,42 @@ public class PersonnelAndFlightPlanHttpClientUtil {
     public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
         log.info("Trying to get personnel infos from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
-        List<PersonnelInfo> personnelInfos;
+
         try (HttpClient client = HttpClient.newHttpClient()) {
-            String url = receiverConfig.getPersonnelUrl();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .GET()
-                    .header("Cookie", formattedCookies)
-                    .header("Set-Cookie", formattedCookies)
-                    .uri(new URI(url))
-                    .build();
-            // 获取响应
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            // 使用objectMapper 序列化返回列表
-            personnelInfos = mapper.readValue(response.body(), mapper.getTypeFactory()
-                    .constructCollectionType(List.class, PersonnelInfo.class));
+            final String url = receiverConfig.getPersonnelUrl();
+
+            return RetryUtil.executeHttpRequestWithRetry(
+                    () -> {
+                        try {
+                            return HttpRequest.newBuilder()
+                                    .GET()
+                                    .header("Cookie", formattedCookies)
+                                    .header("Set-Cookie", formattedCookies)
+                                    .uri(new URI(url))
+                                    .build();
+                        } catch (URISyntaxException e) {
+                            throw new ZorathosException(e, "Failed to create personnel URL");
+                        }
+                    },
+                    client,
+                    MAX_RETRY_COUNT,
+                    response -> {
+                        if (response.statusCode() != 200) {
+                            log.error("Error occurs while fetching personnel infos, response code: {}, response body: {}",
+                                    response.statusCode(), response.body());
+                            throw new ZorathosException("Error occurs while fetching personnel infos.");
+                        }
+                        try {
+                            return mapper.readValue(response.body(), mapper.getTypeFactory()
+                                    .constructCollectionType(List.class, PersonnelInfo.class));
+                        } catch (Exception e) {
+                            throw new ZorathosException(e, "Error parsing personnel response");
+                        }
+                    }
+            );
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while fetching personnel infos.");
         }
-        return personnelInfos;
     }
 
     @Data
