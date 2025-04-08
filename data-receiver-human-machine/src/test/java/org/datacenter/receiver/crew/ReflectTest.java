@@ -18,7 +18,6 @@ public class ReflectTest {
         String columnJdbcType = "String";
 
         PersonnelInfo personnelInfo = PersonnelInfo.builder()
-                .id("123")
                 .name("wangminan")
                 .build();
         // 从personnelInfo反射调用getId 打印

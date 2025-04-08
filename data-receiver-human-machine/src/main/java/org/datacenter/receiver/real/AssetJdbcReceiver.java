@@ -1,7 +1,7 @@
 package org.datacenter.receiver.real;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.ast.SQLIndexDefinition;
 import com.alibaba.druid.sql.dialect.doris.parser.DorisStatementParser;
 import com.alibaba.druid.sql.dialect.starrocks.ast.statement.StarRocksCreateTableStatement;
 import com.alibaba.druid.util.JdbcConstants;
@@ -44,7 +44,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
@@ -171,7 +170,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 // 4.2 show create table 使用 druid 解 ddl 转发给TiDB
                 try {
                     Connection dorisConn = DriverManager.getConnection(
-                            "jdbc:mysql://%s/%s?useUnicode=true&characterEncoding=UTF-8&useSSL=false".formatted(config.getFeNodes(), dbName),
+                            "jdbc:mysql://%s/%s?useUnicode=true&characterEncoding=UTF-8&useSSL=false".formatted(config.getSqlNodes(), dbName),
                             config.getUsername(),
                             config.getPassword()
                     );
@@ -295,7 +294,17 @@ public class AssetJdbcReceiver extends BaseReceiver {
         Connection realConn = null;
         try {
             realConn = pool.getConnection();
-            String sql = """
+            // 1. 删除所有modelId，sortieNumber，以及code相同的记录
+            String deleteSql = """
+                    DELETE FROM %s WHERE model_id = ? AND sortie_number = ? AND code = ?
+                    """.formatted(TiDBTable.ASSET_TABLE_PROPERTY.getName());
+            PreparedStatement deletePreparedStatement = realConn.prepareStatement(deleteSql);
+            deletePreparedStatement.setLong(1, assetTableProperty.getModelId());
+            deletePreparedStatement.setString(2, assetTableProperty.getSortieNumber());
+            deletePreparedStatement.setString(3, assetTableProperty.getCode());
+            deletePreparedStatement.executeUpdate();
+            // 2. 插入新的记录
+            String insertSql = """
                     INSERT INTO %s (
                         sortie_number, model_id, code,
                         name, type, is_time, two_d_display, label
@@ -310,16 +319,16 @@ public class AssetJdbcReceiver extends BaseReceiver {
                         two_d_display = VALUES(two_d_display),
                         label = VALUES(label)
                     """.formatted(TiDBTable.ASSET_TABLE_PROPERTY.getName());
-            PreparedStatement preparedStatement = realConn.prepareStatement(sql);
-            preparedStatement.setString(1, assetTableProperty.getSortieNumber());
-            preparedStatement.setLong(2, assetTableProperty.getModelId());
-            preparedStatement.setString(3, assetTableProperty.getCode());
-            preparedStatement.setString(4, assetTableProperty.getName());
-            preparedStatement.setString(5, assetTableProperty.getType());
-            preparedStatement.setInt(6, assetTableProperty.getIsTime());
-            preparedStatement.setInt(7, assetTableProperty.getTwoDDisplay());
-            preparedStatement.setString(8, assetTableProperty.getLabel());
-            preparedStatement.executeUpdate();
+            PreparedStatement insertStatement = realConn.prepareStatement(insertSql);
+            insertStatement.setString(1, assetTableProperty.getSortieNumber());
+            insertStatement.setLong(2, assetTableProperty.getModelId());
+            insertStatement.setString(3, assetTableProperty.getCode());
+            insertStatement.setString(4, assetTableProperty.getName());
+            insertStatement.setString(5, assetTableProperty.getType());
+            insertStatement.setInt(6, assetTableProperty.getIsTime());
+            insertStatement.setInt(7, assetTableProperty.getTwoDDisplay());
+            insertStatement.setString(8, assetTableProperty.getLabel());
+            insertStatement.executeUpdate();
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while sinking table property.");
         } finally {
@@ -342,17 +351,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
 
 
     private String getColumnDefinitionsFromDorisStatement(StarRocksCreateTableStatement createTableStatement) {
-        return createTableStatement.getTableElementList().stream().map(
-                        tableElement -> {
-                            SQLColumnDefinition columnDefinition = (SQLColumnDefinition) tableElement;
-                            String columnName = columnDefinition.getName().getSimpleName();
-                            if (!columnName.equals("auto_id") && !columnName.equals("batch_id")
-                                    && !columnName.equals("sortie_id") && !columnName.equals("code1")) {
-                                return tableElement.toString();
-                            }
-                            return null;
-                        }
-                ).filter(Objects::nonNull)
+        return createTableStatement.getTableElementList()
+                .stream()
+                .map(Object::toString)
                 .collect(Collectors.joining(",\n"));
     }
 
@@ -364,18 +365,16 @@ public class AssetJdbcReceiver extends BaseReceiver {
      * @return TiDB的建表语句
      */
     private String dorisStatementToTiDBSql(String tableName, StarRocksCreateTableStatement createTableStatement) {
+        SQLIndexDefinition indexDefinition = createTableStatement.getUnique().getIndexDefinition();
         String tidbSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    auto_id BIGINT NOT NULL,
-                    batch_id VARCHAR(255) NOT NULL,
-                    sortie_id VARCHAR(255) NOT NULL,
-                    code1 BIGINT NOT NULL,
                     %s,
-                    PRIMARY KEY (auto_id, batch_id, sortie_id, code1)
+                    PRIMARY KEY %s
                 );
                 """.formatted(
                 tableName,
-                getColumnDefinitionsFromDorisStatement(createTableStatement)
+                getColumnDefinitionsFromDorisStatement(createTableStatement),
+                indexDefinition
         );
 
         return SQLUtils.format(tidbSql, JdbcConstants.TIDB, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION);
@@ -383,50 +382,52 @@ public class AssetJdbcReceiver extends BaseReceiver {
 
     private String dorisStatementToFlinkSqlSource(String sourceDbName, String sourceTableName,
                                                   String flinkTableName, StarRocksCreateTableStatement createTableStatement) {
-        String tidbSql = """
+        SQLIndexDefinition indexDefinition = createTableStatement.getUnique().getIndexDefinition();
+        String flinkSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    auto_id BIGINT,
-                    batch_id VARCHAR(255),
-                    sortie_id VARCHAR(255),
                     %s,
-                    PRIMARY KEY (auto_id, batch_id, sortie_id, code1) NOT ENFORCED
-                )
-                'connector' = 'doris',
-                'fenodes' = '%s',
-                'table.identifier' = '%s',
-                'username' = '%s',
-                'password' = '%s'
+                    PRIMARY KEY %s NOT ENFORCED
+                ) WITH (
+                    'connector' = 'doris',
+                    'fenodes' = '%s',
+                    'table.identifier' = '%s',
+                    'username' = '%s',
+                    'password' = '%s'
+                );
                 """.formatted(
                 flinkTableName,
                 getColumnDefinitionsFromDorisStatement(createTableStatement),
+                indexDefinition,
                 config.getFeNodes(),
                 sourceDbName + "." + sourceTableName,
                 config.getUsername(),
                 config.getPassword()
         );
 
-        return SQLUtils.format(tidbSql, JdbcConstants.TIDB, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION)
-                .replaceAll("VARCHAR\\(\\d+\\)", "STRING");
+        return flinkSql.replaceAll("VARCHAR\\(\\d+\\)", "STRING")
+                .replaceAll("varchar\\(\\d+\\)", "STRING")
+                .replaceAll("BIGINT\\(\\d+\\)", "BIGINT")
+                .replaceAll("bigint\\(\\d+\\)", "BIGINT");
     }
 
     private String dorisStatementToFlinkSqlTarget(String targetTableName, String flinkTableName, StarRocksCreateTableStatement createTableStatement) {
-        String tidbSql = """
+        SQLIndexDefinition indexDefinition = createTableStatement.getUnique().getIndexDefinition();
+        String flinkSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    auto_id BIGINT,
-                    batch_id VARCHAR(255),
-                    sortie_id VARCHAR(255),
                     %s,
-                    PRIMARY KEY (auto_id, batch_id, sortie_id, code1) NOT ENFORCED
-                )
-                'connector' = 'jdbc',             -- 使用 JDBC 持久化
-                'url' = '%s',                     -- TiDB 主机名
-                'driver' = '%s',                  -- TiDB 端口
-                'username' = '%s',                -- TiDB 用户名
-                'password' = '%s',                -- TiDB 密码
-                'table-name' = '%s'               -- 表名
+                    PRIMARY KEY %s NOT ENFORCED
+                ) WITH (
+                    'connector' = 'jdbc',             -- 使用 JDBC 持久化
+                    'url' = '%s',                     -- TiDB 主机名
+                    'driver' = '%s',                  -- TiDB 端口
+                    'username' = '%s',                -- TiDB 用户名
+                    'password' = '%s',                -- TiDB 密码
+                    'table-name' = '%s'               -- 表名
+                );
                 """.formatted(
                 flinkTableName,
                 getColumnDefinitionsFromDorisStatement(createTableStatement),
+                indexDefinition,
                 JdbcSinkUtil.TIDB_REAL_WORLD_FLIGHT,
                 humanMachineProperties.getProperty("tidb.mysql.driverName"),
                 humanMachineProperties.getProperty("tidb.username"),
@@ -434,8 +435,10 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 targetTableName
         );
 
-        return SQLUtils.format(tidbSql, JdbcConstants.TIDB, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION)
-                .replaceAll("VARCHAR\\(\\d+\\)", "STRING");
+        return flinkSql.replaceAll("VARCHAR\\(\\d+\\)", "STRING")
+                .replaceAll("varchar\\(\\d+\\)", "STRING")
+                .replaceAll("BIGINT\\(\\d+\\)", "BIGINT")
+                .replaceAll("bigint\\(\\d+\\)", "BIGINT");
     }
 
 
@@ -494,6 +497,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 .assetListBaseUrl(params.getRequired("assetListBaseUrl"))
                 .assetConfigBaseUrl(params.getRequired("assetConfigBaseUrl"))
                 .sortieNumber(params.getRequired("sortieNumber"))
+                .sqlNodes(params.getRequired("sqlNodes"))
                 .feNodes(params.getRequired("feNodes"))
                 .username(params.getRequired("username"))
                 .password(params.get("password", null))

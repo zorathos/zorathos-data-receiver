@@ -1,12 +1,15 @@
 package org.datacenter.test;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLIndexDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.dialect.doris.parser.DorisStatementParser;
 import com.alibaba.druid.sql.dialect.starrocks.ast.statement.StarRocksCreateTableStatement;
 import com.alibaba.druid.util.JdbcConstants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -42,6 +45,8 @@ public class DruidSqlParserTest {
         // Doris 的 parser 实现了 StarRocksCreateTableParser
         StarRocksCreateTableStatement createTableStatement = (StarRocksCreateTableStatement) dorisStatementParser.getSQLCreateTableParser().parseCreateTable();
         log.info("ddl:{}", createTableStatement);
+        List<SQLSelectOrderByItem> columns = createTableStatement.getUnique().getIndexDefinition().getColumns();
+
         createTableStatement.getTableElementList().stream().map(
                 tableElement -> {
                     return tableElement.toString();
