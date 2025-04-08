@@ -61,7 +61,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
     private AssetReceiverConfig config;
     private String sortieNumber;
     private String sortieId;
-    private String batchId;
+    private String batchNumber;
     private ObjectMapper mapper = new ObjectMapper();
     // 本次读取过程中用到的 资产-资产表配置-DorisDDL triple本地缓存 这个pair的list肉眼可见的会占用很大的内存
     private List<MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement>> assetResultList = new ArrayList<>();
@@ -85,13 +85,13 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 Class.forName(humanMachineProperties.getProperty("tidb.mysql.driverName"));
                 log.info("Fetching sortie data from database, sortieNumber: {}.", config.getSortieNumber());
                 Connection sortiesConn = sortieFlightPool.getConnection();
-                String sql = "SELECT * FROM `%s` WHERE sortieNumber = ?".formatted(TiDBTable.SORTIES.getName());
+                String sql = "SELECT * FROM `%s` WHERE sortie_number = ?".formatted(TiDBTable.SORTIES.getName());
                 PreparedStatement preparedStatement = sortiesConn.prepareStatement(sql);
                 preparedStatement.setString(1, config.getSortieNumber());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
                     sortieId = resultSet.getString("sortie_id");
-                    batchId = resultSet.getString("batch_id");
+                    batchNumber = resultSet.getString("batch_number");
                     armType = resultSet.getString("arm_type");
                     icdVersion = resultSet.getString("icd_version");
                 } else {
@@ -107,7 +107,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             log.info("Fetching asset list from web interface, armType: {}, icdVersion: {}.", armType, icdVersion);
             String assetListUrl = config.getAssetListBaseUrl() +
                     "?weaponModel=" + armType +
-                    "&icd" + icdVersion;
+                    "&icd=" + icdVersion;
             List<AssetSummary> assetList;
             try (HttpClient client = HttpClient.newHttpClient()) {
                 HttpRequest request = HttpRequest.newBuilder()
@@ -147,17 +147,21 @@ public class AssetJdbcReceiver extends BaseReceiver {
             // 4.0 落库
             for (MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair : assetResultList) {
                 // 4.1 把既有数据写入数据库
-                AssetSummary summary = assetConfigPair.getLeft();
-                sinkAssetSummary(realWorldFlightPool, summary);
+                AssetSummary assetSummary = assetConfigPair.getLeft();
+                assetSummary.setSortieNumber(config.getSortieNumber());
+                sinkAssetSummary(realWorldFlightPool, assetSummary);
                 // 入库AssetTableConfig 以 AssetTableModel 和 AssetTableProperty 分别入库
                 // 虽然这事情很荒谬 但我们确实只取第一个元素
                 AssetTableConfig assetTableConfig = assetConfigPair.getMiddle().getFirst();
                 // 先入库AssetTableModel
                 AssetTableModel assetTableModel = assetTableConfig.getAssetModel();
+                assetTableModel.setSortieNumber(config.getSortieNumber());
                 sinkAssetTableModel(realWorldFlightPool, assetTableModel);
                 // 再入库AssetTableProperty
                 List<AssetTableProperty> propertyList = assetTableConfig.getPropertyList();
                 for (AssetTableProperty assetTableProperty : propertyList) {
+                    assetTableProperty.setModelId(assetTableModel.getId());
+                    assetTableProperty.setSortieNumber(config.getSortieNumber());
                     sinkAssetTableProperty(realWorldFlightPool, assetTableProperty);
                 }
 
@@ -208,7 +212,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
                         db_name, source, remark, objectify_flag,
                         copy_flag, labels, time_frame, time_type
                     ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     ) ON DUPLICATE KEY UPDATE
                         name = VALUES(name),
                         sortie_number = VALUES(sortie_number),
@@ -293,10 +297,10 @@ public class AssetJdbcReceiver extends BaseReceiver {
             realConn = pool.getConnection();
             String sql = """
                     INSERT INTO %s (
-                        id, sortie_number, model_id, code,
+                        sortie_number, model_id, code,
                         name, type, is_time, two_d_display, label
                     ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?
                     ) ON DUPLICATE KEY UPDATE
                         name = VALUES(name),
                         model_id = VALUES(model_id),
@@ -307,15 +311,14 @@ public class AssetJdbcReceiver extends BaseReceiver {
                         label = VALUES(label)
                     """.formatted(TiDBTable.ASSET_TABLE_PROPERTY.getName());
             PreparedStatement preparedStatement = realConn.prepareStatement(sql);
-            preparedStatement.setLong(1, assetTableProperty.getId());
-            preparedStatement.setString(2, assetTableProperty.getSortieNumber());
-            preparedStatement.setLong(3, assetTableProperty.getModelId());
-            preparedStatement.setLong(4, assetTableProperty.getCode());
-            preparedStatement.setString(5, assetTableProperty.getName());
-            preparedStatement.setString(6, assetTableProperty.getType());
-            preparedStatement.setInt(7, assetTableProperty.getIsTime());
-            preparedStatement.setInt(8, assetTableProperty.getTwoDDisplay());
-            preparedStatement.setString(9, assetTableProperty.getLabel());
+            preparedStatement.setString(1, assetTableProperty.getSortieNumber());
+            preparedStatement.setLong(2, assetTableProperty.getModelId());
+            preparedStatement.setString(3, assetTableProperty.getCode());
+            preparedStatement.setString(4, assetTableProperty.getName());
+            preparedStatement.setString(5, assetTableProperty.getType());
+            preparedStatement.setInt(6, assetTableProperty.getIsTime());
+            preparedStatement.setInt(7, assetTableProperty.getTwoDDisplay());
+            preparedStatement.setString(8, assetTableProperty.getLabel());
             preparedStatement.executeUpdate();
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while sinking table property.");
@@ -343,7 +346,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
                         tableElement -> {
                             SQLColumnDefinition columnDefinition = (SQLColumnDefinition) tableElement;
                             String columnName = columnDefinition.getName().getSimpleName();
-                            if (!columnName.equals("auto_id") && !columnName.equals("batch_id") && !columnName.equals("sortie_id")) {
+                            if (!columnName.equals("auto_id") && !columnName.equals("batch_id")
+                                    && !columnName.equals("sortie_id") && !columnName.equals("code1")) {
                                 return tableElement.toString();
                             }
                             return null;
@@ -362,9 +366,10 @@ public class AssetJdbcReceiver extends BaseReceiver {
     private String dorisStatementToTiDBSql(String tableName, StarRocksCreateTableStatement createTableStatement) {
         String tidbSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    auto_id BIGINT,
-                    batch_id VARCHAR(255),
-                    sortie_id VARCHAR(255),
+                    auto_id BIGINT NOT NULL,
+                    batch_id VARCHAR(255) NOT NULL,
+                    sortie_id VARCHAR(255) NOT NULL,
+                    code1 BIGINT NOT NULL,
                     %s,
                     PRIMARY KEY (auto_id, batch_id, sortie_id, code1)
                 );
@@ -482,13 +487,16 @@ public class AssetJdbcReceiver extends BaseReceiver {
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
+
+        log.info("Params: {}", params.toMap());
+
         AssetReceiverConfig config = AssetReceiverConfig.builder()
                 .assetListBaseUrl(params.getRequired("assetListBaseUrl"))
                 .assetConfigBaseUrl(params.getRequired("assetConfigBaseUrl"))
                 .sortieNumber(params.getRequired("sortieNumber"))
                 .feNodes(params.getRequired("feNodes"))
                 .username(params.getRequired("username"))
-                .password(params.getRequired("password"))
+                .password(params.get("password", null))
                 .build();
         log.info("Start receiver data assets with sortieNumber: {}", config.getSortieNumber());
         AssetJdbcReceiver assetJdbcReceiver = new AssetJdbcReceiver();
