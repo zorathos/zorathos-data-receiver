@@ -16,7 +16,6 @@ import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
-import java.sql.Timestamp;
 import java.util.List;
 
 /**
@@ -56,8 +55,7 @@ public class EegKafkaReceiver extends BaseReceiver {
                     (JdbcStatementBuilder<Eeg>) (preparedStatement, eeg) -> {
                         preparedStatement.setString(1, config.getSortieNumber());
                         preparedStatement.setString(2, eeg.getSensorId());
-                        preparedStatement.setTimestamp(3, eeg.getSampleTimestamp() == null ?
-                                null : Timestamp.valueOf(eeg.getSampleTimestamp()));
+                        preparedStatement.setLong(3, eeg.getSampleTimestamp());
                         preparedStatement.setString(4, eeg.getStreamName());
                         preparedStatement.setInt(5, eeg.getChannelCount());
                         preparedStatement.setDouble(6, eeg.getSamplingRate());

@@ -16,7 +16,6 @@ import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
-import java.sql.Timestamp;
 import java.util.List;
 
 /**
@@ -73,8 +72,7 @@ public class EyeMovementKafkaReceiver extends BaseReceiver {
                         """, (JdbcStatementBuilder<EyeMovement>) (prepareStatement, eyemovement) -> {
                     prepareStatement.setString(1, config.getSortieNumber());
                     prepareStatement.setString(2, eyemovement.getSensorId());
-                    prepareStatement.setTimestamp(3, eyemovement.getSampleTimestamp() == null ?
-                            null : Timestamp.valueOf(eyemovement.getSampleTimestamp()));
+                    prepareStatement.setLong(3, eyemovement.getSampleTimestamp());
                     prepareStatement.setFloat(4, eyemovement.getPupilDiameterLeftPx());
                     prepareStatement.setFloat(5, eyemovement.getPupilDiameterLeftMm());
                     prepareStatement.setFloat(6, eyemovement.getPupilDiameterRightPx());

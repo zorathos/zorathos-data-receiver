@@ -16,8 +16,8 @@ import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.model.plan.response.FlightPlanResponse;
-import org.datacenter.receiver.util.RetryUtil;
 import org.datacenter.receiver.util.MySQLDriverConnectionPool;
+import org.datacenter.receiver.util.RetryUtil;
 
 import java.net.URI;
 import java.net.URISyntaxException;
