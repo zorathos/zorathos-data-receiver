@@ -404,7 +404,10 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 config.getPassword()
         );
 
-        return flinkSql.replaceAll("VARCHAR\\(\\d+\\)", "STRING")
+        return flinkSql
+                .replaceAll("TEXT", "STRING")
+                .replaceAll("text", "STRING")
+                .replaceAll("VARCHAR\\(\\d+\\)", "STRING")
                 .replaceAll("varchar\\(\\d+\\)", "STRING")
                 .replaceAll("BIGINT\\(\\d+\\)", "BIGINT")
                 .replaceAll("bigint\\(\\d+\\)", "BIGINT");
@@ -435,7 +438,10 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 targetTableName
         );
 
-        return flinkSql.replaceAll("VARCHAR\\(\\d+\\)", "STRING")
+        return flinkSql
+                .replaceAll("TEXT", "STRING")
+                .replaceAll("text", "STRING")
+                .replaceAll("VARCHAR\\(\\d+\\)", "STRING")
                 .replaceAll("varchar\\(\\d+\\)", "STRING")
                 .replaceAll("BIGINT\\(\\d+\\)", "BIGINT")
                 .replaceAll("bigint\\(\\d+\\)", "BIGINT");
