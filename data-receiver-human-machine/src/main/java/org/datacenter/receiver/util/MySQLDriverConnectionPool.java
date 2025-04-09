@@ -24,7 +24,7 @@ public class MySQLDriverConnectionPool {
                 humanMachineProperties.getProperty("tidb.username"),
                 humanMachineProperties.getProperty("tidb.password")
         );
-        log.info("TiDB connection pool for database: {} initialized", database.getName());
+        log.info("TiDB connection pool for database: {} is initializing", database.getName());
         instance = this;
         try {
             dataSource.init();
