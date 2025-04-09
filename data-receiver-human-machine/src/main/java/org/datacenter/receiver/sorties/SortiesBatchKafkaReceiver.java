@@ -80,7 +80,6 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
 
-
         kafkaSourceDS.sinkTo(sinkFunction).name("SortiesBatch Kafka Sinker");
         try {
             env.execute("SortiesBatch Kafka Receiver");
