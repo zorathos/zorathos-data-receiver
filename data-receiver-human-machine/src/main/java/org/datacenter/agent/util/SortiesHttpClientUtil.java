@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.sorties.SortiesReceiverConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
@@ -19,8 +20,6 @@ import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * @author : [wangminan]
  * @description : 架次信息用的HttpClient工具类
@@ -29,7 +28,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class SortiesHttpClientUtil {
 
     private static final ObjectMapper mapper;
-    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(humanMachineProperties.getProperty("agent.retries.http"));
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.retries.http"));
 
     static {
         mapper = new ObjectMapper();

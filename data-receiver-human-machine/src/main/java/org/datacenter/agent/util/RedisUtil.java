@@ -8,12 +8,11 @@ import io.lettuce.core.support.ConnectionPoolSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.receiver.util.RetryUtil;
 
 import java.time.Duration;
-
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author claude (thanks)
@@ -21,17 +20,17 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
  */
 @Slf4j
 public class RedisUtil {
-    private static final String REDIS_HOST = humanMachineProperties.getProperty("redis.host");
-    private static final Integer REDIS_PORT = Integer.parseInt(humanMachineProperties.getProperty("redis.port"));
-    private static final CharSequence REDIS_PASSWORD = humanMachineProperties.getProperty("redis.password");
-    private static final Integer REDIS_TIMEOUT = Integer.parseInt(humanMachineProperties.getProperty("redis.timeout"));
+    private static final String REDIS_HOST = HumanMachineSysConfig.getHumanMachineProperties().getProperty("redis.host");
+    private static final Integer REDIS_PORT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("redis.port"));
+    private static final CharSequence REDIS_PASSWORD = HumanMachineSysConfig.getHumanMachineProperties().getProperty("redis.password");
+    private static final Integer REDIS_TIMEOUT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("redis.timeout"));
     private static final Integer REDIS_POOL_MAX_TOTAL =
-            Integer.parseInt(humanMachineProperties.getProperty("redis.pool.maxTotal"));
+            Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("redis.pool.maxTotal"));
     private static final Integer REDIS_POOL_MAX_IDLE =
-            Integer.parseInt(humanMachineProperties.getProperty("redis.pool.maxIdle"));
+            Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("redis.pool.maxIdle"));
     private static final Integer REDIS_POOL_MIN_IDLE =
-            Integer.parseInt(humanMachineProperties.getProperty("redis.pool.minIdle"));
-    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(humanMachineProperties.getProperty("agent.retries.redis", "3"));
+            Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("redis.pool.minIdle"));
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.retries.redis", "3"));
 
     private static volatile RedisClient redisClient;
     private static volatile GenericObjectPool<StatefulRedisConnection<String, String>> connectionPool;

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -29,8 +30,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * 各个业务之间的Agent是独立的 但是util可以是一起的
  *
@@ -42,7 +41,7 @@ import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 public class PersonnelAndFlightPlanHttpClientUtil {
     private static final ObjectMapper mapper;
     private static final String redisKey = "human-machine:personnel-and-flight-plan:cookie";
-    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(humanMachineProperties.getProperty("agent.retries.http"));
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.retries.http"));
 
     static {
         mapper = new ObjectMapper();

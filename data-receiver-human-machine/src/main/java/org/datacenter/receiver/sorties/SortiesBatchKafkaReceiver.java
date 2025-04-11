@@ -20,8 +20,6 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 import java.util.Base64;
 import java.util.List;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * @author : [wangminan]
  * @description : 从Kafka中接收架次批数据写入TiDB
@@ -62,7 +60,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<SortiesBatch> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.sortiesBatch")), SortiesBatch.class);
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.sortiesBatch")), SortiesBatch.class);
 
         Sink<SortiesBatch> sinkFunction = JdbcSink.<SortiesBatch>builder()
                 .withQueryStatement("""

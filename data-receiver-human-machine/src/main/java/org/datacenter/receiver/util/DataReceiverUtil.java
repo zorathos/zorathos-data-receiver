@@ -15,12 +15,11 @@ import org.apache.flink.core.execution.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.datacenter.config.system.HumanMachineSysConfig;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
@@ -35,11 +34,11 @@ public class DataReceiverUtil {
         Configuration configuration = new Configuration();
 
         configuration.set(CheckpointingOptions.CHECKPOINTING_INTERVAL,
-                Duration.ofSeconds(Long.parseLong(humanMachineProperties.getProperty("flink.checkpoint.interval"))));
+                Duration.ofSeconds(Long.parseLong(HumanMachineSysConfig.getHumanMachineProperties().getProperty("flink.checkpoint.interval"))));
         configuration.set(CheckpointingOptions.CHECKPOINTING_CONSISTENCY_MODE,
                 CheckpointingMode.EXACTLY_ONCE);
         configuration.set(CheckpointingOptions.CHECKPOINTING_TIMEOUT,
-                Duration.ofSeconds(Long.parseLong(humanMachineProperties.getProperty("flink.checkpoint.timeout"))));
+                Duration.ofSeconds(Long.parseLong(HumanMachineSysConfig.getHumanMachineProperties().getProperty("flink.checkpoint.timeout"))));
         configuration.set(CheckpointingOptions.EXTERNALIZED_CHECKPOINT_RETENTION,
                 ExternalizedCheckpointRetention.RETAIN_ON_CANCELLATION);
 
@@ -66,8 +65,8 @@ public class DataReceiverUtil {
         // 开始从kafka获取数据
         // 数据源
         KafkaSourceBuilder<T> tKafkaSourceBuilder = KafkaSource.<T>builder()
-                .setBootstrapServers(humanMachineProperties.getProperty("kafka.bootstrap.servers"))
-                .setGroupId(humanMachineProperties.getProperty("kafka.consumer.group-id"))
+                .setBootstrapServers(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.bootstrap.servers"))
+                .setGroupId(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.consumer.group-id"))
                 .setTopics(topics)
                 .setValueOnlyDeserializer(new AbstractDeserializationSchema<T>(clazz) {
                     @Override
@@ -80,17 +79,17 @@ public class DataReceiverUtil {
                 })
                 // 这个位置有待商榷 确实会因为latest导致agent已经发了但是这边拿不到
                 .setStartingOffsets(OffsetsInitializer.timestamp(System.currentTimeMillis() -
-                        Long.parseLong(humanMachineProperties.getProperty("kafka.offset.timestamp"))));
+                        Long.parseLong(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.offset.timestamp"))));
         // 判断是否需要开启SASL认证
-        if (Boolean.parseBoolean(humanMachineProperties.getProperty("kafka.security.enabled", "false"))) {
+        if (Boolean.parseBoolean(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.security.enabled", "false"))) {
             tKafkaSourceBuilder.setProperty("security.protocol",
-                    humanMachineProperties.getProperty("kafka.security.protocol", "SASL_PLAINTEXT"));
+                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.security.protocol", "SASL_PLAINTEXT"));
             tKafkaSourceBuilder.setProperty(SaslConfigs.SASL_MECHANISM,
-                    humanMachineProperties.getProperty("kafka.sasl.mechanism", "PLAIN"));
+                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.sasl.mechanism", "PLAIN"));
             tKafkaSourceBuilder.setProperty(SaslConfigs.SASL_JAAS_CONFIG,
                     String.format("org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";",
-                            humanMachineProperties.getProperty("kafka.username"),
-                            humanMachineProperties.getProperty("kafka.password")));
+                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.username"),
+                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.password")));
         }
         KafkaSource<T> kafkaSource = tKafkaSourceBuilder.build();
         return env

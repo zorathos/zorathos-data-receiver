@@ -22,8 +22,6 @@ import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.List;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * @author : [wangminan]
  * @description : 架次信息用的KafkaReceiver
@@ -62,7 +60,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
         // 2. 执行环境 引入kafka数据源
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<Sorties> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.sorties")), Sorties.class);
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.sorties")), Sorties.class);
 
         // 3. jdbcsink
         Sink<Sorties> sink = JdbcSink.<Sorties>builder()

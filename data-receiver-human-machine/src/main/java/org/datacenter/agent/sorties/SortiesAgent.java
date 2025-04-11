@@ -9,6 +9,7 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.SortiesHttpClientUtil;
 import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.sorties.SortiesReceiverConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 
@@ -18,8 +19,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
@@ -66,7 +65,8 @@ public class SortiesAgent extends BaseAgent {
                             .map(sorties -> CompletableFuture.runAsync(() -> {
                                 try {
                                     String flightPlanInJson = mapper.writeValueAsString(sorties);
-                                    KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.sorties"), flightPlanInJson);
+                                    KafkaUtil.sendMessage(
+                                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.sorties"), flightPlanInJson);
                                 } catch (JsonProcessingException e) {
                                     throw new ZorathosException(e, "Error occurred while converting sorties to json.");
                                 }
@@ -83,7 +83,8 @@ public class SortiesAgent extends BaseAgent {
                 log.error("Error caught by scheduler pool. Task will be stopped.");
                 stop();
             }
-        }, 0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.sorties")), TimeUnit.SECONDS);
+        }, 0, Integer.parseInt(
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.interval.sorties")), TimeUnit.SECONDS);
     }
 
     @Override

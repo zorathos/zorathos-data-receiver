@@ -17,6 +17,7 @@ import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.datacenter.config.real.AssetReceiverConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
@@ -45,8 +46,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
@@ -81,7 +80,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             String armType;
             String icdVersion;
             try {
-                Class.forName(humanMachineProperties.getProperty("tidb.mysql.driverName"));
+                Class.forName(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"));
                 log.info("Fetching sortie data from database, sortieNumber: {}.", config.getSortieNumber());
                 Connection sortiesConn = sortieFlightPool.getConnection();
                 String sql = "SELECT * FROM `%s` WHERE sortie_number = ?".formatted(TiDBTable.SORTIES.getName());
@@ -432,9 +431,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 getColumnDefinitionsFromDorisStatement(createTableStatement),
                 indexDefinition,
                 JdbcSinkUtil.TIDB_REAL_WORLD_FLIGHT,
-                humanMachineProperties.getProperty("tidb.mysql.driverName"),
-                humanMachineProperties.getProperty("tidb.username"),
-                humanMachineProperties.getProperty("tidb.password"),
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"),
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.username"),
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.password"),
                 targetTableName
         );
 

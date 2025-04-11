@@ -28,8 +28,6 @@ import java.sql.Date;
 import java.util.Base64;
 import java.util.List;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * @author : [wangminan]
  * @description : 从Kafka中接收飞行计划数据写入TiDB
@@ -71,7 +69,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
 
         SingleOutputStreamOperator<FlightPlanRoot> kafkaSourceDS = DataReceiverUtil
-                .getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot")), FlightPlanRoot.class)
+                .getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.flightPlanRoot")), FlightPlanRoot.class)
                 .returns(FlightPlanRoot.class);
 
         Sink<FlightPlanRoot> flightRootSink = JdbcSink.<FlightPlanRoot>builder()

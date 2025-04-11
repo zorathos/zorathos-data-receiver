@@ -12,6 +12,7 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.crew.PersonnelReceiverConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 
@@ -21,8 +22,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
@@ -71,7 +70,7 @@ public class PersonnelAgent extends BaseAgent {
                         // 0. 刷新Cookie
                         PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
                         // 1 准备 Kafka 的 consumer group并创建所有 topic
-                        KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.personnel"));
+                        KafkaUtil.createTopicIfNotExists(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.personnel"));
                         // 这时候才可以拉起Flink任务
                         running = true;
                         log.info("Personnel agent is running.");
@@ -82,7 +81,7 @@ public class PersonnelAgent extends BaseAgent {
                                 .map(personnelInfo -> CompletableFuture.runAsync(() -> {
                                     try {
                                         String personnelInfoInJson = mapper.writeValueAsString(personnelInfo);
-                                        KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.personnel"), personnelInfoInJson);
+                                        KafkaUtil.sendMessage(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.personnel"), personnelInfoInJson);
                                     } catch (JsonProcessingException e) {
                                         throw new ZorathosException(e, "Error occurred while converting personnel info to json.");
                                     }
@@ -100,7 +99,7 @@ public class PersonnelAgent extends BaseAgent {
                     stop();
                 }
             },
-            0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
+            0, Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
     }
 
     @Override

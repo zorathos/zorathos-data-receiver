@@ -22,8 +22,6 @@ import java.sql.Date;
 import java.util.Base64;
 import java.util.List;
 
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
-
 /**
  * @author : [wangminan]
  * @description : 人员数据Kafka接收器
@@ -65,7 +63,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<PersonnelInfo> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(humanMachineProperties.getProperty("kafka.topic.personnel")), PersonnelInfo.class);
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.personnel")), PersonnelInfo.class);
         // 投递到数据库 写sql时使用upsert语法
         Sink<PersonnelInfo> sink = JdbcSink.<PersonnelInfo>builder()
                 .withQueryStatement("""

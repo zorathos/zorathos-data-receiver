@@ -7,12 +7,12 @@ import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.datacenter.config.equipment.EquipmentInfoReceiverConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import static org.apache.flink.table.api.Expressions.$;
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
@@ -115,10 +115,10 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                 );
                 """.formatted(
                 JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
-                humanMachineProperties.getProperty("tidb.mysql.driverName"),
-                humanMachineProperties.getProperty("tidb.username"),
-                humanMachineProperties.getProperty("tidb.password"),
-                humanMachineProperties.getProperty("receiver.equipment.tidb.equipmentInfo.table")
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"),
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.username"),
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.password"),
+                HumanMachineSysConfig.getHumanMachineProperties().getProperty("receiver.equipment.tidb.equipmentInfo.table")
         );
 
         tableEnv.executeSql(targetSql);

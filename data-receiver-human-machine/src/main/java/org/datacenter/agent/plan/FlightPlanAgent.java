@@ -12,6 +12,7 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
+import org.datacenter.config.system.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
@@ -23,8 +24,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static org.datacenter.config.system.BaseSysConfig.humanMachineProperties;
 
 /**
  * @author : [wangminan]
@@ -76,7 +75,7 @@ public class FlightPlanAgent extends BaseAgent {
                     PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
 
                     // 1. 准备 Kafka 的 consumer group并创建所有 topic
-                    KafkaUtil.createTopicIfNotExists(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot"));
+                    KafkaUtil.createTopicIfNotExists(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.flightPlanRoot"));
                     running = true;
                     log.info("Flight plan agent is running.");
 
@@ -92,7 +91,7 @@ public class FlightPlanAgent extends BaseAgent {
                             .map(flightPlan -> CompletableFuture.runAsync(() -> {
                                 try {
                                     String flightPlanInJson = mapper.writeValueAsString(flightPlan);
-                                    KafkaUtil.sendMessage(humanMachineProperties.getProperty("kafka.topic.flightPlanRoot"), flightPlanInJson);
+                                    KafkaUtil.sendMessage(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.flightPlanRoot"), flightPlanInJson);
                                 } catch (JsonProcessingException e) {
                                     throw new ZorathosException(e, "Error occurred while converting flight plan to json.");
                                 }
@@ -109,7 +108,7 @@ public class FlightPlanAgent extends BaseAgent {
                 log.error("Error caught by scheduler pool. Task will be stopped.");
                 stop();
             }
-        }, 0, Integer.parseInt(humanMachineProperties.getProperty("agent.interval.flightPlan")), TimeUnit.MINUTES);
+        }, 0, Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.interval.flightPlan")), TimeUnit.MINUTES);
     }
 
     @Override
