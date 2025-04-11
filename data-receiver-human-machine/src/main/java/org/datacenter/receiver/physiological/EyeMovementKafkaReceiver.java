@@ -41,7 +41,7 @@ public class EyeMovementKafkaReceiver extends BaseReceiver {
         Sink<EyeMovement> sinkFunction = JdbcSink.<EyeMovement>builder()
                 .withQueryStatement("""
                         INSERT INTO `physiological`.`eye_movement` (
-                            `sortie_number`, `sensor_id`, `sample_timestamp`,
+                            `task_id`, `sensor_id`, `sample_timestamp`,
                             `pupil_diameter_left_px`, `pupil_diameter_left_mm`, `pupil_diameter_right_px`, `pupil_diameter_right_mm`,\s
                             `pupil_distance_left`, `pupil_distance_right`,
                             `pupil_center_x_left`, `pupil_center_y_left`, `pupil_center_x_right`, `pupil_center_y_right`,
@@ -70,8 +70,8 @@ public class EyeMovementKafkaReceiver extends BaseReceiver {
                             ?, ?
                         );
                         """, (JdbcStatementBuilder<EyeMovement>) (prepareStatement, eyemovement) -> {
-                    prepareStatement.setString(1, config.getSortieNumber());
-                    prepareStatement.setString(2, eyemovement.getSensorId());
+                    prepareStatement.setLong(1, eyemovement.getTaskId());
+                    prepareStatement.setLong(2, eyemovement.getSensorId());
                     prepareStatement.setLong(3, eyemovement.getSampleTimestamp());
                     prepareStatement.setFloat(4, eyemovement.getPupilDiameterLeftPx());
                     prepareStatement.setFloat(5, eyemovement.getPupilDiameterLeftMm());
@@ -124,15 +124,13 @@ public class EyeMovementKafkaReceiver extends BaseReceiver {
     /**
      * 主函数
      *
-     * @param args 接收器参数 入参为 --topic xxxx --sortieNumber xxxx
+     * @param args 接收器参数 入参为 --topic xxxx
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
         String topic = params.getRequired("topic");
-        String sortieNumber = params.getRequired("sortieNumber");
         PhysiologicalKafkaReceiverConfig config = PhysiologicalKafkaReceiverConfig.builder()
                 .topic(topic)
-                .sortieNumber(sortieNumber)
                 .build();
         EyeMovementKafkaReceiver receiver = new EyeMovementKafkaReceiver(config);
         receiver.run();

@@ -42,7 +42,7 @@ public class EegKafkaReceiver extends BaseReceiver {
         Sink<Eeg> sinkFunction = JdbcSink.<Eeg>builder()
                 .withQueryStatement("""
                 INSERT INTO `physiological`.`eeg` (
-                    `sortie_number`, `sensor_id`, `sample_timestamp`,
+                    `task_id`, `sensor_id`, `sample_timestamp`,
                     `stream_name`, `channel_count`, `sampling_rate`, `channel_format`,
                     `channel_1`, `channel_2`, `channel_3`, `channel_4`,
                     `channel_5`, `channel_6`, `channel_7`, `channel_8`,
@@ -53,8 +53,8 @@ public class EegKafkaReceiver extends BaseReceiver {
                 );
                 """,
                     (JdbcStatementBuilder<Eeg>) (preparedStatement, eeg) -> {
-                        preparedStatement.setString(1, config.getSortieNumber());
-                        preparedStatement.setString(2, eeg.getSensorId());
+                        preparedStatement.setLong(1, eeg.getTaskId());
+                        preparedStatement.setLong(2, eeg.getSensorId());
                         preparedStatement.setLong(3, eeg.getSampleTimestamp());
                         preparedStatement.setString(4, eeg.getStreamName());
                         preparedStatement.setInt(5, eeg.getChannelCount());
@@ -92,15 +92,13 @@ public class EegKafkaReceiver extends BaseReceiver {
 
     /**
      * 主函数
-     * @param args 接收器参数 入参为 --topic xxxx --sortieNumber xxxx
+     * @param args 接收器参数 入参为 --topic xxxx
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
         String topic = params.getRequired("topic");
-        String sortieNumber = params.getRequired("sortieNumber");
         PhysiologicalKafkaReceiverConfig config = PhysiologicalKafkaReceiverConfig.builder()
                 .topic(topic)
-                .sortieNumber(sortieNumber)
                 .build();
         EegKafkaReceiver receiver = new EegKafkaReceiver(config);
         receiver.run();

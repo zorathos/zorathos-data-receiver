@@ -40,7 +40,7 @@ public class MotionCaptureKafkaReceiver extends BaseReceiver {
         Sink<MotionCapture> sinkFunction = JdbcSink.<MotionCapture>builder()
                 .withQueryStatement("""
                         INSERT INTO `physiological`.`motion_capture` (
-                            `sortie_number`, `sensor_id`, `sample_timestamp`,
+                            `task_id`, `sensor_id`, `sample_timestamp`,
                             `hips_qx`, `hips_qy`, `hips_qz`, `hips_px`, `hips_py`, `hips_pz`, `hips_timestamp`,
                             `joint_tag_spine_qx`, `joint_tag_spine_qy`, `joint_tag_spine_qz`, `joint_tag_spine_px`, `joint_tag_spine_py`, `joint_tag_spine_pz`, `joint_tag_spine_timestamp`,
                             `joint_tag_spine1_qx`, `joint_tag_spine1_qy`, `joint_tag_spine1_qz`, `joint_tag_spine1_px`, `joint_tag_spine1_py`, `joint_tag_spine1_pz`, `joint_tag_spine1_timestamp`,
@@ -82,8 +82,8 @@ public class MotionCaptureKafkaReceiver extends BaseReceiver {
                             ?, ?, ?, ?, ?, ?, ?
                         );
                         """, (JdbcStatementBuilder<MotionCapture>) (preparedStatement, motionCapture) -> {
-                    preparedStatement.setString(1, config.getSortieNumber());
-                    preparedStatement.setString(2, motionCapture.getSensorId());
+                    preparedStatement.setLong(1, motionCapture.getTaskId());
+                    preparedStatement.setLong(2, motionCapture.getSensorId());
                     preparedStatement.setLong(3, motionCapture.getSampleTimestamp());
                     preparedStatement.setFloat(4, motionCapture.getHipsQx());
                     preparedStatement.setFloat(5, motionCapture.getHipsQy());
