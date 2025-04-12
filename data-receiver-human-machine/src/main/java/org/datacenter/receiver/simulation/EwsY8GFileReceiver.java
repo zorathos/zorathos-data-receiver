@@ -16,6 +16,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
+
 
 /**
  * @author : [宁]
@@ -106,8 +109,8 @@ public class EwsY8GFileReceiver extends SimulationReceiver<EwsY8G> {
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
-                parameterTool.getRequired("url"),
-                parameterTool.getRequired("sortie_number"));
+                parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
         EwsY8GFileReceiver receiver = new EwsY8GFileReceiver();
         receiver.setConfig(config);
         receiver.run();

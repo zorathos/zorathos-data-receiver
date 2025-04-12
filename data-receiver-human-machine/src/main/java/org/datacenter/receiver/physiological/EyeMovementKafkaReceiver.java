@@ -18,6 +18,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PHYSIOLOGY_KAFKA_TOPIC;
+
 /**
  * @author : [wangminan]
  * @description : 眼动数据接收
@@ -128,7 +130,7 @@ public class EyeMovementKafkaReceiver extends BaseReceiver {
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
-        String topic = params.getRequired("topic");
+        String topic = params.getRequired(PHYSIOLOGY_KAFKA_TOPIC.getKeyForParamsMap());
         PhysiologicalKafkaReceiverConfig config = PhysiologicalKafkaReceiverConfig.builder()
                 .topic(topic)
                 .build();

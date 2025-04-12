@@ -22,6 +22,9 @@ import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BASE_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_JSON;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_URL;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES;
 
 /**
@@ -161,15 +164,15 @@ public class SortiesKafkaReceiver extends BaseReceiver {
         ParameterTool params = ParameterTool.fromArgs(args);
         log.info("Params: {}", params.toMap());
 
-        String encodedJson = params.getRequired("sortiesBatchJson");
+        String encodedJson = params.getRequired(SORTIES_BATCH_JSON.getKeyForParamsMap());
         String decodedJson = new String(Base64.getDecoder().decode(encodedJson));
 
         SortiesBatchReceiverConfig batchReceiverConfig = SortiesBatchReceiverConfig.builder()
-                .sortiesBatchUrl(params.getRequired("sortiesBatchUrl"))
-                .sortiesBatchJson(decodedJson)
+                .url(params.getRequired(SORTIES_BATCH_URL.getKeyForParamsMap()))
+                .json(decodedJson)
                 .build();
         SortiesReceiverConfig sortiesReceiverConfig = SortiesReceiverConfig.builder()
-                .sortiesBaseUrl(params.getRequired("sortiesBaseUrl"))
+                .baseUrl(params.getRequired(SORTIES_BASE_URL.getKeyForParamsMap()))
                 .build();
         SortiesKafkaReceiver receiver = new SortiesKafkaReceiver(batchReceiverConfig, sortiesReceiverConfig);
         receiver.run();

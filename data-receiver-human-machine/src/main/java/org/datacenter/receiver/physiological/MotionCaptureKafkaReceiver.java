@@ -17,6 +17,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PHYSIOLOGY_KAFKA_TOPIC;
+
 /**
  * @author : [wangminan]
  * @description : 三维动捕数据Kafka接收器
@@ -236,7 +238,7 @@ public class MotionCaptureKafkaReceiver extends BaseReceiver {
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
-        String topic = params.getRequired("topic");
+        String topic = params.getRequired(PHYSIOLOGY_KAFKA_TOPIC.getKeyForParamsMap());
         PhysiologicalKafkaReceiverConfig config = PhysiologicalKafkaReceiverConfig.builder()
                 .topic(topic)
                 .build();

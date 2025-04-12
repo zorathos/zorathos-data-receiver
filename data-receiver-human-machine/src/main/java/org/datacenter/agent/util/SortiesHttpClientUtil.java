@@ -43,14 +43,14 @@ public class SortiesHttpClientUtil {
      * @return 架次批数据
      */
     public static List<SortiesBatch> getSortiesBatches(SortiesBatchReceiverConfig receiverConfig) {
-        String url = receiverConfig.getSortiesBatchUrl();
+        String url = receiverConfig.getUrl();
         try (HttpClient client = HttpClient.newHttpClient()) {
             return RetryUtil.executeHttpRequestWithRetry(
                     () -> {
                         try {
                             return HttpRequest.newBuilder()
                                     .header("Content-Type", "application/json")
-                                    .POST(HttpRequest.BodyPublishers.ofString(receiverConfig.getSortiesBatchJson()))
+                                    .POST(HttpRequest.BodyPublishers.ofString(receiverConfig.getJson()))
                                     .uri(new URI(url))
                                     .build();
                         } catch (URISyntaxException e) {
@@ -89,7 +89,7 @@ public class SortiesHttpClientUtil {
         List<SortiesBatch> sortiesBatchList = SortiesHttpClientUtil.getSortiesBatches(sortiesBatchReceiverConfig);
 
         for (SortiesBatch sortiesBatch : sortiesBatchList) {
-            final String url = sortiesReceiverConfig.getSortiesBaseUrl() + "?batchId=" + sortiesBatch.getId();
+            final String url = sortiesReceiverConfig.getBaseUrl() + "?batchId=" + sortiesBatch.getId();
             try (HttpClient client = HttpClient.newHttpClient()) {
                 List<Sorties> batchSorties = RetryUtil.executeHttpRequestWithRetry(
                         () -> {

@@ -7,4 +7,4 @@
 架次
 --sortiesBatchUrl http://127.0.0.1:18080/task/dataAsset/queryAllBatches --sortiesBatchJson ewogICJhY21pVGltZUVuZCI6ICIiLAogICJhY21pVGltZVN0YXJ0IjogIiIKfQo= --sortiesBaseUrl http://127.0.0.1:18080/task/dataAsset/querySortiesByBatchId
 数据资产
---assetListBaseUrl http://127.0.0.1:18080/datahandle/asset/getObjectifyAsset --assetConfigBaseUrl http://127.0.0.1:18080/datahandle/asset/getAssetValidConfig --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02 --sqlNodes 127.0.0.1:9030 --feNodes 127.0.0.1:8030 --username wangminan --password Lab418Server!
+--listBaseUrl http://127.0.0.1:18080/datahandle/asset/getObjectifyAsset --configBaseUrl http://127.0.0.1:18080/datahandle/asset/getAssetValidConfig --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02 --sqlNodes 127.0.0.1:9030 --feNodes 127.0.0.1:8030 --username wangminan --password Lab418Server!

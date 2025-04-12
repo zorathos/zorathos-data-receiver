@@ -12,6 +12,12 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import static org.apache.flink.table.api.Expressions.$;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.EQUIPMENT_CODE_DATABASE;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.EQUIPMENT_CODE_HOST;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.EQUIPMENT_CODE_PASSWORD;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.EQUIPMENT_CODE_PORT;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.EQUIPMENT_CODE_TABLE;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.EQUIPMENT_CODE_USERNAME;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.RECEIVER_EQUIPMENT_TIDB_EQUIPMENT_CODE_TABLE;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_MYSQL_DRIVER_NAME;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_PASSWORD;
@@ -142,12 +148,12 @@ public class EquipmentCodeCdcReceiver extends BaseReceiver {
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
         EquipmentCodeReceiverConfig config = EquipmentCodeReceiverConfig.builder()
-                .host(params.getRequired("host"))
-                .port(params.getRequired("port"))
-                .database(params.getRequired("database"))
-                .username(params.getRequired("username"))
-                .password(params.getRequired("password"))
-                .table(params.getRequired("table"))
+                .host(params.getRequired(EQUIPMENT_CODE_HOST.getKeyForParamsMap()))
+                .port(params.getRequired(EQUIPMENT_CODE_PORT.getKeyForParamsMap()))
+                .database(params.getRequired(EQUIPMENT_CODE_DATABASE.getKeyForParamsMap()))
+                .username(params.getRequired(EQUIPMENT_CODE_USERNAME.getKeyForParamsMap()))
+                .password(params.getRequired(EQUIPMENT_CODE_PASSWORD.getKeyForParamsMap()))
+                .table(params.getRequired(EQUIPMENT_CODE_TABLE.getKeyForParamsMap()))
                 .build();
         EquipmentCodeCdcReceiver receiver = new EquipmentCodeCdcReceiver(config);
         receiver.run();

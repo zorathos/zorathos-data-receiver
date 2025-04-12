@@ -241,7 +241,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         String formattedCookies = RedisUtil.get(redisKey);
 
         try (HttpClient client = HttpClient.newHttpClient()) {
-            final String url = receiverConfig.getPersonnelUrl();
+            final String url = receiverConfig.getUrl();
 
             return RetryUtil.executeHttpRequestWithRetry(
                     () -> {

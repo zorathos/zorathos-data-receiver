@@ -22,6 +22,8 @@ import java.sql.Date;
 import java.util.Base64;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_AND_PLAN_LOGIN_JSON;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_AND_PLAN_LOGIN_URL;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_PERSONNEL;
 
 /**
@@ -161,15 +163,15 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         ParameterTool params = ParameterTool.fromArgs(args);
         log.info("Parameters: {}", params.toMap());
 
-        String encodedLoginJson = params.getRequired("loginJson");
+        String encodedLoginJson = params.getRequired(PERSONNEL_AND_PLAN_LOGIN_JSON.getKeyForParamsMap());
         String decodedLoginJson = new String(Base64.getDecoder().decode(encodedLoginJson));
 
         PersonnelAndPlanLoginConfig loginConfig = PersonnelAndPlanLoginConfig.builder()
-                .loginUrl(params.getRequired("loginUrl"))
+                .loginUrl(params.getRequired(PERSONNEL_AND_PLAN_LOGIN_URL.getKeyForParamsMap()))
                 .loginJson(decodedLoginJson)
                 .build();
         PersonnelReceiverConfig receiverConfig = PersonnelReceiverConfig.builder()
-                .personnelUrl(params.getRequired("personnelUrl"))
+                .url(params.getRequired(PERSONNEL_AND_PLAN_LOGIN_URL.getKeyForParamsMap()))
                 .build();
         PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver(loginConfig, receiverConfig);
         personnelKafkaReceiver.run();

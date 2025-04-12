@@ -15,6 +15,9 @@ import org.datacenter.receiver.simulation.base.SimulationReceiver;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
+
 
 /**
  * @author : [宁]
@@ -77,8 +80,8 @@ public class PlaneProFileReceiver extends SimulationReceiver<PlanePro> {
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
-                parameterTool.getRequired("url"),
-                parameterTool.getRequired("sortie_number"));
+                parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
         PlaneProFileReceiver receiver = new PlaneProFileReceiver();
         receiver.setConfig(config);
         receiver.run();

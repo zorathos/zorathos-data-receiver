@@ -107,7 +107,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
 
             // 2. 获取到架次后拿着sortie的armType作为weaponNumber入参 icdVersion作为icd入参 查数据资产列表接口 获取资产列表
             log.info("Fetching asset list from web interface, armType: {}, icdVersion: {}.", armType, icdVersion);
-            String assetListUrl = config.getAssetListBaseUrl() +
+            String assetListUrl = config.getListBaseUrl() +
                     "?weaponModel=" + armType +
                     "&icd=" + icdVersion;
             List<AssetSummary> assetList;
@@ -129,7 +129,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             // 3. 根据资产ID查资产配置信息接口
             for (AssetSummary asset : assetList) {
                 Long assetId = asset.getId();
-                String url = config.getAssetConfigBaseUrl() + "?id=" + assetId;
+                String url = config.getConfigBaseUrl() + "?id=" + assetId;
                 try (HttpClient client = HttpClient.newHttpClient()) {
                     HttpRequest request = HttpRequest.newBuilder()
                             .GET()
@@ -492,8 +492,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
      * 接收数据资产数据
      *
      * @param args 接收参数 格式为
-     *             --assetListBaseUrl http://192.168.10.100:8088/datahandle/asset/getObjectifyAsset
-     *             --assetConfigBaseUrl http://192.168.10.100:8088/datahandle/asset/getAssetValidConfig
+     *             --listBaseUrl http://192.168.10.100:8088/datahandle/asset/getObjectifyAsset
+     *             --configBaseUrl http://192.168.10.100:8088/datahandle/asset/getAssetValidConfig
      *             --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02
      *             --feNodes 127.0.0.1:8030 --username root --password 123456
      */
@@ -503,8 +503,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
         log.info("Params: {}", params.toMap());
 
         AssetReceiverConfig config = AssetReceiverConfig.builder()
-                .assetListBaseUrl(params.getRequired("assetListBaseUrl"))
-                .assetConfigBaseUrl(params.getRequired("assetConfigBaseUrl"))
+                .listBaseUrl(params.getRequired("listBaseUrl"))
+                .configBaseUrl(params.getRequired("configBaseUrl"))
                 .sortieNumber(params.getRequired("sortieNumber"))
                 .sqlNodes(params.getRequired("sqlNodes"))
                 .feNodes(params.getRequired("feNodes"))

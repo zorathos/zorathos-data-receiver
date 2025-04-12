@@ -16,6 +16,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
+
 
 /**
  * @author : [宁]
@@ -118,8 +121,8 @@ public class CdDroneTspiFileReceiver extends SimulationReceiver<CdDroneTspi> {
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
-                parameterTool.getRequired("url"),
-                parameterTool.getRequired("sortie_number"));
+                parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
         CdDroneTspiFileReceiver receiver = new CdDroneTspiFileReceiver();
         receiver.setConfig(config);
         receiver.run();
