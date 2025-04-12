@@ -10,9 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
-import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.crew.PersonnelReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.receiver.crew.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 
@@ -22,6 +22,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_INTERVAL_PERSONNEL;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_PERSONNEL;
 
 /**
  * @author : [wangminan]
@@ -64,42 +67,42 @@ public class PersonnelAgent extends BaseAgent {
         }
 
         scheduler.scheduleAtFixedRate(() -> {
-                try {
-                    if (prepared) {
-                        // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
-                        // 0. 刷新Cookie
-                        PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
-                        // 1 准备 Kafka 的 consumer group并创建所有 topic
-                        KafkaUtil.createTopicIfNotExists(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.personnel"));
-                        // 这时候才可以拉起Flink任务
-                        running = true;
-                        log.info("Personnel agent is running.");
-                        // 2. 拉取人员数据
-                        List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
-                        // 3. 转发到Kafka
-                        List<CompletableFuture<Void>> futures = personnelInfos.stream()
-                                .map(personnelInfo -> CompletableFuture.runAsync(() -> {
-                                    try {
-                                        String personnelInfoInJson = mapper.writeValueAsString(personnelInfo);
-                                        KafkaUtil.sendMessage(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.personnel"), personnelInfoInJson);
-                                    } catch (JsonProcessingException e) {
-                                        throw new ZorathosException(e, "Error occurred while converting personnel info to json.");
-                                    }
-                                }))
-                                .toList();
-                        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-                        try {
-                            allFutures.join();
-                        } catch (CompletionException e) {
-                            throw new ZorathosException(e.getCause(), "Error in parallel processing of personnel info.");
+                    try {
+                        if (prepared) {
+                            // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
+                            // 0. 刷新Cookie
+                            PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
+                            // 1 准备 Kafka 的 consumer group并创建所有 topic
+                            KafkaUtil.createTopicIfNotExists(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL));
+                            // 这时候才可以拉起Flink任务
+                            running = true;
+                            log.info("Personnel agent is running.");
+                            // 2. 拉取人员数据
+                            List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
+                            // 3. 转发到Kafka
+                            List<CompletableFuture<Void>> futures = personnelInfos.stream()
+                                    .map(personnelInfo -> CompletableFuture.runAsync(() -> {
+                                        try {
+                                            String personnelInfoInJson = mapper.writeValueAsString(personnelInfo);
+                                            KafkaUtil.sendMessage(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL), personnelInfoInJson);
+                                        } catch (JsonProcessingException e) {
+                                            throw new ZorathosException(e, "Error occurred while converting personnel info to json.");
+                                        }
+                                    }))
+                                    .toList();
+                            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                            try {
+                                allFutures.join();
+                            } catch (CompletionException e) {
+                                throw new ZorathosException(e.getCause(), "Error in parallel processing of personnel info.");
+                            }
                         }
+                    } catch (Exception e) {
+                        log.error("Error caught by scheduler pool. Task will be stopped.");
+                        stop();
                     }
-                } catch (Exception e) {
-                    log.error("Error caught by scheduler pool. Task will be stopped.");
-                    stop();
-                }
-            },
-            0, Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.interval.personnel")), TimeUnit.MINUTES);
+                },
+                0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_PERSONNEL)), TimeUnit.MINUTES);
     }
 
     @Override

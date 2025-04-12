@@ -7,8 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.SortiesHttpClientUtil;
-import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.SortiesBatch;
 
@@ -18,6 +18,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_INTERVAL_SORTIES_BATCH;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES_BATCH;
 
 /**
  * @author : [wangminan]
@@ -62,7 +65,7 @@ public class SortiesBatchAgent extends BaseAgent {
                             .map(sortiesBatch -> CompletableFuture.runAsync(() -> {
                                 try {
                                     String sortiesBatchInJson = mapper.writeValueAsString(sortiesBatch);
-                                    KafkaUtil.sendMessage(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.sortiesBatch"), sortiesBatchInJson);
+                                    KafkaUtil.sendMessage(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES_BATCH), sortiesBatchInJson);
                                 } catch (JsonProcessingException e) {
                                     throw new ZorathosException(e, "Error occurred while converting sortiesBatch to json.");
                                 }
@@ -79,7 +82,7 @@ public class SortiesBatchAgent extends BaseAgent {
                 log.error("Error caught by scheduler pool. Task will be stopped.");
                 stop();
             }
-        }, 0, Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.interval.sortiesBatch")), TimeUnit.SECONDS);
+        }, 0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_SORTIES_BATCH)), TimeUnit.SECONDS);
     }
 
     @Override

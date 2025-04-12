@@ -27,9 +27,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.datacenter</groupId>
-            <artifactId>data-receiver-config</artifactId>
-            <version>0.0.1</version>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
         </dependency>
 
         <!-- Unit Test -->

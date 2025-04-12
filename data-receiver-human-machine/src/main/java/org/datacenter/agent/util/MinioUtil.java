@@ -15,7 +15,7 @@ import io.minio.errors.InvalidResponseException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.exception.ZorathosException;
 
 import java.io.File;
@@ -23,6 +23,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.MINIO_ACCESS_KEY_ID;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.MINIO_ACCESS_KEY_SECRET;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.MINIO_BUCKET;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.MINIO_ENDPOINT;
 
 /**
  * @author : [wangminan]
@@ -34,17 +39,17 @@ public class MinioUtil {
 
     static {
         minioClient = MinioClient.builder()
-                .endpoint(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.endpoint"))
-                .credentials(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.accessKeyId"), HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.accessKeySecret"))
+                .endpoint(HumanMachineConfig.getProperty(MINIO_ENDPOINT))
+                .credentials(HumanMachineConfig.getProperty(MINIO_ACCESS_KEY_ID), HumanMachineConfig.getProperty(MINIO_ACCESS_KEY_SECRET))
                 .build();
         // 检查 bucket是否存在 如果不存在的就创建
         try {
             if (!minioClient.bucketExists(BucketExistsArgs.builder()
-                    .bucket(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.bucket"))
+                    .bucket(HumanMachineConfig.getProperty(MINIO_BUCKET))
                     .build())) {
-                log.info("Human machine bucket does not exist, creating:{}", HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.bucket"));
+                log.info("Human machine bucket does not exist, creating:{}", HumanMachineConfig.getProperty(MINIO_BUCKET));
                 minioClient.makeBucket(MakeBucketArgs.builder()
-                        .bucket(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.bucket"))
+                        .bucket(HumanMachineConfig.getProperty(MINIO_BUCKET))
                         .build());
             }
         } catch (Exception e) {
@@ -56,7 +61,7 @@ public class MinioUtil {
         try {
             StatObjectResponse statObjectResponse = minioClient.statObject(
                     StatObjectArgs.builder()
-                            .bucket(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.bucket"))
+                            .bucket(HumanMachineConfig.getProperty(MINIO_BUCKET))
                             .object(url)
                             .build());
             if (statObjectResponse != null) {
@@ -86,7 +91,7 @@ public class MinioUtil {
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.bucket"))
+                            .bucket(HumanMachineConfig.getProperty(MINIO_BUCKET))
                             .object(url)
                             .stream(
                                     inputStream, -1, 10485760)
@@ -110,7 +115,7 @@ public class MinioUtil {
         try {
             minioClient.uploadObject(
                     UploadObjectArgs.builder()
-                            .bucket(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.bucket"))
+                            .bucket(HumanMachineConfig.getProperty(MINIO_BUCKET))
                             .object(url)
                             .filename(file.getName())
                             .contentType(contentType)
@@ -125,7 +130,7 @@ public class MinioUtil {
     public static void delete(String url) {
         try {
             minioClient.removeObject(RemoveObjectArgs.builder()
-                    .bucket(HumanMachineSysConfig.getHumanMachineProperties().getProperty("minio.bucket"))
+                    .bucket(HumanMachineConfig.getProperty(MINIO_BUCKET))
                     .object(url)
                     .build());
         } catch (ServerException | InsufficientDataException | ErrorResponseException | IOException |

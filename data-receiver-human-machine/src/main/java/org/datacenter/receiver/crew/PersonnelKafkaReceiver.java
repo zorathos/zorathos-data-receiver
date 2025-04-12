@@ -8,9 +8,9 @@ import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.personnel.PersonnelAgent;
-import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.crew.PersonnelReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.receiver.crew.PersonnelReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -22,6 +22,8 @@ import java.sql.Date;
 import java.util.Base64;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_PERSONNEL;
+
 /**
  * @author : [wangminan]
  * @description : 人员数据Kafka接收器
@@ -32,8 +34,8 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     private final PersonnelAgent personnelAgent;
 
     public PersonnelKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig, PersonnelReceiverConfig receiverConfig) {
-        // 1. 加载配置 HumanMachineSysConfig.loadConfig();
-        HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
+        // 1. 加载配置 HumanMachineConfig.loadConfig();
+        HumanMachineConfig sysConfig = new HumanMachineConfig();
         sysConfig.loadConfig();
         // 2. 初始化人员Agent
         this.personnelAgent = new PersonnelAgent(loginConfig, receiverConfig);
@@ -55,15 +57,13 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
     @Override
     public void start() {
         // shutdownhook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            agentShutdown(personnelAgent);
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentShutdown(personnelAgent)));
 
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<PersonnelInfo> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.personnel")), PersonnelInfo.class);
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL)), PersonnelInfo.class);
         // 投递到数据库 写sql时使用upsert语法
         Sink<PersonnelInfo> sink = JdbcSink.<PersonnelInfo>builder()
                 .withQueryStatement("""

@@ -8,8 +8,8 @@ import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.sorties.SortiesBatchAgent;
-import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.sorties.SortiesBatch;
@@ -19,6 +19,8 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.util.Base64;
 import java.util.List;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES_BATCH;
 
 /**
  * @author : [wangminan]
@@ -30,8 +32,8 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
     private final SortiesBatchAgent sortiesBatchAgent;
 
     public SortiesBatchKafkaReceiver(SortiesBatchReceiverConfig receiverConfig) {
-        // 1. 加载配置 HumanMachineSysConfig.loadConfig();
-        HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
+        // 1. 加载配置 HumanMachineConfig.loadConfig();
+        HumanMachineConfig sysConfig = new HumanMachineConfig();
         sysConfig.loadConfig();
         this.sortiesBatchAgent = new SortiesBatchAgent(receiverConfig);
     }
@@ -52,15 +54,13 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
     @Override
     public void start() {
         //shutdownhook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            agentShutdown(sortiesBatchAgent);
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentShutdown(sortiesBatchAgent)));
 
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<SortiesBatch> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.sortiesBatch")), SortiesBatch.class);
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES_BATCH)), SortiesBatch.class);
 
         Sink<SortiesBatch> sinkFunction = JdbcSink.<SortiesBatch>builder()
                 .withQueryStatement("""
@@ -88,6 +88,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
 
     /**
      * 主函数
+     *
      * @param args 入参 --sortiesBatchUrl xxx --sortiesBatchJson xxx
      */
     public static void main(String[] args) {

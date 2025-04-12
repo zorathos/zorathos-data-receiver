@@ -1,6 +1,6 @@
 package org.datacenter.test;
 
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileWriter;
@@ -15,9 +15,8 @@ public class PropertiesTest {
 
     @Test
     void testRead() {
-        HumanMachineSysConfig humanMachineSysConfig = new HumanMachineSysConfig();
+        HumanMachineConfig humanMachineSysConfig = new HumanMachineConfig();
         humanMachineSysConfig.loadConfig();
-        System.out.println(HumanMachineSysConfig.getHumanMachineProperties());
     }
 
     @Test

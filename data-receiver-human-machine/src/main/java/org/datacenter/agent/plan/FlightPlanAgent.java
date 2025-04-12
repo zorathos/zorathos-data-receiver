@@ -10,9 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
-import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.plan.FlightPlanReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.receiver.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
@@ -24,6 +24,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_INTERVAL_FLIGHT_PLAN;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_FLIGHT_PLAN_ROOT;
 
 /**
  * @author : [wangminan]
@@ -75,7 +78,7 @@ public class FlightPlanAgent extends BaseAgent {
                     PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
 
                     // 1. 准备 Kafka 的 consumer group并创建所有 topic
-                    KafkaUtil.createTopicIfNotExists(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.flightPlanRoot"));
+                    KafkaUtil.createTopicIfNotExists(HumanMachineConfig.getProperty(KAFKA_TOPIC_FLIGHT_PLAN_ROOT));
                     running = true;
                     log.info("Flight plan agent is running.");
 
@@ -91,7 +94,7 @@ public class FlightPlanAgent extends BaseAgent {
                             .map(flightPlan -> CompletableFuture.runAsync(() -> {
                                 try {
                                     String flightPlanInJson = mapper.writeValueAsString(flightPlan);
-                                    KafkaUtil.sendMessage(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.flightPlanRoot"), flightPlanInJson);
+                                    KafkaUtil.sendMessage(HumanMachineConfig.getProperty(KAFKA_TOPIC_FLIGHT_PLAN_ROOT), flightPlanInJson);
                                 } catch (JsonProcessingException e) {
                                     throw new ZorathosException(e, "Error occurred while converting flight plan to json.");
                                 }
@@ -108,7 +111,7 @@ public class FlightPlanAgent extends BaseAgent {
                 log.error("Error caught by scheduler pool. Task will be stopped.");
                 stop();
             }
-        }, 0, Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.interval.flightPlan")), TimeUnit.MINUTES);
+        }, 0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_FLIGHT_PLAN)), TimeUnit.MINUTES);
     }
 
     @Override

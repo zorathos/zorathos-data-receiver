@@ -2,8 +2,8 @@ package org.datacenter.receiver;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
-import org.datacenter.config.BaseReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.BaseReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 
 import java.util.Timer;
@@ -25,7 +25,7 @@ public abstract class BaseReceiver {
     }
 
     public void prepare() {
-        HumanMachineSysConfig humanMachineSysConfig = new HumanMachineSysConfig();
+        HumanMachineConfig humanMachineSysConfig = new HumanMachineConfig();
         humanMachineSysConfig.loadConfig();
     }
 

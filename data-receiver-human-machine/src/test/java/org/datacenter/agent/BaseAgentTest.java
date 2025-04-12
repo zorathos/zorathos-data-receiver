@@ -1,7 +1,7 @@
 package org.datacenter.agent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -16,7 +16,7 @@ public class BaseAgentTest {
     private static final TestAgent1 testAgent3;
 
     static {
-        HumanMachineSysConfig humanMachineSysConfig = new HumanMachineSysConfig();
+        HumanMachineConfig humanMachineSysConfig = new HumanMachineConfig();
         humanMachineSysConfig.loadConfig();
         testAgent1 = new TestAgent1();
         testAgent2 = new TestAgent2();
@@ -67,7 +67,7 @@ public class BaseAgentTest {
 
     @Test
     void testStop() {
-        HumanMachineSysConfig humanMachineSysConfig = new HumanMachineSysConfig();
+        HumanMachineConfig humanMachineSysConfig = new HumanMachineConfig();
         humanMachineSysConfig.loadConfig();
         testAgent1.stop();
         testAgent2.stop();

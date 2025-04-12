@@ -9,9 +9,9 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
-import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.plan.FlightPlanReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.receiver.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightCmd;
@@ -28,6 +28,8 @@ import java.sql.Date;
 import java.util.Base64;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_FLIGHT_PLAN_ROOT;
+
 /**
  * @author : [wangminan]
  * @description : 从Kafka中接收飞行计划数据写入TiDB
@@ -39,8 +41,8 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
 
     public FlightPlanKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig,
                                    FlightPlanReceiverConfig flightPlanReceiverConfig) {
-        // 1. 加载配置 HumanMachineSysConfig.loadConfig();
-        HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
+        // 1. 加载配置 HumanMachineConfig.loadConfig();
+        HumanMachineConfig sysConfig = new HumanMachineConfig();
         sysConfig.loadConfig();
         this.flightPlanAgent = new FlightPlanAgent(loginConfig, flightPlanReceiverConfig);
     }
@@ -60,16 +62,14 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
     @Override
     public void start() {
         // shutdownhook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            agentShutdown(flightPlanAgent);
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentShutdown(flightPlanAgent)));
 
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
 
         SingleOutputStreamOperator<FlightPlanRoot> kafkaSourceDS = DataReceiverUtil
-                .getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.flightPlanRoot")), FlightPlanRoot.class)
+                .getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_FLIGHT_PLAN_ROOT)), FlightPlanRoot.class)
                 .returns(FlightPlanRoot.class);
 
         Sink<FlightPlanRoot> flightRootSink = JdbcSink.<FlightPlanRoot>builder()

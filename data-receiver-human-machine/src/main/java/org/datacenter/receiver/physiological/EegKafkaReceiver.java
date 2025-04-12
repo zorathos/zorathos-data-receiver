@@ -8,7 +8,7 @@ import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.datacenter.config.physiological.PhysiologicalKafkaReceiverConfig;
+import org.datacenter.config.receiver.physiological.PhysiologicalKafkaReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.physiological.Eeg;

@@ -6,13 +6,17 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.datacenter.config.equipment.EquipmentInfoReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.equipment.EquipmentInfoReceiverConfig;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import static org.apache.flink.table.api.Expressions.$;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.RECEIVER_EQUIPMENT_TIDB_EQUIPMENT_INFO_TABLE;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_MYSQL_DRIVER_NAME;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_PASSWORD;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
 
 /**
  * @author : [wangminan]
@@ -115,10 +119,10 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                 );
                 """.formatted(
                 JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"),
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.username"),
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.password"),
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("receiver.equipment.tidb.equipmentInfo.table")
+                HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME),
+                HumanMachineConfig.getProperty(TIDB_USERNAME),
+                HumanMachineConfig.getProperty(TIDB_PASSWORD),
+                HumanMachineConfig.getProperty(RECEIVER_EQUIPMENT_TIDB_EQUIPMENT_INFO_TABLE)
         );
 
         tableEnv.executeSql(targetSql);

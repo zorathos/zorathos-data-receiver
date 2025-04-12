@@ -2,8 +2,18 @@ package org.datacenter.receiver.util;
 
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.model.base.TiDBDatabase;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.FLINK_JDBC_SINKER_BATCH_INTERVAL;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.FLINK_JDBC_SINKER_BATCH_SIZE;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.FLINK_JDBC_SINKER_MAX_RETRIES;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_CONNECTION_CHECK_TIMEOUT_SECONDS;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_MYSQL_DRIVER_NAME;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_PASSWORD;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_URL_PREFIX;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_URL_SUFFIX;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
 
 /**
  * @author : [wangminan]
@@ -11,35 +21,30 @@ import org.datacenter.model.base.TiDBDatabase;
  */
 public class JdbcSinkUtil {
     public static final String TIDB_URL_HUMAN_MACHINE =
-            HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.prefix") +
-                    TiDBDatabase.HUMAN_MACHINE.getName() +
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.suffix");
+            HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +
+                    TiDBDatabase.HUMAN_MACHINE.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
 
     public static final String TIDB_URL_FLIGHT_PLAN =
-            HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.prefix") +
-                    TiDBDatabase.FLIGHT_PLAN.getName() +
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.suffix");
+            HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +
+                    TiDBDatabase.FLIGHT_PLAN.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
 
     public static final String TIDB_URL_SIMULATION =
-            HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.prefix") +
-                    TiDBDatabase.SIMULATION.getName() +
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.suffix");
+            HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +
+                    TiDBDatabase.SIMULATION.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
 
     public static final String TIDB_URL_SORTIES =
-            HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.prefix") +
-                    TiDBDatabase.SORTIES.getName() +
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.suffix");
+            HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +
+                    TiDBDatabase.SORTIES.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
 
     public static final String TIDB_REAL_WORLD_FLIGHT =
-            HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.prefix") +
-                    TiDBDatabase.REAL_WORLD_FLIGHT.getName() +
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.suffix");
+            HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +
+                    TiDBDatabase.REAL_WORLD_FLIGHT.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
 
     public static JdbcExecutionOptions getTiDBJdbcExecutionOptions() {
         return JdbcExecutionOptions.builder()
-                .withBatchSize(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("flink.jdbc.sinker.batchSize")))
-                .withBatchIntervalMs(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("flink.jdbc.sinker.batchInterval")))
-                .withMaxRetries(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("flink.jdbc.sinker.maxRetries")))
+                .withBatchSize(Integer.parseInt(HumanMachineConfig.getProperty(FLINK_JDBC_SINKER_BATCH_SIZE)))
+                .withBatchIntervalMs(Integer.parseInt(HumanMachineConfig.getProperty(FLINK_JDBC_SINKER_BATCH_INTERVAL)))
+                .withMaxRetries(Integer.parseInt(HumanMachineConfig.getProperty(FLINK_JDBC_SINKER_MAX_RETRIES)))
                 .build();
     }
 
@@ -52,21 +57,21 @@ public class JdbcSinkUtil {
      */
     public static JdbcConnectionOptions getTiDBJdbcConnectionOptions(TiDBDatabase database) {
         return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                .withUrl(HumanMachineSysConfig.getHumanMachineProperties().get("tidb.url.prefix") + database.getName() + HumanMachineSysConfig.getHumanMachineProperties().get("tidb.url.suffix"))
-                .withDriverName(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"))
-                .withUsername(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.username"))
-                .withPassword(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.password"))
-                .withConnectionCheckTimeoutSeconds(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.connectionCheckTimeoutSeconds")))
+                .withUrl(HumanMachineConfig.getProperty(TIDB_URL_PREFIX) + database.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX))
+                .withDriverName(HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME))
+                .withUsername(HumanMachineConfig.getProperty(TIDB_USERNAME))
+                .withPassword(HumanMachineConfig.getProperty(TIDB_PASSWORD))
+                .withConnectionCheckTimeoutSeconds(Integer.parseInt(HumanMachineConfig.getProperty(TIDB_CONNECTION_CHECK_TIMEOUT_SECONDS)))
                 .build();
     }
 
     public static JdbcConnectionOptions getTiDBJdbcConnectionOptions(String url) {
         return new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                 .withUrl(url)
-                .withDriverName(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"))
-                .withUsername(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.username"))
-                .withPassword(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.password"))
-                .withConnectionCheckTimeoutSeconds(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.connectionCheckTimeoutSeconds")))
+                .withDriverName(HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME))
+                .withUsername(HumanMachineConfig.getProperty(TIDB_USERNAME))
+                .withPassword(HumanMachineConfig.getProperty(TIDB_PASSWORD))
+                .withConnectionCheckTimeoutSeconds(Integer.parseInt(HumanMachineConfig.getProperty(TIDB_CONNECTION_CHECK_TIMEOUT_SECONDS)))
                 .build();
     }
 }

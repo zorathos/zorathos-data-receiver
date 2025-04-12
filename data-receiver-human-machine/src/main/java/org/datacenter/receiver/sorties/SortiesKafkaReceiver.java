@@ -8,9 +8,9 @@ import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.sorties.SortiesAgent;
-import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.sorties.SortiesReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
+import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.sorties.Sorties;
@@ -22,6 +22,8 @@ import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES;
+
 /**
  * @author : [wangminan]
  * @description : 架次信息用的KafkaReceiver
@@ -32,8 +34,8 @@ public class SortiesKafkaReceiver extends BaseReceiver {
     private final SortiesAgent sortiesAgent;
 
     public SortiesKafkaReceiver(SortiesBatchReceiverConfig batchReceiverConfig, SortiesReceiverConfig sortiesReceiverConfig) {
-        // 1. 加载配置 HumanMachineSysConfig.loadConfig();
-        HumanMachineSysConfig sysConfig = new HumanMachineSysConfig();
+        // 1. 加载配置 HumanMachineConfig.loadConfig();
+        HumanMachineConfig sysConfig = new HumanMachineConfig();
         sysConfig.loadConfig();
         this.sortiesAgent = new SortiesAgent(batchReceiverConfig, sortiesReceiverConfig);
     }
@@ -53,14 +55,12 @@ public class SortiesKafkaReceiver extends BaseReceiver {
     @Override
     public void start() {
         // 1. shutdownhook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            agentShutdown(sortiesAgent);
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentShutdown(sortiesAgent)));
 
         // 2. 执行环境 引入kafka数据源
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         DataStreamSource<Sorties> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.sorties")), Sorties.class);
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES)), Sorties.class);
 
         // 3. jdbcsink
         Sink<Sorties> sink = JdbcSink.<Sorties>builder()
@@ -112,13 +112,13 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                     preparedStatement.setString(6, sorties.getCampStr());
                     preparedStatement.setTimestamp(7,
                             sorties.getCarEndTime() == null ? null :
-                            Timestamp.valueOf(sorties.getCarEndTime()));
+                                    Timestamp.valueOf(sorties.getCarEndTime()));
                     preparedStatement.setTimestamp(8,
                             sorties.getCarStartTime() == null ? null :
-                            Timestamp.valueOf(sorties.getCarStartTime()));
+                                    Timestamp.valueOf(sorties.getCarStartTime()));
                     preparedStatement.setTimestamp(9,
                             sorties.getCreateTime() == null ? null :
-                            Timestamp.valueOf(sorties.getCreateTime()));
+                                    Timestamp.valueOf(sorties.getCreateTime()));
                     preparedStatement.setString(10, sorties.getDownPilot());
                     preparedStatement.setString(11, sorties.getFolderId());
                     preparedStatement.setString(12, sorties.getFolderName());

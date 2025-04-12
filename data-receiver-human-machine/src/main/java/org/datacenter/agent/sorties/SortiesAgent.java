@@ -7,9 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.SortiesHttpClientUtil;
-import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.sorties.SortiesReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
+import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 
@@ -19,6 +19,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_INTERVAL_SORTIES;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES;
 
 /**
  * @author : [wangminan]
@@ -66,7 +69,7 @@ public class SortiesAgent extends BaseAgent {
                                 try {
                                     String flightPlanInJson = mapper.writeValueAsString(sorties);
                                     KafkaUtil.sendMessage(
-                                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.topic.sorties"), flightPlanInJson);
+                                            HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES), flightPlanInJson);
                                 } catch (JsonProcessingException e) {
                                     throw new ZorathosException(e, "Error occurred while converting sorties to json.");
                                 }
@@ -84,7 +87,7 @@ public class SortiesAgent extends BaseAgent {
                 stop();
             }
         }, 0, Integer.parseInt(
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.interval.sorties")), TimeUnit.SECONDS);
+                HumanMachineConfig.getProperty(AGENT_INTERVAL_SORTIES)), TimeUnit.SECONDS);
     }
 
     @Override

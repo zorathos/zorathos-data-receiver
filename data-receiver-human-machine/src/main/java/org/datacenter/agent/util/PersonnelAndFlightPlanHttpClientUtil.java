@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.crew.PersonnelReceiverConfig;
-import org.datacenter.config.plan.FlightPlanReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.receiver.crew.PersonnelReceiverConfig;
+import org.datacenter.config.receiver.plan.FlightPlanReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -30,6 +30,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_RETRIES_HTTP;
+
 /**
  * 各个业务之间的Agent是独立的 但是util可以是一起的
  *
@@ -41,7 +43,7 @@ import java.util.List;
 public class PersonnelAndFlightPlanHttpClientUtil {
     private static final ObjectMapper mapper;
     private static final String redisKey = "human-machine:personnel-and-flight-plan:cookie";
-    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.retries.http"));
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineConfig.getProperty(AGENT_RETRIES_HTTP));
 
     static {
         mapper = new ObjectMapper();

@@ -16,8 +16,8 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.datacenter.config.real.AssetReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.real.AssetReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;
@@ -46,6 +46,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_MYSQL_DRIVER_NAME;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_PASSWORD;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
 
 /**
  * @author : [wangminan]
@@ -80,7 +84,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             String armType;
             String icdVersion;
             try {
-                Class.forName(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"));
+                Class.forName(HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME));
                 log.info("Fetching sortie data from database, sortieNumber: {}.", config.getSortieNumber());
                 Connection sortiesConn = sortieFlightPool.getConnection();
                 String sql = "SELECT * FROM `%s` WHERE sortie_number = ?".formatted(TiDBTable.SORTIES.getName());
@@ -431,9 +435,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 getColumnDefinitionsFromDorisStatement(createTableStatement),
                 indexDefinition,
                 JdbcSinkUtil.TIDB_REAL_WORLD_FLIGHT,
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"),
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.username"),
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.password"),
+                HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME),
+                HumanMachineConfig.getProperty(TIDB_USERNAME),
+                HumanMachineConfig.getProperty(TIDB_PASSWORD),
                 targetTableName
         );
 

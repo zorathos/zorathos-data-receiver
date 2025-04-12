@@ -20,7 +20,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.function.SerializableFunction;
 import org.apache.flink.util.function.SerializableSupplier;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.receiver.util.DataReceiverUtil;
@@ -64,7 +64,7 @@ public class TimeTest {
     }
 
     public static void main(String[] args) {
-        HumanMachineSysConfig humanMachineSysConfig = new HumanMachineSysConfig();
+        HumanMachineConfig humanMachineSysConfig = new HumanMachineConfig();
         humanMachineSysConfig.loadConfig();
 
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();

@@ -3,12 +3,21 @@ package org.datacenter.receiver.util;
 import com.alibaba.druid.pool.DruidDataSource;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_MYSQL_DRIVER_NAME;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_PASSWORD;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_POOL_MAX_IDLE;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_POOL_MAX_TOTAL;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_POOL_MIN_IDLE;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_URL_PREFIX;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_URL_SUFFIX;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
 
 @Slf4j
 public class MySQLDriverConnectionPool {
@@ -19,9 +28,9 @@ public class MySQLDriverConnectionPool {
 
     public MySQLDriverConnectionPool(TiDBDatabase database) {
         this(
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.prefix") + database.getName() + HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.url.suffix"),
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.username"),
-                HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.password")
+                HumanMachineConfig.getProperty(TIDB_URL_PREFIX) + database.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX),
+                HumanMachineConfig.getProperty(TIDB_USERNAME),
+                HumanMachineConfig.getProperty(TIDB_PASSWORD)
         );
         log.info("TiDB connection pool for database: {} is initializing", database.getName());
         instance = this;
@@ -34,7 +43,7 @@ public class MySQLDriverConnectionPool {
 
     public MySQLDriverConnectionPool(String url, String username, String password) {
         dataSource = new DruidDataSource();
-        dataSource.setDriverClassName(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.mysql.driverName"));
+        dataSource.setDriverClassName(HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME));
         dataSource.setUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
@@ -43,9 +52,9 @@ public class MySQLDriverConnectionPool {
     }
 
     private void configureDataSource() {
-        dataSource.setMaxActive(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.pool.maxTotal")));
-        dataSource.setMinIdle(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.pool.minIdle")));
-        dataSource.setMaxActive(Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("tidb.pool.maxIdle")));
+        dataSource.setMaxActive(Integer.parseInt(HumanMachineConfig.getProperty(TIDB_POOL_MAX_TOTAL)));
+        dataSource.setMinIdle(Integer.parseInt(HumanMachineConfig.getProperty(TIDB_POOL_MIN_IDLE)));
+        dataSource.setMaxActive(Integer.parseInt(HumanMachineConfig.getProperty(TIDB_POOL_MAX_IDLE)));
         dataSource.setTestOnBorrow(true);
         dataSource.setTestOnReturn(true);
         dataSource.setValidationQuery("SELECT 1");

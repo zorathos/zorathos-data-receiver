@@ -3,7 +3,7 @@ package org.datacenter.receiver.physiological.base;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.physiological.PhysiologicalFileReceiverConfig;
+import org.datacenter.config.receiver.physiological.PhysiologicalFileReceiverConfig;
 import org.datacenter.receiver.CsvFileReceiver;
 
 import java.io.Serial;

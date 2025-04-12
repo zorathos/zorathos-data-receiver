@@ -7,7 +7,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.apache.flink.util.function.SerializableFunction;
-import org.datacenter.config.simulation.SimulationReceiverConfig;
+import org.datacenter.config.receiver.simulation.SimulationReceiverConfig;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.simulation.Sendto3DData;
 import org.datacenter.receiver.simulation.base.SimulationReceiver;

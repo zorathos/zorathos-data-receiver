@@ -3,9 +3,9 @@ package org.datacenter.agent.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.sorties.SortiesReceiverConfig;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
+import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
+import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
@@ -20,6 +20,8 @@ import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_RETRIES_HTTP;
+
 /**
  * @author : [wangminan]
  * @description : 架次信息用的HttpClient工具类
@@ -28,7 +30,7 @@ import java.util.List;
 public class SortiesHttpClientUtil {
 
     private static final ObjectMapper mapper;
-    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.retries.http"));
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineConfig.getProperty(AGENT_RETRIES_HTTP));
 
     static {
         mapper = new ObjectMapper();

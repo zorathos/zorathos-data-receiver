@@ -8,7 +8,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.datacenter.config.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.receiver.util.RetryUtil;
 
@@ -16,6 +16,14 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_RETRIES_KAFKA;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_BOOTSTRAP_SERVERS;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_PASSWORD;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_SASL_MECHANISM;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_SECURITY_ENABLED;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_SECURITY_PROTOCOL;
+import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_USERNAME;
 
 /**
  * @author : [wangminan]
@@ -25,49 +33,49 @@ import java.util.concurrent.ExecutionException;
 public class KafkaUtil {
     private static final Properties adminProps = new Properties();
     private static final Properties producerProps = new Properties();
-    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineSysConfig.getHumanMachineProperties().getProperty("agent.retries.kafka", "3"));
+    private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineConfig.getProperty(AGENT_RETRIES_KAFKA, "3"));
 
     static {
         // 通用配置
         adminProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                HumanMachineSysConfig.getHumanMachineProperties().get("kafka.bootstrap.servers"));
+                HumanMachineConfig.getProperty(KAFKA_BOOTSTRAP_SERVERS));
 
         // 添加安全认证配置 - AdminClient
-        if (Boolean.parseBoolean(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.security.enabled", "false"))) {
+        if (Boolean.parseBoolean(HumanMachineConfig.getProperty(KAFKA_SECURITY_ENABLED, "false"))) {
             // 配置安全协议
             adminProps.put("security.protocol",
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.security.protocol", "SASL_PLAINTEXT"));
+                    HumanMachineConfig.getProperty(KAFKA_SECURITY_PROTOCOL, "SASL_PLAINTEXT"));
             // 配置SASL机制
             adminProps.put(SaslConfigs.SASL_MECHANISM,
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.sasl.mechanism", "PLAIN"));
+                    HumanMachineConfig.getProperty(KAFKA_SASL_MECHANISM, "PLAIN"));
             // 配置JAAS
             adminProps.put(SaslConfigs.SASL_JAAS_CONFIG,
                     String.format("org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";",
-                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.username"),
-                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.password")));
+                            HumanMachineConfig.getProperty(KAFKA_USERNAME),
+                            HumanMachineConfig.getProperty(KAFKA_PASSWORD)));
         }
 
         // Producer配置
         producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                HumanMachineSysConfig.getHumanMachineProperties().get("kafka.bootstrap.servers"));
+                HumanMachineConfig.getProperty(KAFKA_BOOTSTRAP_SERVERS));
         producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                 StringSerializer.class.getName());
         producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                 StringSerializer.class.getName());
 
         // 添加安全认证配置 - Producer
-        if (Boolean.parseBoolean(HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.security.enabled", "false"))) {
+        if (Boolean.parseBoolean(HumanMachineConfig.getProperty(KAFKA_SECURITY_ENABLED, "false"))) {
             // 配置安全协议
             producerProps.put("security.protocol",
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.security.protocol", "SASL_PLAINTEXT"));
+                    HumanMachineConfig.getProperty(KAFKA_SECURITY_PROTOCOL, "SASL_PLAINTEXT"));
             // 配置SASL机制
             producerProps.put(SaslConfigs.SASL_MECHANISM,
-                    HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.sasl.mechanism", "PLAIN"));
+                    HumanMachineConfig.getProperty(KAFKA_SASL_MECHANISM, "PLAIN"));
             // 配置JAAS
             producerProps.put(SaslConfigs.SASL_JAAS_CONFIG,
                     String.format("org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";",
-                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.username"),
-                            HumanMachineSysConfig.getHumanMachineProperties().getProperty("kafka.password")));
+                            HumanMachineConfig.getProperty(KAFKA_USERNAME),
+                            HumanMachineConfig.getProperty(KAFKA_PASSWORD)));
         }
     }
 

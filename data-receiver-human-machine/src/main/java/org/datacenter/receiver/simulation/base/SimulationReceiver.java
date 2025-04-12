@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
-import org.datacenter.config.simulation.SimulationReceiverConfig;
+import org.datacenter.config.receiver.simulation.SimulationReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.receiver.CsvFileReceiver;
