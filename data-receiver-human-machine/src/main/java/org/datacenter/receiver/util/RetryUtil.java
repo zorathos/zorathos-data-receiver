@@ -49,6 +49,7 @@ public class RetryUtil {
                 log.warn("Operation '{}' failed, retry: {}/{}", operationName, retries, maxRetries, e);
             }
 
+            // 指数退避（Exponential Backoff）重试策略
             retries++;
             if (retries <= maxRetries) {
                 try {
@@ -60,7 +61,10 @@ public class RetryUtil {
             }
         }
 
-        throw new ZorathosException(lastException, "Operation '" + operationName + "' failed after " + maxRetries + " retries");
+        if (lastException != null) {
+            throw new ZorathosException(lastException, "Operation '" + operationName + "' failed after " + maxRetries + " retries");
+        }
+        return null;
     }
 
     public interface HttpResponseHandler<T> {
