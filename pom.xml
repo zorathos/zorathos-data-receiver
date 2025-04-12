@@ -33,7 +33,7 @@
         <!-- data-model的包里面不带lombok shade的时候排除掉了 要手动引入 -->
         <lombok.version>1.18.38</lombok.version>
         <delombok.output.dir>${project.build.directory}/delombok</delombok.output.dir>
-        <zorathos-data-model.version>0.0.11</zorathos-data-model.version>
+        <zorathos-data-model.version>0.0.12</zorathos-data-model.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <log4j2.version>2.24.3</log4j2.version>
         <!-- flink 版本 和服务器一致 -->
@@ -47,7 +47,6 @@
         <!-- jackson-core和jackson-xml已经在zorathos的对应包里引入 不用重复引入了 如果需要使用自己版本的jackson记得exclude -->
 
         <mysql-connector-j.version>8.4.0</mysql-connector-j.version>
-        <minio.version>8.5.17</minio.version>
         <lettuce.version>6.5.5.RELEASE</lettuce.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-pool2.verson>2.12.1</commons-pool2.verson>
@@ -206,13 +205,6 @@
                 <groupId>com.mysql</groupId>
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql-connector-j.version}</version>
-            </dependency>
-
-            <!-- MinIO客户端 -->
-            <dependency>
-                <groupId>io.minio</groupId>
-                <artifactId>minio</artifactId>
-                <version>${minio.version}</version>
             </dependency>
 
             <!-- Kafka客户端 -->

@@ -105,12 +105,6 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
-        </dependency>
-
-
         <!-- flink table api -->
         <dependency>
             <groupId>org.apache.flink</groupId>
