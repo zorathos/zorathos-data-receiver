@@ -15,7 +15,7 @@ import org.apache.flink.core.execution.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.kafka.common.config.SaslConfigs;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 
 import java.io.IOException;
 import java.time.Duration;

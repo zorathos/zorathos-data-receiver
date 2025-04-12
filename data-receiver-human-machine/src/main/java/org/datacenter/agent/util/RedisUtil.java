@@ -8,7 +8,7 @@ import io.lettuce.core.support.ConnectionPoolSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.receiver.util.RetryUtil;
 

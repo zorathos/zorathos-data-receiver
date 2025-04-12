@@ -1,4 +1,4 @@
-package org.datacenter.config.system;
+package org.datacenter.config;
 
 import lombok.Data;
 

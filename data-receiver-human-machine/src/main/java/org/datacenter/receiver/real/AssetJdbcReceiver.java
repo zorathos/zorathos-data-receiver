@@ -17,7 +17,7 @@ import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.datacenter.config.real.AssetReceiverConfig;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.base.TiDBTable;

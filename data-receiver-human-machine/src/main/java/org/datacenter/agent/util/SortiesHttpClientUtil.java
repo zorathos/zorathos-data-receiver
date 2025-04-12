@@ -5,7 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.sorties.SortiesReceiverConfig;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;

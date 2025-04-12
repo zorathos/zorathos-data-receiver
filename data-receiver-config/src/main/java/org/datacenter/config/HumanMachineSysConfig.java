@@ -1,4 +1,4 @@
-package org.datacenter.config.system;
+package org.datacenter.config;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -46,7 +46,7 @@ public class HumanMachineSysConfig extends BaseSysConfig {
     }
 
     @Override
-    public void loadConfig() {
+    public synchronized void loadConfig() {
         super.loadConfig();
         /*
          * 逐条打印System.getenv
@@ -86,7 +86,7 @@ public class HumanMachineSysConfig extends BaseSysConfig {
     }
 
     @Override
-    public void saveConfig() {
+    public synchronized void saveConfig() {
         super.saveConfig();
         if (!useSystemEnv) {
             // 不是使用系统环境变量的情况 使用的是 bundle 在 resource 里的的配置文件

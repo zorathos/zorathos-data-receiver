@@ -3,7 +3,7 @@ package org.datacenter.receiver.util;
 import com.alibaba.druid.pool.DruidDataSource;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 

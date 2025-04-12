@@ -2,7 +2,7 @@ package org.datacenter.receiver.util;
 
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.model.base.TiDBDatabase;
 
 /**

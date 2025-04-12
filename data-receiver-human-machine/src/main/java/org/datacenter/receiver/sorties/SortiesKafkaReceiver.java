@@ -10,7 +10,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.sorties.SortiesAgent;
 import org.datacenter.config.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.sorties.SortiesReceiverConfig;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.sorties.Sorties;

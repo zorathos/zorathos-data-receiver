@@ -11,7 +11,7 @@
     <description>这是zorathos的数据接收器</description>
 
     <modules>
-        <module>data-receiver-base</module>
+        <module>data-receiver-config</module>
         <module>data-receiver-human-machine</module>
         <module>data-receiver-maps</module>
     </modules>

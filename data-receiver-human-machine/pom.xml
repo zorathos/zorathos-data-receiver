@@ -28,7 +28,7 @@
 
         <dependency>
             <groupId>org.datacenter</groupId>
-            <artifactId>data-receiver-base</artifactId>
+            <artifactId>data-receiver-config</artifactId>
             <version>0.0.1</version>
         </dependency>
 

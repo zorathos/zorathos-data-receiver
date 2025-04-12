@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.crew.PersonnelReceiverConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;

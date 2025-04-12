@@ -11,7 +11,7 @@ import org.apache.flink.util.Collector;
 import org.datacenter.agent.plan.FlightPlanAgent;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightCmd;

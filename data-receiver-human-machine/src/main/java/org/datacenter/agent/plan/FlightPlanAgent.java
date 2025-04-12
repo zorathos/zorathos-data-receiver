@@ -12,7 +12,7 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.plan.FlightPlanReceiverConfig;
-import org.datacenter.config.system.HumanMachineSysConfig;
+import org.datacenter.config.HumanMachineSysConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
