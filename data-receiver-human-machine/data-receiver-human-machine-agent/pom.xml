@@ -5,15 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.datacenter</groupId>
-        <artifactId>zorathos-data-receiver</artifactId>
+        <artifactId>data-receiver-human-machine</artifactId>
         <version>0.0.1</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>data-receiver-human-machine</artifactId>
-    <name>zorathos-data-receiver-human-machine</name>
-    <description>为人机能力系统准备的数据接收器</description>
-    <url>https://github.com/zorathos/zorathos-data-receiver/tree/main/data-receiver-human-machine</url>
-    <packaging>pom</packaging>
+    <artifactId>data-receiver-human-machine-agent</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -21,9 +18,18 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <modules>
-        <module>data-receiver-human-machine-base</module>
-        <module>data-receiver-human-machine-agent</module>
-        <module>data-receiver-human-machine-receiver</module>
-    </modules>
+    <dependencies>
+        <!-- 基础模块依赖 -->
+        <dependency>
+            <groupId>org.datacenter</groupId>
+            <artifactId>data-receiver-human-machine-base</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+
+        <!-- Kafka客户端 -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+        </dependency>
+    </dependencies>
 </project>
