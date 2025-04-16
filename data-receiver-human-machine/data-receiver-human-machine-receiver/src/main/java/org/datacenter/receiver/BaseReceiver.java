@@ -3,7 +3,7 @@ package org.datacenter.receiver;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.config.HumanMachineConfig;
-import org.datacenter.config.receiver.BaseReceiverConfig;
+import org.datacenter.config.BaseReceiverAndAgentConfig;
 import org.datacenter.exception.ZorathosException;
 
 import java.util.Timer;
@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
 @Slf4j
 public abstract class BaseReceiver {
 
-    protected BaseReceiverConfig receiverConfig;
+    protected BaseReceiverAndAgentConfig receiverConfig;
 
     public void run() {
         prepare();

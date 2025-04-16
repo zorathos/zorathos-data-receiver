@@ -130,12 +130,6 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         }
     }
 
-    /**
-     * 被flink调用的主函数
-     * 参数输入形式为 --loginUrl xxx --loginJson xxx --personnelUrl xxx
-     *
-     * @param args 参数 第一个为接收器参数 第二个为持久化器参数
-     */
     public static void main(String[] args) {
         PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver();
         personnelKafkaReceiver.run();

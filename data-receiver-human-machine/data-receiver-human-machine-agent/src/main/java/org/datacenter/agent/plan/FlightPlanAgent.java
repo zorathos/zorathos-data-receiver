@@ -142,7 +142,7 @@ public class FlightPlanAgent extends BaseAgent {
      *             --flightCodeUrl http://xxxx --flightXmlUrl http://xxxx
      */
     public static void main(String[] args) {
-        log.info("Starting FlightPlanAgent...");
+        log.info("Flight Plan Agent starting...");
         ParameterUtil params = ParameterUtil.fromArgs(args);
         log.info("Parameters: {}", params);
 

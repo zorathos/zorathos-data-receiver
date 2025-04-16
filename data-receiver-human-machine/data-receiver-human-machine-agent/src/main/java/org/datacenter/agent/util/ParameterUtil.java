@@ -31,6 +31,10 @@ public class ParameterUtil {
         this.data = new HashMap<>(data);
     }
 
+    public Map<String, String> toMap() {
+        return new HashMap<>(data);
+    }
+
     /**
      * 从命令行参数解析，格式为 --key value 或 -key value
      *
