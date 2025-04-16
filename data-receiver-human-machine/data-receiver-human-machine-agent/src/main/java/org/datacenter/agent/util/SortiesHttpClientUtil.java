@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.HumanMachineConfig;
-import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
+import org.datacenter.config.agent.sorties.SortiesAgentConfig;
+import org.datacenter.config.agent.sorties.SortiesBatchAgentConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
@@ -42,7 +42,7 @@ public class SortiesHttpClientUtil {
      *
      * @return 架次批数据
      */
-    public static List<SortiesBatch> getSortiesBatches(SortiesBatchReceiverConfig receiverConfig) {
+    public static List<SortiesBatch> getSortiesBatches(SortiesBatchAgentConfig receiverConfig) {
         String url = receiverConfig.getUrl();
         try (HttpClient client = HttpClient.newHttpClient()) {
             return RetryUtil.executeHttpRequestWithRetry(
@@ -82,14 +82,14 @@ public class SortiesHttpClientUtil {
      *
      * @return 架次信息
      */
-    public static List<Sorties> getSortiesList(SortiesBatchReceiverConfig sortiesBatchReceiverConfig,
-                                               SortiesReceiverConfig sortiesReceiverConfig) {
+    public static List<Sorties> getSortiesList(SortiesBatchAgentConfig SortiesBatchAgentConfig,
+                                               SortiesAgentConfig sortiesAgentConfig) {
         List<Sorties> sortiesList = new ArrayList<>();
         // 拿着batch号去找对应的sorties
-        List<SortiesBatch> sortiesBatchList = SortiesHttpClientUtil.getSortiesBatches(sortiesBatchReceiverConfig);
+        List<SortiesBatch> sortiesBatchList = SortiesHttpClientUtil.getSortiesBatches(SortiesBatchAgentConfig);
 
         for (SortiesBatch sortiesBatch : sortiesBatchList) {
-            final String url = sortiesReceiverConfig.getBaseUrl() + "?batchId=" + sortiesBatch.getId();
+            final String url = sortiesAgentConfig.getBaseUrl() + "?batchId=" + sortiesBatch.getId();
             try (HttpClient client = HttpClient.newHttpClient()) {
                 List<Sorties> batchSorties = RetryUtil.executeHttpRequestWithRetry(
                         () -> {

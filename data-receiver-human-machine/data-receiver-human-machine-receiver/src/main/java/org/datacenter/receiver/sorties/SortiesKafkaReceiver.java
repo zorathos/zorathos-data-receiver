@@ -2,14 +2,11 @@ package org.datacenter.receiver.sorties;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.config.HumanMachineConfig;
-import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.sorties.Sorties;
@@ -18,12 +15,8 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
 import java.sql.Timestamp;
-import java.util.Base64;
 import java.util.List;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BASE_URL;
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_JSON;
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_URL;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES;
 
 /**
@@ -32,13 +25,6 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
  */
 @Slf4j
 public class SortiesKafkaReceiver extends BaseReceiver {
-
-
-    public SortiesKafkaReceiver(SortiesBatchReceiverConfig batchReceiverConfig, SortiesReceiverConfig sortiesReceiverConfig) {
-        // 1. 加载配置 HumanMachineConfig.loadConfig();
-        HumanMachineConfig sysConfig = new HumanMachineConfig();
-        sysConfig.loadConfig();
-    }
 
     @Override
     public void prepare() {
@@ -148,20 +134,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
     }
 
     public static void main(String[] args) {
-        ParameterTool params = ParameterTool.fromArgs(args);
-        log.info("Params: {}", params.toMap());
-
-        String encodedJson = params.getRequired(SORTIES_BATCH_JSON.getKeyForParamsMap());
-        String decodedJson = new String(Base64.getDecoder().decode(encodedJson));
-
-        SortiesBatchReceiverConfig batchReceiverConfig = SortiesBatchReceiverConfig.builder()
-                .url(params.getRequired(SORTIES_BATCH_URL.getKeyForParamsMap()))
-                .json(decodedJson)
-                .build();
-        SortiesReceiverConfig sortiesReceiverConfig = SortiesReceiverConfig.builder()
-                .baseUrl(params.getRequired(SORTIES_BASE_URL.getKeyForParamsMap()))
-                .build();
-        SortiesKafkaReceiver receiver = new SortiesKafkaReceiver(batchReceiverConfig, sortiesReceiverConfig);
+        SortiesKafkaReceiver receiver = new SortiesKafkaReceiver();
         receiver.run();
     }
 }
