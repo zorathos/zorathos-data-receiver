@@ -1,0 +1,10 @@
+飞行计划
+--loginUrl http://127.0.0.1:18080/Home/Login --loginJson eyJ1c2VySW5wdXQiOiAidXNlciIsImdyYnNJbnB1dCI6ICJ1c2VyIiwicGFzc3dvcmRJbnB1dCI6ICIxMjM0NTYifQ== --flightDateUrl http://127.0.0.1:18080/FXJH/GetFXRQ?from=1970-01-01&to=2025-04-02&dwdm=90121 --flightCodeUrl http://127.0.0.1:18080/FXDT/BindJHxx?dwdm=90121&_=1742546210611&rq= --flightXmlUrl http://127.0.0.1:18080/FXDT/GetXML?jhbh=
+人员
+--loginUrl http://127.0.0.1:18080/Home/Login --loginJson eyJ1c2VySW5wdXQiOiAidXNlciIsImdyYnNJbnB1dCI6ICJ1c2VyIiwicGFzc3dvcmRJbnB1dCI6ICIxMjM0NTYifQ== --personnelUrl http://127.0.0.1:18080/FXY/BindFxyLb?dwdm=90121
+批次
+--sortiesBatchUrl http://127.0.0.1:18080/task/dataAsset/queryAllBatches --sortiesBatchJson ewogICJhY21pVGltZUVuZCI6ICIiLAogICJhY21pVGltZVN0YXJ0IjogIiIKfQo=
+架次
+--sortiesBatchUrl http://127.0.0.1:18080/task/dataAsset/queryAllBatches --sortiesBatchJson ewogICJhY21pVGltZUVuZCI6ICIiLAogICJhY21pVGltZVN0YXJ0IjogIiIKfQo= --sortiesBaseUrl http://127.0.0.1:18080/task/dataAsset/querySortiesByBatchId
+数据资产
+--listBaseUrl http://127.0.0.1:18080/datahandle/asset/getObjectifyAsset --configBaseUrl http://127.0.0.1:18080/datahandle/asset/getAssetValidConfig --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02 --sqlNodes 127.0.0.1:9030 --feNodes 127.0.0.1:8030 --username wangminan --password Lab418Server!

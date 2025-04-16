@@ -9,9 +9,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.HumanMachineConfig;
-import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.crew.PersonnelReceiverConfig;
-import org.datacenter.config.receiver.plan.FlightPlanReceiverConfig;
+import org.datacenter.config.agent.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.agent.crew.PersonnelAgentConfig;
+import org.datacenter.config.agent.plan.FlightPlanAgentConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -86,7 +86,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig, MySQLDriverConnectionPool tidbFlightPlanPool) {
+    public static List<FlightPlanRoot> getFlightRoots(FlightPlanAgentConfig receiverConfig, MySQLDriverConnectionPool tidbFlightPlanPool) {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 
@@ -236,7 +236,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
      * @param receiverConfig 接收器配置
      * @return 人员信息列表
      */
-    public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
+    public static List<PersonnelInfo> getPersonnelInfos(PersonnelAgentConfig receiverConfig) {
         log.info("Trying to get personnel infos from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 

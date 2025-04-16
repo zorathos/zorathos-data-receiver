@@ -7,7 +7,6 @@ import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.datacenter.agent.sorties.SortiesBatchAgent;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.exception.ZorathosException;
@@ -30,34 +29,20 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
  */
 @Slf4j
 public class SortiesBatchKafkaReceiver extends BaseReceiver {
-
-    private final SortiesBatchAgent sortiesBatchAgent;
-
     public SortiesBatchKafkaReceiver(SortiesBatchReceiverConfig receiverConfig) {
         // 1. 加载配置 HumanMachineConfig.loadConfig();
         HumanMachineConfig sysConfig = new HumanMachineConfig();
         sysConfig.loadConfig();
-        this.sortiesBatchAgent = new SortiesBatchAgent(receiverConfig);
     }
 
 
     @Override
     public void prepare() {
         super.prepare();
-        Thread agentThread = new Thread(sortiesBatchAgent);
-        agentThread.setUncaughtExceptionHandler((thread, throwable) -> {
-            log.error("Sorties batch agent thread {} encountered an error: {}", thread.getName(), throwable.getMessage());
-            agentShutdown(sortiesBatchAgent);
-        });
-        agentThread.start();
-        awaitAgentRunning(sortiesBatchAgent);
     }
 
     @Override
     public void start() {
-        //shutdownhook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentShutdown(sortiesBatchAgent)));
-
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();

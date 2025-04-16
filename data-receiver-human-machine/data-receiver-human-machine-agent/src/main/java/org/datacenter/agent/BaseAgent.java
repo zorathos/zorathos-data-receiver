@@ -3,6 +3,7 @@ package org.datacenter.agent;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.util.RedisUtil;
+import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.exception.ZorathosException;
 
 /**
@@ -20,6 +21,8 @@ public abstract class BaseAgent implements Runnable {
     protected String redisKey;
 
     public BaseAgent() {
+        HumanMachineConfig config = new HumanMachineConfig();
+        config.loadConfig();
         RedisUtil.initPool();
         this.redisKey = "human-machine:agent:" + this.getClass().getSimpleName();
         try {
@@ -44,9 +47,6 @@ public abstract class BaseAgent implements Runnable {
             // 使用SETNX实现并发锁
             Boolean success = RedisUtil.setnx(redisKey, "running");
             if (Boolean.TRUE.equals(success)) {
-                // 设置过期时间，防止意外中断后长期锁住
-                RedisUtil.expire(redisKey, 60 * 60);
-
                 log.info("Agent is starting...");
                 prepared = true;
                 isStartedByThisInstance = true;

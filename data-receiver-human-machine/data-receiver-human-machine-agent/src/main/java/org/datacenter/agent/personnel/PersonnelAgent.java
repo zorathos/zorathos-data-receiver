@@ -11,8 +11,8 @@ import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.HumanMachineConfig;
-import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.crew.PersonnelReceiverConfig;
+import org.datacenter.config.agent.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.agent.crew.PersonnelAgentConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 
@@ -37,11 +37,11 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_PE
 public class PersonnelAgent extends BaseAgent {
 
     private final ObjectMapper mapper;
-    private final PersonnelReceiverConfig receiverConfig;
+    private final PersonnelAgentConfig receiverConfig;
     private ScheduledExecutorService scheduler;
     private PersonnelAndPlanLoginConfig loginConfig;
 
-    public PersonnelAgent(PersonnelAndPlanLoginConfig loginConfig, PersonnelReceiverConfig receiverConfig) {
+    public PersonnelAgent(PersonnelAndPlanLoginConfig loginConfig, PersonnelAgentConfig receiverConfig) {
         super();
         this.loginConfig = loginConfig;
         this.receiverConfig = receiverConfig;

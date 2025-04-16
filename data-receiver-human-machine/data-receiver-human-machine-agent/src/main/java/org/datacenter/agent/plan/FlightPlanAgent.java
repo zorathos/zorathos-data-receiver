@@ -9,22 +9,30 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.BaseAgent;
 import org.datacenter.agent.util.KafkaUtil;
+import org.datacenter.agent.util.ParameterUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.HumanMachineConfig;
-import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.plan.FlightPlanReceiverConfig;
+import org.datacenter.config.agent.PersonnelAndPlanLoginConfig;
+import org.datacenter.config.agent.plan.FlightPlanAgentConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.util.MySQLDriverConnectionPool;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.datacenter.config.keys.HumanMachineAgentConfigKey.FLIGHT_PLAN_FLIGHT_CODE_URL;
+import static org.datacenter.config.keys.HumanMachineAgentConfigKey.FLIGHT_PLAN_FLIGHT_DATE_URL;
+import static org.datacenter.config.keys.HumanMachineAgentConfigKey.FLIGHT_PLAN_FLIGHT_XML_URL;
+import static org.datacenter.config.keys.HumanMachineAgentConfigKey.PERSONNEL_AND_PLAN_LOGIN_JSON;
+import static org.datacenter.config.keys.HumanMachineAgentConfigKey.PERSONNEL_AND_PLAN_LOGIN_URL;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_INTERVAL_FLIGHT_PLAN;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_FLIGHT_PLAN_ROOT;
 
@@ -41,16 +49,16 @@ public class FlightPlanAgent extends BaseAgent {
     private final ObjectMapper mapper;
     private ScheduledExecutorService scheduler;
     private PersonnelAndPlanLoginConfig loginConfig;
-    private FlightPlanReceiverConfig flightPlanReceiverConfig;
+    private FlightPlanAgentConfig FlightPlanAgentConfig;
     private MySQLDriverConnectionPool tidbFlightPlanPool;
 
     public FlightPlanAgent(PersonnelAndPlanLoginConfig loginConfig,
-                           FlightPlanReceiverConfig flightPlanReceiverConfig) {
+                           FlightPlanAgentConfig FlightPlanAgentConfig) {
         super();
         this.mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         this.loginConfig = loginConfig;
-        this.flightPlanReceiverConfig = flightPlanReceiverConfig;
+        this.FlightPlanAgentConfig = FlightPlanAgentConfig;
         this.tidbFlightPlanPool = new MySQLDriverConnectionPool(TiDBDatabase.FLIGHT_PLAN);
     }
 
@@ -83,7 +91,7 @@ public class FlightPlanAgent extends BaseAgent {
                     log.info("Flight plan agent is running.");
 
                     // 2. 获取飞行计划根XML并解析
-                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig, tidbFlightPlanPool);
+                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(FlightPlanAgentConfig, tidbFlightPlanPool);
                     // 所有日期都已导入完成
                     if (flightPlans.isEmpty()) {
                         log.info("All flight plans have been imported.");
@@ -124,5 +132,44 @@ public class FlightPlanAgent extends BaseAgent {
         }
         tidbFlightPlanPool.closePool();
         System.exit(0);
+    }
+
+    /**
+     * 主函数
+     *
+     * @param args 输入参数
+     *             --loginUrl http://xxxx --loginJson eyxxx== --flightDateUrl http://xxxx
+     *             --flightCodeUrl http://xxxx --flightXmlUrl http://xxxx
+     */
+    public static void main(String[] args) {
+        log.info("Starting FlightPlanAgent...");
+        ParameterUtil params = ParameterUtil.fromArgs(args);
+        log.info("Parameters: {}", params);
+
+        String encodedLoginJson = params.getRequired(PERSONNEL_AND_PLAN_LOGIN_JSON.getKeyForParamsMap());
+        String decodedLoginJson = new String(Base64.getDecoder().decode(encodedLoginJson));
+
+        // 1. 加载配置
+        PersonnelAndPlanLoginConfig loginConfig = PersonnelAndPlanLoginConfig.builder()
+                .loginUrl(params.getRequired(PERSONNEL_AND_PLAN_LOGIN_URL.getKeyForParamsMap()))
+                .loginJson(decodedLoginJson)
+                .build();
+        FlightPlanAgentConfig flightPlanAgentConfig = org.datacenter.config.agent.plan.FlightPlanAgentConfig.builder()
+                .flightDateUrl(params.getRequired(FLIGHT_PLAN_FLIGHT_DATE_URL.getKeyForParamsMap()))
+                .flightCodeUrl(params.getRequired(FLIGHT_PLAN_FLIGHT_CODE_URL.getKeyForParamsMap()))
+                .flightXmlUrl(params.getRequired(FLIGHT_PLAN_FLIGHT_XML_URL.getKeyForParamsMap()))
+                .build();
+
+        FlightPlanAgent flightPlanAgent = new FlightPlanAgent(loginConfig, flightPlanAgentConfig);
+        try (ExecutorService executorService = Executors.newSingleThreadExecutor()) {
+            executorService.submit(flightPlanAgent);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                flightPlanAgent.stop();
+                log.info("Flight plan agent stopped.");
+            }));
+        } catch (Exception e) {
+            log.error("Error starting flight plan agent", e);
+            flightPlanAgent.stop();
+        }
     }
 }
