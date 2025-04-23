@@ -12,6 +12,7 @@ import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.sorties.Sorties;
+import org.datacenter.receiver.util.DataReceiverUtil;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -30,7 +31,7 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
 @Slf4j
 public class SortiesAgent extends BaseAgent {
 
-    private final ObjectMapper mapper;
+    private final ObjectMapper mapper = DataReceiverUtil.mapper;
     private ScheduledExecutorService scheduler;
     private final SortiesBatchReceiverConfig batchReceiverConfig;
     private final SortiesReceiverConfig sortiesReceiverConfig;
@@ -39,8 +40,6 @@ public class SortiesAgent extends BaseAgent {
         super();
         this.batchReceiverConfig = batchReceiverConfig;
         this.sortiesReceiverConfig = sortiesReceiverConfig;
-        this.mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
     }
 
     @Override

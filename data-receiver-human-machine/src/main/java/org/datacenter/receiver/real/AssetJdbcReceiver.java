@@ -64,7 +64,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
     private String sortieNumber;
     private String sortieId;
     private String batchNumber;
-    private ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper = DataReceiverUtil.mapper;
     // 本次读取过程中用到的 资产-资产表配置-DorisDDL triple本地缓存 这个pair的list肉眼可见的会占用很大的内存
     private List<MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement>> assetResultList = new ArrayList<>();
 
@@ -74,7 +74,6 @@ public class AssetJdbcReceiver extends BaseReceiver {
     @Override
     public void prepare() {
         super.prepare();
-        mapper.registerModule(new JavaTimeModule());
         // 0. 连接池准备
         MySQLDriverConnectionPool sortieFlightPool = new MySQLDriverConnectionPool(TiDBDatabase.SORTIES);
         MySQLDriverConnectionPool realWorldFlightPool = new MySQLDriverConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);

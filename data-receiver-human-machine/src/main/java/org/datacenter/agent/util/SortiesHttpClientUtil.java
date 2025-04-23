@@ -11,6 +11,7 @@ import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
 import org.datacenter.model.sorties.response.SortiesBatchResponse;
 import org.datacenter.model.sorties.response.SortiesResponse;
+import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.RetryUtil;
 
 import java.net.URI;
@@ -29,13 +30,8 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_RETRIES_
 @Slf4j
 public class SortiesHttpClientUtil {
 
-    private static final ObjectMapper mapper;
+    private static final ObjectMapper mapper = DataReceiverUtil.mapper;
     private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineConfig.getProperty(AGENT_RETRIES_HTTP));
-
-    static {
-        mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-    }
 
     /**
      * 从效能系统的架次系统中拉取架次批数据
