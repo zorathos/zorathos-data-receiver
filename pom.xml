@@ -193,6 +193,14 @@
                 <version>${flink.version}</version>
             </dependency>
 
+            <!-- Flink JSON formatter -->
+            <dependency>
+                <groupId>org.apache.flink</groupId>
+                <artifactId>flink-json</artifactId>
+                <version>${flink.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
             <!-- 需要把自带的shaded-jackson排除 然后用最新的 不然解析不了LocalDateTime -->
             <dependency>
                 <groupId>org.apache.flink</groupId>

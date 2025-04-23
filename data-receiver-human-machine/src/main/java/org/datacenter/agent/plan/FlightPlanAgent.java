@@ -2,7 +2,6 @@ package org.datacenter.agent.plan;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,10 +11,11 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.plan.FlightPlanReceiverConfig;
+import org.datacenter.config.receiver.plan.FlightPlanOnlineReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
+import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.MySQLDriverConnectionPool;
 
 import java.util.List;
@@ -38,19 +38,17 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_FL
 @AllArgsConstructor
 public class FlightPlanAgent extends BaseAgent {
 
-    private final ObjectMapper mapper;
+    private final ObjectMapper mapper = DataReceiverUtil.mapper;
     private ScheduledExecutorService scheduler;
     private PersonnelAndPlanLoginConfig loginConfig;
-    private FlightPlanReceiverConfig flightPlanReceiverConfig;
+    private FlightPlanOnlineReceiverConfig FlightPlanOnlineReceiverConfig;
     private MySQLDriverConnectionPool tidbFlightPlanPool;
 
     public FlightPlanAgent(PersonnelAndPlanLoginConfig loginConfig,
-                           FlightPlanReceiverConfig flightPlanReceiverConfig) {
+                           FlightPlanOnlineReceiverConfig FlightPlanOnlineReceiverConfig) {
         super();
-        this.mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
         this.loginConfig = loginConfig;
-        this.flightPlanReceiverConfig = flightPlanReceiverConfig;
+        this.FlightPlanOnlineReceiverConfig = FlightPlanOnlineReceiverConfig;
         this.tidbFlightPlanPool = new MySQLDriverConnectionPool(TiDBDatabase.FLIGHT_PLAN);
     }
 
@@ -83,7 +81,7 @@ public class FlightPlanAgent extends BaseAgent {
                     log.info("Flight plan agent is running.");
 
                     // 2. 获取飞行计划根XML并解析
-                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(flightPlanReceiverConfig, tidbFlightPlanPool);
+                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(FlightPlanOnlineReceiverConfig, tidbFlightPlanPool);
                     // 所有日期都已导入完成
                     if (flightPlans.isEmpty()) {
                         log.info("All flight plans have been imported.");

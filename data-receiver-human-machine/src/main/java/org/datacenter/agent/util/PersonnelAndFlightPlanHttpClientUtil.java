@@ -3,20 +3,19 @@ package org.datacenter.agent.util;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.crew.PersonnelReceiverConfig;
-import org.datacenter.config.receiver.plan.FlightPlanReceiverConfig;
+import org.datacenter.config.receiver.crew.PersonnelOnlineReceiverConfig;
+import org.datacenter.config.receiver.plan.FlightPlanOnlineReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.model.plan.response.FlightPlanResponse;
+import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.MySQLDriverConnectionPool;
 import org.datacenter.receiver.util.RetryUtil;
 
@@ -39,19 +38,10 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_RETRIES_
  * @description : 在本类中，我们调用HttpClient发送请求
  */
 @Slf4j
-@SuppressWarnings("deprecation")
 public class PersonnelAndFlightPlanHttpClientUtil {
-    private static final ObjectMapper mapper;
+    private static final ObjectMapper mapper = DataReceiverUtil.mapper;
     private static final String redisKey = "human-machine:personnel-and-flight-plan:cookie";
     private static final Integer MAX_RETRY_COUNT = Integer.parseInt(HumanMachineConfig.getProperty(AGENT_RETRIES_HTTP));
-
-    static {
-        mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
-        mapper.configure(JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION, true);
-        mapper.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
-    }
 
     /**
      * 登录人员与装备系统 一共有三条cookie 通过逗号分隔
@@ -86,7 +76,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlanRoot> getFlightRoots(FlightPlanReceiverConfig receiverConfig, MySQLDriverConnectionPool tidbFlightPlanPool) {
+    public static List<FlightPlanRoot> getFlightRoots(FlightPlanOnlineReceiverConfig receiverConfig, MySQLDriverConnectionPool tidbFlightPlanPool) {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 
@@ -221,7 +211,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                             }
                         }
                 );
-
+                flightPlanRoot.setId(planCode.getCode());
                 flightPlans.add(flightPlanRoot);
             } catch (Exception e) {
                 throw new ZorathosException(e, "Error occurs while fetching flight plans.");
@@ -236,7 +226,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
      * @param receiverConfig 接收器配置
      * @return 人员信息列表
      */
-    public static List<PersonnelInfo> getPersonnelInfos(PersonnelReceiverConfig receiverConfig) {
+    public static List<PersonnelInfo> getPersonnelInfos(PersonnelOnlineReceiverConfig receiverConfig) {
         log.info("Trying to get personnel infos from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 

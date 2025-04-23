@@ -1,5 +1,6 @@
 package org.datacenter.receiver.util;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,14 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_USERNAME
  * @description : 数据接收器工具类
  */
 @Slf4j
+@SuppressWarnings("deprecation")
 public class DataReceiverUtil {
+
+    public static ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
+            .configure(JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION, true)
+            .configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
 
     public static StreamExecutionEnvironment prepareStreamEnv() {
         log.info("Preparing flink execution environment.");
@@ -83,7 +91,6 @@ public class DataReceiverUtil {
                     @Override
                     public T deserialize(byte[] message) throws IOException {
                         log.info("Receiving message from kafka with topics:{}.", topics);
-                        ObjectMapper mapper = new ObjectMapper();
                         mapper.registerModule(new JavaTimeModule());
                         return mapper.readValue(message, clazz);
                     }

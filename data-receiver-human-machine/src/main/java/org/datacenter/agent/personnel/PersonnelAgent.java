@@ -2,7 +2,6 @@ package org.datacenter.agent.personnel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,9 +11,10 @@ import org.datacenter.agent.util.KafkaUtil;
 import org.datacenter.agent.util.PersonnelAndFlightPlanHttpClientUtil;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.crew.PersonnelReceiverConfig;
+import org.datacenter.config.receiver.crew.PersonnelOnlineReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
+import org.datacenter.receiver.util.DataReceiverUtil;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -36,17 +36,15 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_PE
 @AllArgsConstructor
 public class PersonnelAgent extends BaseAgent {
 
-    private final ObjectMapper mapper;
-    private final PersonnelReceiverConfig receiverConfig;
+    private final ObjectMapper mapper = DataReceiverUtil.mapper;
+    private final PersonnelOnlineReceiverConfig receiverConfig;
     private ScheduledExecutorService scheduler;
     private PersonnelAndPlanLoginConfig loginConfig;
 
-    public PersonnelAgent(PersonnelAndPlanLoginConfig loginConfig, PersonnelReceiverConfig receiverConfig) {
+    public PersonnelAgent(PersonnelAndPlanLoginConfig loginConfig, PersonnelOnlineReceiverConfig receiverConfig) {
         super();
         this.loginConfig = loginConfig;
         this.receiverConfig = receiverConfig;
-        this.mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
     }
 
     @Override

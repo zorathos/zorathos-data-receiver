@@ -143,6 +143,12 @@
             <artifactId>flink-csv</artifactId>
         </dependency>
 
+        <!-- flink JSON formatter -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-json</artifactId>
+        </dependency>
+
         <!-- flink依赖结束 -->
 
         <dependency>
