@@ -124,7 +124,7 @@ public class EquipmentInfoCdcReceiver extends BaseReceiver {
                     'table-name' = '%s'               -- 表名
                 );
                 """.formatted(
-                JdbcSinkUtil.TIDB_URL_HUMAN_MACHINE,
+                JdbcSinkUtil.TIDB_URL_EQUIPMENT,
                 HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME),
                 HumanMachineConfig.getProperty(TIDB_USERNAME),
                 HumanMachineConfig.getProperty(TIDB_PASSWORD),

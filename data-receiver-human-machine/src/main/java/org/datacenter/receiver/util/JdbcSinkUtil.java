@@ -20,9 +20,13 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
  * @description : TiDB持久化Util
  */
 public class JdbcSinkUtil {
-    public static final String TIDB_URL_HUMAN_MACHINE =
+    public static final String TIDB_URL_PERSONNEL =
             HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +
-                    TiDBDatabase.HUMAN_MACHINE.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
+                    TiDBDatabase.PERSONNEL.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
+
+    public static final String TIDB_URL_EQUIPMENT =
+            HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +
+                    TiDBDatabase.EQUIPMENT.getName() + HumanMachineConfig.getProperty(TIDB_URL_SUFFIX);
 
     public static final String TIDB_URL_FLIGHT_PLAN =
             HumanMachineConfig.getProperty(TIDB_URL_PREFIX) +

@@ -8,12 +8,11 @@ import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.datacenter.config.HumanMachineConfig;
-import org.datacenter.config.receiver.plan.FlightPlanJsonFileReceiverConfig;
+import org.datacenter.config.receiver.plan.FlightPlanImplementationAndDynamicJsonFileReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
-import org.datacenter.model.plan.response.FlightPlanResponseSingleton;
+import org.datacenter.model.plan.response.FlightPlanImplementationAndDynamicResponseSingleton;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.plan.util.FlightPlanSinkUtil;
 import org.datacenter.receiver.util.DataReceiverUtil;
@@ -23,17 +22,15 @@ import java.util.UUID;
 
 /**
  * @author : [wangminan]
- * @description : 飞行计划JSON接收器
+ * @description : 飞行计划实施和动态接收器
  */
 @Slf4j
-public class FlightPlanJsonFileReceiver extends BaseReceiver {
+public class FlightPlanImplementationAndDynamicJsonFileReceiver extends BaseReceiver {
 
-    private final FlightPlanJsonFileReceiverConfig config;
+    private final FlightPlanImplementationAndDynamicJsonFileReceiverConfig receiverConfig;
 
-    public FlightPlanJsonFileReceiver(FlightPlanJsonFileReceiverConfig config) {
-        HumanMachineConfig humanMachineConfig = new HumanMachineConfig();
-        humanMachineConfig.loadConfig();
-        this.config = config;
+    public  FlightPlanImplementationAndDynamicJsonFileReceiver(FlightPlanImplementationAndDynamicJsonFileReceiverConfig receiverConfig) {
+        this.receiverConfig = receiverConfig;
     }
 
     @Override
@@ -44,13 +41,13 @@ public class FlightPlanJsonFileReceiver extends BaseReceiver {
     @Override
     public void start() {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
-        JsonArrayFileInputFormat<FlightPlanResponseSingleton> inputFormat = new JsonArrayFileInputFormat<>(FlightPlanResponseSingleton.class);
+        JsonArrayFileInputFormat<FlightPlanImplementationAndDynamicResponseSingleton> inputFormat = new JsonArrayFileInputFormat<>(FlightPlanImplementationAndDynamicResponseSingleton.class);
 
-        FileSource<FlightPlanResponseSingleton> source = FileSource
-                .forRecordStreamFormat(inputFormat, new Path(config.getUrl()))
+        FileSource<FlightPlanImplementationAndDynamicResponseSingleton> source = FileSource
+                .forRecordStreamFormat(inputFormat, new Path(receiverConfig.getUrl()))
                 .build();
 
-        DataStreamSource<FlightPlanResponseSingleton> flightPlanSource = env.fromSource(source, WatermarkStrategy.noWatermarks(), "FlightPlanSource");
+        DataStreamSource<FlightPlanImplementationAndDynamicResponseSingleton> flightPlanSource = env.fromSource(source, WatermarkStrategy.noWatermarks(), "FlightPlanSource");
         SingleOutputStreamOperator<FlightPlanRoot> sourceDs = flightPlanSource
                 .map(responseSingleton -> {
                     String xml = responseSingleton.getXml();
@@ -67,8 +64,14 @@ public class FlightPlanJsonFileReceiver extends BaseReceiver {
                 })
                 .returns(FlightPlanRoot.class);
 
-        // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
-        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN);
+        if (this.receiverConfig.getReceiverType().equals(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.DYNAMIC)) {
+            // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
+            FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN_DYNAMIC);
+        } else if (this.receiverConfig.getReceiverType().equals(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.IMPLEMENTATION)) {
+            FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN_IMPLEMENTATION);
+        } else {
+            throw new ZorathosException("Receiver type not supported.");
+        }
 
         try {
             env.execute();
@@ -81,11 +84,12 @@ public class FlightPlanJsonFileReceiver extends BaseReceiver {
         ParameterTool params = ParameterTool.fromArgs(args);
         log.info("Parameters: {}", params.toMap());
 
-        FlightPlanJsonFileReceiverConfig config = FlightPlanJsonFileReceiverConfig.builder()
+        FlightPlanImplementationAndDynamicJsonFileReceiverConfig config = FlightPlanImplementationAndDynamicJsonFileReceiverConfig.builder()
+                .receiverType(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.fromString(params.getRequired("receiverType")))
                 .url(params.getRequired("url"))
                 .build();
 
-        FlightPlanJsonFileReceiver receiver = new FlightPlanJsonFileReceiver(config);
-        receiver.run();
+        FlightPlanImplementationAndDynamicJsonFileReceiver receiver = new FlightPlanImplementationAndDynamicJsonFileReceiver(config);
+        receiver.start();
     }
 }

@@ -9,6 +9,7 @@ import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
 import org.datacenter.config.receiver.plan.FlightPlanOnlineReceiverConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.plan.FlightPlanRoot;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.plan.util.FlightPlanSinkUtil;
@@ -62,7 +63,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                 .returns(FlightPlanRoot.class);
 
         // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
-        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(kafkaSourceDS);
+        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(kafkaSourceDS, TiDBDatabase.FLIGHT_PLAN);
 
         try {
             env.execute();

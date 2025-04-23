@@ -14,7 +14,7 @@ import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.model.plan.FlightPlanRoot;
-import org.datacenter.model.plan.response.FlightPlanResponse;
+import org.datacenter.model.plan.response.FlightPlanResponseSingleton;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.MySQLDriverConnectionPool;
 import org.datacenter.receiver.util.RetryUtil;
@@ -202,9 +202,13 @@ public class PersonnelAndFlightPlanHttpClientUtil {
                                 throw new ZorathosException("Error occurs while fetching flight plan.");
                             }
                             try {
-                                FlightPlanResponse planResponse = mapper.readValue(response.body(), FlightPlanResponse.class);
-                                FlightPlanRoot root = FlightPlanRoot.fromXml(planResponse.getXml(), finalCode);
+                                // 以列表形式返回的
+                                List<FlightPlanResponseSingleton> planResponse = mapper.readValue(response.body(),
+                                        mapper.getTypeFactory()
+                                                .constructCollectionType(List.class, FlightPlanResponseSingleton.class));
+                                FlightPlanRoot root = FlightPlanRoot.fromXml(planResponse.getFirst().getXml(), finalCode);
                                 root.setFlightDate(finalDate);
+                                root.setFlightDateTime(planResponse.getFirst().getFlightDateTime());
                                 return root;
                             } catch (Exception e) {
                                 throw new ZorathosException(e, "Error parsing flight plan response");

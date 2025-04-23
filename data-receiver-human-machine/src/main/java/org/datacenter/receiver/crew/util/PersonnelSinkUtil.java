@@ -91,5 +91,5 @@ public class PersonnelSinkUtil {
                 preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
             })
             .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
-            .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.HUMAN_MACHINE));
+            .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PERSONNEL));
 }
