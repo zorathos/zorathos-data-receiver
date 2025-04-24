@@ -7,7 +7,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.agent.personnel.PersonnelAgent;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.crew.PersonnelOnlineReceiverConfig;
+import org.datacenter.config.receiver.crew.PersonnelAgentReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.receiver.BaseReceiver;
@@ -30,7 +30,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
 
     private final PersonnelAgent personnelAgent;
 
-    public PersonnelKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig, PersonnelOnlineReceiverConfig receiverConfig) {
+    public PersonnelKafkaReceiver(PersonnelAndPlanLoginConfig loginConfig, PersonnelAgentReceiverConfig receiverConfig) {
         // 1. 加载配置 HumanMachineConfig.loadConfig();
         HumanMachineConfig sysConfig = new HumanMachineConfig();
         sysConfig.loadConfig();
@@ -87,8 +87,9 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
                 .loginUrl(params.getRequired(PERSONNEL_AND_PLAN_LOGIN_URL.getKeyForParamsMap()))
                 .loginJson(decodedLoginJson)
                 .build();
-        PersonnelOnlineReceiverConfig receiverConfig = PersonnelOnlineReceiverConfig.builder()
+        PersonnelAgentReceiverConfig receiverConfig = PersonnelAgentReceiverConfig.builder()
                 .url(params.getRequired(PERSONNEL_AND_PLAN_LOGIN_URL.getKeyForParamsMap()))
+                .startupMode(PersonnelAgentReceiverConfig.StartupMode.KAFKA)
                 .build();
         PersonnelKafkaReceiver personnelKafkaReceiver = new PersonnelKafkaReceiver(loginConfig, receiverConfig);
         personnelKafkaReceiver.run();

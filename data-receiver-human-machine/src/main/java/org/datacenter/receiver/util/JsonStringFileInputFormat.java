@@ -20,7 +20,7 @@ import java.io.Serial;
  * @description : 以单个JSON为一个文件 不能使用标准TextLineFormat 借用arktouros逻辑处理
  */
 @Slf4j
-public class JsonFileSingleInputFormat<T> extends SimpleStreamFormat<T> {
+public class JsonStringFileInputFormat<T> extends SimpleStreamFormat<T> {
     @Serial
     private static final long serialVersionUID = 895648L;
     public static final String DEFAULT_CHARSET_NAME = "UTF-8";
@@ -28,12 +28,12 @@ public class JsonFileSingleInputFormat<T> extends SimpleStreamFormat<T> {
     protected final Class<T> modelClass;
     private static final ObjectMapper mapper = DataReceiverUtil.mapper;
 
-    public JsonFileSingleInputFormat(Class<T> modelClass) {
+    public JsonStringFileInputFormat(Class<T> modelClass) {
         this(DEFAULT_CHARSET_NAME, modelClass);
     }
 
-    public JsonFileSingleInputFormat(String charsetName, Class<T> modelClass) {
-        log.info("JsonFileSingleInputFormat initializing for class: {} with charset: {}", modelClass, charsetName);
+    public JsonStringFileInputFormat(String charsetName, Class<T> modelClass) {
+        log.info("JsonStringFileInputFormat initializing for class: {} with charset: {}", modelClass, charsetName);
         this.charsetName = charsetName;
         this.modelClass = modelClass;
     }
@@ -41,7 +41,7 @@ public class JsonFileSingleInputFormat<T> extends SimpleStreamFormat<T> {
     public StreamFormat.Reader<T> createReader(Configuration config,
                                                FSDataInputStream stream) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream, this.charsetName));
-        return new JsonFileSingleInputFormat.Reader<>(reader, modelClass, mapper);
+        return new JsonStringFileInputFormat.Reader<>(reader, modelClass, mapper);
     }
 
     public TypeInformation<T> getProducedType() {

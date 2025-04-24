@@ -6,13 +6,14 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.file.src.FileSource;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.crew.PersonnelJsonFileReceiverConfig;
 import org.datacenter.model.crew.PersonnelInfo;
 import org.datacenter.receiver.BaseReceiver;
 import org.datacenter.receiver.crew.util.PersonnelSinkUtil;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JsonArrayFileInputFormat;
+
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_URL;
 
 /**
  * @author : [wangminan]
@@ -24,8 +25,6 @@ public class PersonnelJsonFileReceiver extends BaseReceiver {
     private final PersonnelJsonFileReceiverConfig receiverConfig;
 
     public PersonnelJsonFileReceiver(PersonnelJsonFileReceiverConfig receiverConfig) {
-        HumanMachineConfig sysConfig = new HumanMachineConfig();
-        sysConfig.loadConfig();
         this.receiverConfig = receiverConfig;
     }
 
@@ -58,9 +57,8 @@ public class PersonnelJsonFileReceiver extends BaseReceiver {
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
         log.info("Parameters: {}", params.toMap());
-
         PersonnelJsonFileReceiverConfig receiverConfig = PersonnelJsonFileReceiverConfig.builder()
-                .url(params.getRequired("url"))
+                .url(params.getRequired(PERSONNEL_URL.getKeyForParamsMap()))
                 .build();
 
         PersonnelJsonFileReceiver receiver = new PersonnelJsonFileReceiver(receiverConfig);

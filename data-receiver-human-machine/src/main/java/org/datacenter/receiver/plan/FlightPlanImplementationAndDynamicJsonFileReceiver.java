@@ -20,6 +20,8 @@ import org.datacenter.receiver.util.JsonArrayFileInputFormat;
 
 import java.util.UUID;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FILE_URL;
+
 /**
  * @author : [wangminan]
  * @description : 飞行计划实施和动态接收器
@@ -86,7 +88,7 @@ public class FlightPlanImplementationAndDynamicJsonFileReceiver extends BaseRece
 
         FlightPlanImplementationAndDynamicJsonFileReceiverConfig config = FlightPlanImplementationAndDynamicJsonFileReceiverConfig.builder()
                 .receiverType(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.fromString(params.getRequired("receiverType")))
-                .url(params.getRequired("url"))
+                .url(params.getRequired(FLIGHT_PLAN_FILE_URL.getKeyForParamsMap()))
                 .build();
 
         FlightPlanImplementationAndDynamicJsonFileReceiver receiver = new FlightPlanImplementationAndDynamicJsonFileReceiver(config);

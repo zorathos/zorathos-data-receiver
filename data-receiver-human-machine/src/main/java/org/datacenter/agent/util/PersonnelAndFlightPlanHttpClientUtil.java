@@ -8,8 +8,8 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.PersonnelAndPlanLoginConfig;
-import org.datacenter.config.receiver.crew.PersonnelOnlineReceiverConfig;
-import org.datacenter.config.receiver.plan.FlightPlanOnlineReceiverConfig;
+import org.datacenter.config.receiver.crew.PersonnelAgentReceiverConfig;
+import org.datacenter.config.receiver.plan.FlightPlanAgentReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBTable;
 import org.datacenter.model.crew.PersonnelInfo;
@@ -76,7 +76,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
         }
     }
 
-    public static List<FlightPlanRoot> getFlightRoots(FlightPlanOnlineReceiverConfig receiverConfig, MySQLDriverConnectionPool tidbFlightPlanPool) {
+    public static List<FlightPlanRoot> getFlightRoots(FlightPlanAgentReceiverConfig receiverConfig, MySQLDriverConnectionPool tidbFlightPlanPool) {
         log.info("Trying to get flight plans from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 
@@ -230,7 +230,7 @@ public class PersonnelAndFlightPlanHttpClientUtil {
      * @param receiverConfig 接收器配置
      * @return 人员信息列表
      */
-    public static List<PersonnelInfo> getPersonnelInfos(PersonnelOnlineReceiverConfig receiverConfig) {
+    public static List<PersonnelInfo> getPersonnelInfos(PersonnelAgentReceiverConfig receiverConfig) {
         log.info("Trying to get personnel infos from sys api.");
         String formattedCookies = RedisUtil.get(redisKey);
 
