@@ -40,7 +40,7 @@
         <flink.version>1.20.1</flink.version>
         <kafka-flink-connector.version>3.4.0-1.20</kafka-flink-connector.version>
         <flink-connector-jdbc.version>3.2.0-1.19</flink-connector-jdbc.version>
-        <flink-doris-connector.version>25.0.0</flink-doris-connector.version>
+        <flink-doris-connector.version>25.1.0</flink-doris-connector.version>
         <flink-mysql-cdc.version>3.3.0</flink-mysql-cdc.version>
         <kafka-clients.version>4.0.0</kafka-clients.version>
         <flink-shaded-jackson.version>2.18.2-20.0</flink-shaded-jackson.version>
