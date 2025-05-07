@@ -73,6 +73,7 @@ public abstract class BaseAgent implements Runnable {
 
         if (isStartedByThisInstance) {
             try {
+                log.info("Started by this instance, removing Redis key...");
                 // 删除Redis中的标识
                 RedisUtil.del(redisKey);
                 log.info("Agent stopped, Redis key removed.");

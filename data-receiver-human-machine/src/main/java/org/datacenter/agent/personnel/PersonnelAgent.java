@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_AND_PLAN_LOGIN_JSON;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_AND_PLAN_LOGIN_URL;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_OUTPUT_DIRECTORY;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_URL;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_INTERVAL_PERSONNEL;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_PERSONNEL;
 
@@ -79,8 +80,6 @@ public class PersonnelAgent extends BaseAgent {
                             // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
                             // 0. 刷新Cookie
                             PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
-                            // 1 准备 Kafka 的 consumer group并创建所有 topic
-                            KafkaUtil.createTopicIfNotExists(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL));
                             // 这时候才可以拉起Flink任务
                             running = true;
                             log.info("Personnel agent is running.");
@@ -91,8 +90,12 @@ public class PersonnelAgent extends BaseAgent {
                                 return;
                             }
                             if (receiverConfig.getStartupMode().equals(PersonnelAgentReceiverConfig.StartupMode.KAFKA)) {
+                                log.info("Sending personnel info to Kafka.");
+                                // 1 准备 Kafka 的 consumer group并创建所有 topic
+                                KafkaUtil.createTopicIfNotExists(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL));
                                 sendPersonnelInfosToKafka(personnelInfos);
                             } else if (receiverConfig.getStartupMode().equals(PersonnelAgentReceiverConfig.StartupMode.JSON_FILE)) {
+                                log.info("Saving personnel info to JSON file.");
                                 savePersonnelInfosToFile(personnelInfos);
                             }
                         }
@@ -173,7 +176,7 @@ public class PersonnelAgent extends BaseAgent {
                 .loginJson(decodedLoginJson)
                 .build();
         PersonnelAgentReceiverConfig receiverConfig = PersonnelAgentReceiverConfig.builder()
-                .url(params.getRequired(PERSONNEL_AND_PLAN_LOGIN_URL.getKeyForParamsMap()))
+                .url(params.getRequired(PERSONNEL_URL.getKeyForParamsMap()))
                 .startupMode(PersonnelAgentReceiverConfig.StartupMode.JSON_FILE)
                 .outputDir(params.getRequired(PERSONNEL_OUTPUT_DIRECTORY.getKeyForParamsMap()))
                 .build();

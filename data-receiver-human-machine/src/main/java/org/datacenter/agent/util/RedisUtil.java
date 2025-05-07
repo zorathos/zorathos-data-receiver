@@ -150,6 +150,7 @@ public class RedisUtil {
             try (StatefulRedisConnection<String, String> connection = connectionPool.borrowObject()) {
                 RedisCommands<String, String> commands = connection.sync();
                 commands.del(key);
+                log.info("Redis key: {} deleted successfully", key);
                 return null; // 必须返回值以符合Supplier接口
             } catch (Exception e) {
                 log.error("Failed to del the key: {}", key, e);
