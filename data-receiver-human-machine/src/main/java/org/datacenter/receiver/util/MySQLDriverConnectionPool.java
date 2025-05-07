@@ -7,6 +7,8 @@ import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -20,7 +22,10 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_URL_SUFFI
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
 
 @Slf4j
-public class MySQLDriverConnectionPool {
+public class MySQLDriverConnectionPool implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 235710784L;
+
     private final DruidDataSource dataSource;
 
     @Getter

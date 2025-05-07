@@ -26,12 +26,12 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
 
     @Serial
     private static final long serialVersionUID = 2345678L;
-    private MySQLDriverConnectionPool simulationConnectionPool = new MySQLDriverConnectionPool(TiDBDatabase.SIMULATION);
 
     @Override
     public void prepare() {
         super.prepare();
         database = TiDBDatabase.SIMULATION;
+        MySQLDriverConnectionPool simulationConnectionPool = new MySQLDriverConnectionPool(TiDBDatabase.SIMULATION);
         url = config.getUrl();
         // 通过JDBC连接到对应j表 如果有和config.getSortieNumber()相同的记录就删除
         try {

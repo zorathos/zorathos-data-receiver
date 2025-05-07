@@ -111,12 +111,7 @@ public class AaTrajFileReceiver extends SimulationReceiver<AaTraj> {
         preparedStatement.setString(23, data.getZeroCrossingFlag());
     }
 
-    @Override
-    public void start() {
-        super.start();
-    }
-
-    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(

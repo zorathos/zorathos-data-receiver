@@ -166,6 +166,9 @@ public class FlightPlanAgent extends BaseAgent {
         ParameterTool params = ParameterTool.fromArgs(args);
         log.info("Parameters: {}", params.toMap());
 
+        HumanMachineConfig config = new HumanMachineConfig();
+        config.loadConfig();
+
         String encodedLoginJson = params.getRequired(PERSONNEL_AND_PLAN_LOGIN_JSON.getKeyForParamsMap());
         String decodedLoginJson = new String(Base64.getDecoder().decode(encodedLoginJson));
 

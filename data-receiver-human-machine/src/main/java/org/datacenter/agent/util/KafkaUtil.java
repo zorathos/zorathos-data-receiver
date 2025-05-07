@@ -80,6 +80,7 @@ public class KafkaUtil {
     }
 
     public static void createTopicIfNotExists(String topic) {
+        Thread.currentThread().setContextClassLoader(null);
         RetryUtil.executeWithRetry(() -> {
             try (AdminClient adminClient = AdminClient.create(adminProps)) {
                 Set<String> existingTopics = adminClient.listTopics().names().get();
@@ -98,6 +99,7 @@ public class KafkaUtil {
     }
 
     public static void sendMessage(String topic, String message) {
+        Thread.currentThread().setContextClassLoader(null);
         RetryUtil.executeWithRetry(() -> {
             try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps)) {
                 createTopicIfNotExists(topic);
