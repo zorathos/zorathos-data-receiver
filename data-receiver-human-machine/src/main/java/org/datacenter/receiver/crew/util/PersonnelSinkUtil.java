@@ -14,9 +14,17 @@ import java.sql.Date;
  * @description : 人员接收工具
  */
 public class PersonnelSinkUtil {
-    // 投递到数据库 写sql时使用upsert语法
-    public static Sink<PersonnelInfo> personnelJdbcSink = JdbcSink.<PersonnelInfo>builder()
-            .withQueryStatement("""
+
+    /**
+     * 投递到数据库 写sql时使用upsert语法
+     * 如果把 PersonnelJdbcSink 写作一个static变量，在minicluster下不会报错
+     * 但在集群下会报java.lang.NoClassDefFoundError: Could not initialize class org.datacenter.receiver.crew.util.PersonnelSinkUtil
+     * 通过反射stack我估摸着是flink在加载jar包的时候用反射加载了 PersonnelSinkUtil static变量会第一时间初始化
+     * 但是 PersonnelJdbcSink 依赖于JdbcSinkUtil 也就依赖于懒加载的 {@link org.datacenter.config.HumanMachineConfig} 所以会报properties空
+     */
+    public static Sink<PersonnelInfo> getPersonnelJdbcSink() {
+        return JdbcSink.<PersonnelInfo>builder()
+                .withQueryStatement("""
                         INSERT INTO `personnel_info` (
                             unit_code, unit, personal_identifier, name, position, sex, appointment_date, native_place, family_background,
                             education_level, birthday, enlistment_date, rating_date, graduate_college, graduation_date, military_rank,
@@ -41,55 +49,56 @@ public class PersonnelSinkUtil {
                             modification_time = VALUES(modification_time), total_time_history = VALUES(total_time_history), total_time_current_year = VALUES(total_time_current_year),
                             total_teaching_time_history = VALUES(total_teaching_time_history);
                         """, (JdbcStatementBuilder<PersonnelInfo>) (preparedStatement, personnelInfo) -> {
-                preparedStatement.setString(1, personnelInfo.getUnitCode());
-                preparedStatement.setString(2, personnelInfo.getUnit());
-                preparedStatement.setString(3, personnelInfo.getPersonalIdentifier());
-                preparedStatement.setString(4, personnelInfo.getName());
-                preparedStatement.setString(5, personnelInfo.getPosition());
-                preparedStatement.setString(6, personnelInfo.getSex()); // 添加缺失的sex字段
-                preparedStatement.setDate(7, personnelInfo.getAppointmentDate() == null ? null :
-                        Date.valueOf(personnelInfo.getAppointmentDate()));
-                preparedStatement.setString(8, personnelInfo.getNativePlace());
-                preparedStatement.setString(9, personnelInfo.getFamilyBackground());
-                preparedStatement.setString(10, personnelInfo.getEducationLevel());
-                preparedStatement.setDate(11, personnelInfo.getBirthday() == null ? null :
-                        Date.valueOf(personnelInfo.getBirthday()));
-                preparedStatement.setDate(12, personnelInfo.getEnlistmentDate() == null ? null :
-                        Date.valueOf(personnelInfo.getEnlistmentDate()));
-                preparedStatement.setDate(13, personnelInfo.getRatingDate() == null ? null :
-                        Date.valueOf(personnelInfo.getRatingDate()));
-                preparedStatement.setString(14, personnelInfo.getGraduateCollege());
-                preparedStatement.setDate(15, personnelInfo.getGraduationDate() == null ? null :
-                        Date.valueOf(personnelInfo.getGraduationDate()));
-                preparedStatement.setString(16, personnelInfo.getMilitaryRank());
-                preparedStatement.setString(17, personnelInfo.getPilotRole());
-                preparedStatement.setString(18, personnelInfo.getFlightLevel());
-                preparedStatement.setString(19, personnelInfo.getCurrentAircraftType());
-                preparedStatement.setString(20, personnelInfo.getPxh());
-                preparedStatement.setString(21, personnelInfo.getCodeName());
-                preparedStatement.setString(22, personnelInfo.getBm());
-                preparedStatement.setString(23, personnelInfo.getCodeCharacter());
-                preparedStatement.setString(24, personnelInfo.getIsAirCombatCommander());
-                preparedStatement.setString(25, personnelInfo.getFlightOutline());
-                preparedStatement.setString(26, personnelInfo.getLeadPilot());
-                preparedStatement.setString(27, personnelInfo.getCommandLevelDaytime());
-                preparedStatement.setString(28, personnelInfo.getCommandLevelNighttime());
-                preparedStatement.setString(29, personnelInfo.getInstructor());
-                preparedStatement.setString(30, personnelInfo.getTheoreticalInstructor());
-                preparedStatement.setString(31, personnelInfo.getZbzt());
-                preparedStatement.setString(32, personnelInfo.getIsTrainee());
-                preparedStatement.setString(33, personnelInfo.getIsInstructor());
-                preparedStatement.setString(34, personnelInfo.getQb());
-                preparedStatement.setDate(35, personnelInfo.getLastParachuteTimeLand() == null ? null :
-                        Date.valueOf(personnelInfo.getLastParachuteTimeLand()));
-                preparedStatement.setDate(36, personnelInfo.getLastParachuteTimeWater() == null ? null :
-                        Date.valueOf(personnelInfo.getLastParachuteTimeWater()));
-                preparedStatement.setDate(37, personnelInfo.getModificationTime() == null ? null :
-                        Date.valueOf(personnelInfo.getModificationTime()));
-                preparedStatement.setString(38, personnelInfo.getTotalTimeHistory());
-                preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
-                preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
-            })
-            .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
-            .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PERSONNEL));
+                    preparedStatement.setString(1, personnelInfo.getUnitCode());
+                    preparedStatement.setString(2, personnelInfo.getUnit());
+                    preparedStatement.setString(3, personnelInfo.getPersonalIdentifier());
+                    preparedStatement.setString(4, personnelInfo.getName());
+                    preparedStatement.setString(5, personnelInfo.getPosition());
+                    preparedStatement.setString(6, personnelInfo.getSex()); // 添加缺失的sex字段
+                    preparedStatement.setDate(7, personnelInfo.getAppointmentDate() == null ? null :
+                            Date.valueOf(personnelInfo.getAppointmentDate()));
+                    preparedStatement.setString(8, personnelInfo.getNativePlace());
+                    preparedStatement.setString(9, personnelInfo.getFamilyBackground());
+                    preparedStatement.setString(10, personnelInfo.getEducationLevel());
+                    preparedStatement.setDate(11, personnelInfo.getBirthday() == null ? null :
+                            Date.valueOf(personnelInfo.getBirthday()));
+                    preparedStatement.setDate(12, personnelInfo.getEnlistmentDate() == null ? null :
+                            Date.valueOf(personnelInfo.getEnlistmentDate()));
+                    preparedStatement.setDate(13, personnelInfo.getRatingDate() == null ? null :
+                            Date.valueOf(personnelInfo.getRatingDate()));
+                    preparedStatement.setString(14, personnelInfo.getGraduateCollege());
+                    preparedStatement.setDate(15, personnelInfo.getGraduationDate() == null ? null :
+                            Date.valueOf(personnelInfo.getGraduationDate()));
+                    preparedStatement.setString(16, personnelInfo.getMilitaryRank());
+                    preparedStatement.setString(17, personnelInfo.getPilotRole());
+                    preparedStatement.setString(18, personnelInfo.getFlightLevel());
+                    preparedStatement.setString(19, personnelInfo.getCurrentAircraftType());
+                    preparedStatement.setString(20, personnelInfo.getPxh());
+                    preparedStatement.setString(21, personnelInfo.getCodeName());
+                    preparedStatement.setString(22, personnelInfo.getBm());
+                    preparedStatement.setString(23, personnelInfo.getCodeCharacter());
+                    preparedStatement.setString(24, personnelInfo.getIsAirCombatCommander());
+                    preparedStatement.setString(25, personnelInfo.getFlightOutline());
+                    preparedStatement.setString(26, personnelInfo.getLeadPilot());
+                    preparedStatement.setString(27, personnelInfo.getCommandLevelDaytime());
+                    preparedStatement.setString(28, personnelInfo.getCommandLevelNighttime());
+                    preparedStatement.setString(29, personnelInfo.getInstructor());
+                    preparedStatement.setString(30, personnelInfo.getTheoreticalInstructor());
+                    preparedStatement.setString(31, personnelInfo.getZbzt());
+                    preparedStatement.setString(32, personnelInfo.getIsTrainee());
+                    preparedStatement.setString(33, personnelInfo.getIsInstructor());
+                    preparedStatement.setString(34, personnelInfo.getQb());
+                    preparedStatement.setDate(35, personnelInfo.getLastParachuteTimeLand() == null ? null :
+                            Date.valueOf(personnelInfo.getLastParachuteTimeLand()));
+                    preparedStatement.setDate(36, personnelInfo.getLastParachuteTimeWater() == null ? null :
+                            Date.valueOf(personnelInfo.getLastParachuteTimeWater()));
+                    preparedStatement.setDate(37, personnelInfo.getModificationTime() == null ? null :
+                            Date.valueOf(personnelInfo.getModificationTime()));
+                    preparedStatement.setString(38, personnelInfo.getTotalTimeHistory());
+                    preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
+                    preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
+                })
+                .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
+                .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PERSONNEL));
+    }
 }

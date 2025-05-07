@@ -45,7 +45,7 @@ public class PersonnelJsonFileReceiver extends BaseReceiver {
 
         env.fromSource(source, WatermarkStrategy.noWatermarks(), "PersonnelInfo")
                 .returns(PersonnelInfo.class)
-                .sinkTo(PersonnelSinkUtil.personnelJdbcSink);
+                .sinkTo(PersonnelSinkUtil.getPersonnelJdbcSink());
 
         try {
             env.execute("PersonnelJsonFileReceiver");
