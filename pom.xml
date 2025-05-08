@@ -47,7 +47,7 @@
         <!-- jackson-core和jackson-xml已经在zorathos的对应包里引入 不用重复引入了 如果需要使用自己版本的jackson记得exclude -->
 
         <mysql-connector-j.version>8.4.0</mysql-connector-j.version>
-        <lettuce.version>6.5.5.RELEASE</lettuce.version>
+        <lettuce.version>6.6.0.RELEASE</lettuce.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-pool2.verson>2.12.1</commons-pool2.verson>
         <druid.version>1.2.24</druid.version>
