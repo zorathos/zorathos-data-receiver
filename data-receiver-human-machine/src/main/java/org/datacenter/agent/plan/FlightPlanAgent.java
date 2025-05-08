@@ -32,10 +32,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FLIGHT_CODE_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FLIGHT_DATE_URL;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FLIGHT_XML_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_OUTPUT_DIRECTORY;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_AND_PLAN_LOGIN_JSON;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_AND_PLAN_LOGIN_URL;
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_OUTPUT_DIRECTORY;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.AGENT_INTERVAL_FLIGHT_PLAN;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_FLIGHT_PLAN_ROOT;
 
@@ -178,10 +179,11 @@ public class FlightPlanAgent extends BaseAgent {
                 .loginJson(decodedLoginJson)
                 .build();
         FlightPlanAgentReceiverConfig receiverConfig = FlightPlanAgentReceiverConfig.builder()
-                .flightDateUrl(params.getRequired(FLIGHT_PLAN_FLIGHT_CODE_URL.getKeyForParamsMap()))
+                .flightDateUrl(params.getRequired(FLIGHT_PLAN_FLIGHT_DATE_URL.getKeyForParamsMap()))
+                .flightCodeUrl(params.getRequired(FLIGHT_PLAN_FLIGHT_CODE_URL.getKeyForParamsMap()))
                 .flightXmlUrl(params.getRequired(FLIGHT_PLAN_FLIGHT_XML_URL.getKeyForParamsMap()))
                 .startupMode(FlightPlanAgentReceiverConfig.StartupMode.JSON_FILE)
-                .outputDir(params.getRequired(PERSONNEL_OUTPUT_DIRECTORY.getKeyForParamsMap()))
+                .outputDir(params.getRequired(FLIGHT_PLAN_OUTPUT_DIRECTORY.getKeyForParamsMap()))
                 .build();
 
         FlightPlanAgent flightPlanAgent = new FlightPlanAgent(loginConfig, receiverConfig);
