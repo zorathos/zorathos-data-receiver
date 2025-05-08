@@ -46,6 +46,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_CONFIG_BASE_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_FE_NODES;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_LIST_BASE_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_PASSWORD;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_SQL_NODES;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_USERNAME;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_MYSQL_DRIVER_NAME;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_PASSWORD;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
@@ -501,13 +508,13 @@ public class AssetJdbcReceiver extends BaseReceiver {
         log.info("Params: {}", params.toMap());
 
         AssetReceiverConfig config = AssetReceiverConfig.builder()
-                .listBaseUrl(params.getRequired("listBaseUrl"))
-                .configBaseUrl(params.getRequired("configBaseUrl"))
-                .sortieNumber(params.getRequired("sortieNumber"))
-                .sqlNodes(params.getRequired("sqlNodes"))
-                .feNodes(params.getRequired("feNodes"))
-                .username(params.getRequired("username"))
-                .password(params.get("password", null))
+                .listBaseUrl(params.getRequired(ASSET_LIST_BASE_URL.getKeyForParamsMap()))
+                .configBaseUrl(params.getRequired(ASSET_CONFIG_BASE_URL.getKeyForParamsMap()))
+                .sortieNumber(params.getRequired(ASSET_SORTIE_NUMBER.getKeyForParamsMap()))
+                .sqlNodes(params.getRequired(ASSET_SQL_NODES.getKeyForParamsMap()))
+                .feNodes(params.getRequired(ASSET_FE_NODES.getKeyForParamsMap()))
+                .username(params.getRequired(ASSET_USERNAME.getKeyForParamsMap()))
+                .password(params.get(ASSET_PASSWORD.getKeyForParamsMap(), null))
                 .build();
         log.info("Start receiver data assets with sortieNumber: {}", config.getSortieNumber());
         AssetJdbcReceiver assetJdbcReceiver = new AssetJdbcReceiver();
