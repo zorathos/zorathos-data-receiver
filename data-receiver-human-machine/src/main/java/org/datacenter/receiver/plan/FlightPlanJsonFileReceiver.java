@@ -43,31 +43,16 @@ public class FlightPlanJsonFileReceiver extends BaseReceiver {
     @Override
     public void start() {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
-        JsonArrayFileInputFormat<FlightPlanResponseSingleton> inputFormat = new JsonArrayFileInputFormat<>(FlightPlanResponseSingleton.class);
+        JsonArrayFileInputFormat<FlightPlanRoot> inputFormat = new JsonArrayFileInputFormat<>(FlightPlanRoot.class);
 
-        FileSource<FlightPlanResponseSingleton> source = FileSource
+        FileSource<FlightPlanRoot> source = FileSource
                 .forRecordStreamFormat(inputFormat, new Path(config.getUrl()))
                 .build();
 
-        DataStreamSource<FlightPlanResponseSingleton> flightPlanSource = env.fromSource(source, WatermarkStrategy.noWatermarks(), "FlightPlanSource");
-        SingleOutputStreamOperator<FlightPlanRoot> sourceDs = flightPlanSource
-                .map(responseSingleton -> {
-                    String xml = responseSingleton.getXml();
-                    String rootId;
-                    if (responseSingleton.getPlanRootId() != null) {
-                        rootId = responseSingleton.getPlanRootId();
-                    } else {
-                        rootId = UUID.randomUUID().toString();
-                    }
-                    FlightPlanRoot flightPlanRoot = FlightPlanRoot.fromXml(xml, rootId);
-                    flightPlanRoot.setFlightDate(responseSingleton.getFlightDateTime().toLocalDate());
-                    flightPlanRoot.setFlightDateTime(responseSingleton.getFlightDateTime());
-                    return flightPlanRoot;
-                })
-                .returns(FlightPlanRoot.class);
+        DataStreamSource<FlightPlanRoot> flightPlanSource = env.fromSource(source, WatermarkStrategy.noWatermarks(), "FlightPlanSource");
 
         // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
-        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN);
+        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(flightPlanSource, TiDBDatabase.FLIGHT_PLAN);
 
         try {
             env.execute();

@@ -43,28 +43,13 @@ public class FlightPlanImplementationAndDynamicJsonFileReceiver extends BaseRece
     @Override
     public void start() {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
-        JsonArrayFileInputFormat<FlightPlanImplementationAndDynamicResponseSingleton> inputFormat = new JsonArrayFileInputFormat<>(FlightPlanImplementationAndDynamicResponseSingleton.class);
+        JsonArrayFileInputFormat<FlightPlanRoot> inputFormat = new JsonArrayFileInputFormat<>(FlightPlanRoot.class);
 
-        FileSource<FlightPlanImplementationAndDynamicResponseSingleton> source = FileSource
+        FileSource<FlightPlanRoot> source = FileSource
                 .forRecordStreamFormat(inputFormat, new Path(receiverConfig.getUrl()))
                 .build();
 
-        DataStreamSource<FlightPlanImplementationAndDynamicResponseSingleton> flightPlanSource = env.fromSource(source, WatermarkStrategy.noWatermarks(), "FlightPlanSource");
-        SingleOutputStreamOperator<FlightPlanRoot> sourceDs = flightPlanSource
-                .map(responseSingleton -> {
-                    String xml = responseSingleton.getXml();
-                    String rootId;
-                    if (responseSingleton.getPlanRootId() != null) {
-                        rootId = responseSingleton.getPlanRootId();
-                    } else {
-                        rootId = UUID.randomUUID().toString();
-                    }
-                    FlightPlanRoot flightPlanRoot = FlightPlanRoot.fromXml(xml, rootId);
-                    flightPlanRoot.setFlightDate(responseSingleton.getFlightDateTime().toLocalDate());
-                    flightPlanRoot.setFlightDateTime(responseSingleton.getFlightDateTime());
-                    return flightPlanRoot;
-                })
-                .returns(FlightPlanRoot.class);
+        DataStreamSource<FlightPlanRoot> sourceDs = env.fromSource(source, WatermarkStrategy.noWatermarks(), "FlightPlanSource");
 
         if (this.receiverConfig.getReceiverType().equals(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.DYNAMIC)) {
             // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
