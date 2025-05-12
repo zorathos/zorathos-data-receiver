@@ -9,6 +9,7 @@ import org.datacenter.agent.util.SortiesHttpClientUtil;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
 import org.datacenter.exception.ZorathosException;
+import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
 import org.datacenter.receiver.util.DataReceiverUtil;
 
@@ -47,40 +48,62 @@ public class SortiesBatchAgent extends BaseAgent {
 
         log.info("Flight Batch Agent start running, fetching data from server.");
 
-        if (scheduler == null) {
-            scheduler = Executors.newScheduledThreadPool(1);
-        }
-
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                if (prepared) {
-                    // 可以直接起flink
-                    running = true;
-                    // 1. 通过接口获取所有flightBatch
-                    List<SortiesBatch> flightBatchList = SortiesHttpClientUtil.getSortiesBatches(receiverConfig);
-                    // 2. 转发到Kafka
-                    List<CompletableFuture<Void>> futures = flightBatchList.stream()
-                            .map(sortiesBatch -> CompletableFuture.runAsync(() -> {
-                                try {
-                                    String sortiesBatchInJson = mapper.writeValueAsString(sortiesBatch);
-                                    KafkaUtil.sendMessage(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES_BATCH), sortiesBatchInJson);
-                                } catch (JsonProcessingException e) {
-                                    throw new ZorathosException(e, "Error occurred while converting sortiesBatch to json.");
-                                }
-                            }))
-                            .toList();
-                    CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-                    try {
-                        allFutures.join();
-                    } catch (CompletionException e) {
-                        throw new ZorathosException(e.getCause(), "Error in parallel processing of sortiesBatch.");
-                    }
-                }
-            } catch (ZorathosException e) {
-                log.error("Error caught by scheduler pool. Task will be stopped.");
-                stop();
+        if (receiverConfig.getRunMode().equals(SortiesBatchReceiverConfig.RunMode.SCHEDULED)) {
+            if (scheduler == null) {
+                scheduler = Executors.newScheduledThreadPool(1);
             }
-        }, 0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_SORTIES_BATCH)), TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(this::fetchSortiesBatchDataFromRemote,
+                    0,
+                    Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_SORTIES_BATCH)), TimeUnit.SECONDS);
+        } else if (receiverConfig.getRunMode().equals(SortiesBatchReceiverConfig.RunMode.AT_ONCE)) {
+            // 直接获取一次
+            fetchSortiesBatchDataFromRemote();
+            SortiesBatch sortiesBatch = SortiesBatch.builder()
+                    .batchNumber(Sorties.END_SIGNAL_PREFIX + System.currentTimeMillis())
+                    .build();
+            // 发送结束消息
+            try {
+                KafkaUtil.sendMessage(
+                        HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES_BATCH),
+                        mapper.writeValueAsString(sortiesBatch));
+            } catch (JsonProcessingException e) {
+                throw new ZorathosException("Error occurred while converting sortiesBatch to json.");
+            }
+        } else {
+            log.error("Unknown run mode: {}", receiverConfig.getRunMode());
+            throw new ZorathosException("Unknown run mode: " + receiverConfig.getRunMode());
+        }
+    }
+
+    private void fetchSortiesBatchDataFromRemote() {
+        try {
+            if (prepared) {
+                // 可以直接起flink
+                running = true;
+                // 1. 通过接口获取所有flightBatch
+                List<SortiesBatch> flightBatchList = SortiesHttpClientUtil.getSortiesBatches(receiverConfig);
+                // 2. 转发到Kafka
+                List<CompletableFuture<Void>> futures = flightBatchList.stream()
+                        .map(sortiesBatch -> CompletableFuture.runAsync(() -> {
+                            try {
+                                String sortiesBatchInJson = mapper.writeValueAsString(sortiesBatch);
+                                KafkaUtil.sendMessage(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES_BATCH), sortiesBatchInJson);
+                            } catch (JsonProcessingException e) {
+                                throw new ZorathosException(e, "Error occurred while converting sortiesBatch to json.");
+                            }
+                        }))
+                        .toList();
+                CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                try {
+                    allFutures.join();
+                } catch (CompletionException e) {
+                    throw new ZorathosException(e.getCause(), "Error in parallel processing of sortiesBatch.");
+                }
+            }
+        } catch (ZorathosException e) {
+            log.error("Error caught by scheduler pool. Task will be stopped.");
+            stop();
+        }
     }
 
     @Override

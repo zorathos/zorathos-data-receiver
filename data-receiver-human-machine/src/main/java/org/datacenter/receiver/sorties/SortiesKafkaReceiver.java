@@ -7,6 +7,8 @@ import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.util.Collector;
 import org.datacenter.agent.sorties.SortiesAgent;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
@@ -26,6 +28,7 @@ import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BASE_URL;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_JSON;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_RUN_MODE;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES;
 
 /**
@@ -37,6 +40,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
 
     private final SortiesAgent sortiesAgent;
     private final SortiesReceiverConfig receiverConfig;
+    private static final Long STOP_SIGNAL_DURATION = 30000L;
 
     public SortiesKafkaReceiver(SortiesBatchReceiverConfig batchReceiverConfig, SortiesReceiverConfig sortiesReceiverConfig) {
         // 1. 加载配置 HumanMachineConfig.loadConfig();
@@ -163,7 +167,30 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
 
-        kafkaSourceDS.sinkTo(sink).name("Sorties Kafka Sinker");
+        kafkaSourceDS
+                .process(new ProcessFunction<Sorties, Sorties>() {
+                    @Override
+                    public void processElement(Sorties sorties, ProcessFunction<Sorties, Sorties>.Context context, Collector<Sorties> collector) {
+                        // 添加单次运行时处理逻辑
+                        if (receiverConfig.getRunMode().equals(SortiesReceiverConfig.RunMode.AT_ONCE)
+                                && sorties.getSortieNumber() != null
+                                && sorties.getSortieNumber().startsWith(Sorties.END_SIGNAL_PREFIX)) {
+                            log.info("Received end signal: {}, receiver will shutdown after 30 seconds after all data saved.", sorties.getSortieNumber());
+                            context.timerService().registerProcessingTimeTimer(System.currentTimeMillis() + STOP_SIGNAL_DURATION);
+                        } else {
+                            // 正常数据流转
+                            collector.collect(sorties);
+                        }
+                    }
+
+                    @Override
+                    public void onTimer(long timestamp, ProcessFunction<Sorties, Sorties>.OnTimerContext ctx, Collector<Sorties> out) throws Exception {
+                        super.onTimer(timestamp, ctx, out);
+                        log.info("Received end signal, shutting down agent and receiver.");
+                        System.exit(0);
+                    }
+                })
+                .sinkTo(sink).name("Sorties Kafka Sinker");
 
         try {
             env.execute("Sorties Kafka Receiver");
@@ -186,6 +213,8 @@ public class SortiesKafkaReceiver extends BaseReceiver {
         SortiesReceiverConfig sortiesReceiverConfig = SortiesReceiverConfig.builder()
                 .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
                 .baseUrl(params.getRequired(SORTIES_BASE_URL.getKeyForParamsMap()))
+                .runMode(SortiesReceiverConfig.RunMode.fromString(
+                        params.getRequired(SORTIES_RUN_MODE.getKeyForParamsMap())))
                 .build();
         SortiesKafkaReceiver receiver = new SortiesKafkaReceiver(batchReceiverConfig, sortiesReceiverConfig);
         receiver.run();
