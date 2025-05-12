@@ -73,43 +73,61 @@ public class FlightPlanAgent extends BaseAgent {
 
         log.info("Flight plan agent start running, fetching data from flight agent system's xml interface and sending it to kafka.");
 
-        if (scheduler == null) {
-            scheduler = Executors.newScheduledThreadPool(1, r -> {
-                Thread t = new Thread(r);
-                t.setName("FlightPlanAgent");
-                return t;
-            });
+        if (this.receiverConfig
+                .getStartupMode()
+                .equals(FlightPlanAgentReceiverConfig.StartupMode.KAFKA)) {
+            if (scheduler == null) {
+                scheduler = Executors.newScheduledThreadPool(1, r -> {
+                    Thread t = new Thread(r);
+                    t.setName("FlightPlanAgent");
+                    return t;
+                });
+            }
+
+            scheduler.scheduleAtFixedRate(this::fetchFlightPlanFromRemote, 0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_FLIGHT_PLAN)), TimeUnit.MINUTES);
+        } else if (this.receiverConfig
+                .getStartupMode()
+                .equals(FlightPlanAgentReceiverConfig.StartupMode.JSON_FILE)) {
+            // 跑一次就可以
+            fetchFlightPlanFromRemote();
+        } else {
+            log.error("Unknown startup mode: {}", this.receiverConfig.getStartupMode());
+            throw new ZorathosException("Unknown startup mode: " + this.receiverConfig.getStartupMode());
         }
+    }
 
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                if (prepared) {
-                    // 0. 刷新Cookie
-                    PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
+    private void fetchFlightPlanFromRemote() {
+        try {
+            if (prepared) {
+                // 0. 刷新Cookie
+                PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
 
+                running = true;
+                log.info("Flight plan agent is running.");
+
+                // 2. 获取飞行计划根XML并解析
+                List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(receiverConfig, tidbFlightPlanPool);
+                // 所有日期都已导入完成
+                if (flightPlans.isEmpty()) {
+                    log.info("All flight plans have been imported.");
+                    return;
+                }
+                if (receiverConfig
+                        .getStartupMode()
+                        .equals(FlightPlanAgentReceiverConfig.StartupMode.KAFKA)) {
                     // 1. 准备 Kafka 的 consumer group并创建所有 topic
                     KafkaUtil.createTopicIfNotExists(HumanMachineConfig.getProperty(KAFKA_TOPIC_FLIGHT_PLAN_ROOT));
-                    running = true;
-                    log.info("Flight plan agent is running.");
-
-                    // 2. 获取飞行计划根XML并解析
-                    List<FlightPlanRoot> flightPlans = PersonnelAndFlightPlanHttpClientUtil.getFlightRoots(receiverConfig, tidbFlightPlanPool);
-                    // 所有日期都已导入完成
-                    if (flightPlans.isEmpty()) {
-                        log.info("All flight plans have been imported.");
-                        return;
-                    }
-                    if (receiverConfig.getStartupMode().equals(FlightPlanAgentReceiverConfig.StartupMode.KAFKA)) {
-                        sendFlightPlansToKafka(flightPlans);
-                    } else if (receiverConfig.getStartupMode().equals(FlightPlanAgentReceiverConfig.StartupMode.JSON_FILE)) {
-                        saveFlightPlanToFile(flightPlans);
-                    }
+                    sendFlightPlansToKafka(flightPlans);
+                } else if (receiverConfig
+                        .getStartupMode()
+                        .equals(FlightPlanAgentReceiverConfig.StartupMode.JSON_FILE)) {
+                    saveFlightPlanToFile(flightPlans);
                 }
-            } catch (Exception e) {
-                log.error("Error caught by scheduler pool. Task will be stopped.");
-                stop();
             }
-        }, 0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_FLIGHT_PLAN)), TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("Error caught by scheduler pool. Task will be stopped.");
+            stop();
+        }
     }
 
     private void saveFlightPlanToFile(List<FlightPlanRoot> flightPlanRoots) throws IOException {
@@ -154,10 +172,19 @@ public class FlightPlanAgent extends BaseAgent {
     @Override
     public void stop() {
         super.stop();
-        try {
-            scheduler.shutdown();
-        } catch (Exception ex) {
-            log.error("Error shutting down scheduler", ex);
+        if (!prepared && !running) {
+            // 需要额外再做一次
+            log.info("Personnel agent is not running, no need to stop.");
+            return;
+        }
+        if (this.receiverConfig
+                .getStartupMode()
+                .equals(FlightPlanAgentReceiverConfig.StartupMode.KAFKA)){
+            try {
+                scheduler.shutdown();
+            } catch (Exception ex) {
+                log.error("Error shutting down scheduler", ex);
+            }
         }
         tidbFlightPlanPool.closePool();
         System.exit(0);

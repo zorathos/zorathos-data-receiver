@@ -66,45 +66,57 @@ public class PersonnelAgent extends BaseAgent {
 
         log.info("Personnel agent start running, fetching data from personnel agent system's json interface and sending it to kafka.");
 
-        if (scheduler == null) {
-            scheduler = Executors.newScheduledThreadPool(1, r -> {
-                Thread t = new Thread(r);
-                t.setName("PersonnelAgent-Scheduler");
-                return t;
-            });
-        }
+        if (this.receiverConfig
+                .getStartupMode()
+                .equals(PersonnelAgentReceiverConfig.StartupMode.KAFKA)) {
+            if (scheduler == null) {
+                scheduler = Executors.newScheduledThreadPool(1, r -> {
+                    Thread t = new Thread(r);
+                    t.setName("PersonnelAgent-Scheduler");
+                    return t;
+                });
+            }
 
-        scheduler.scheduleAtFixedRate(() -> {
-                    try {
-                        if (prepared) {
-                            // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
-                            // 0. 刷新Cookie
-                            PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
-                            // 这时候才可以拉起Flink任务
-                            running = true;
-                            log.info("Personnel agent is running.");
-                            // 2. 拉取人员数据
-                            List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
-                            if (personnelInfos.isEmpty()) {
-                                log.info("Fetched nothing from personnel agent system.");
-                                return;
-                            }
-                            if (receiverConfig.getStartupMode().equals(PersonnelAgentReceiverConfig.StartupMode.KAFKA)) {
-                                log.info("Sending personnel info to Kafka.");
-                                // 1 准备 Kafka 的 consumer group并创建所有 topic
-                                KafkaUtil.createTopicIfNotExists(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL));
-                                sendPersonnelInfosToKafka(personnelInfos);
-                            } else if (receiverConfig.getStartupMode().equals(PersonnelAgentReceiverConfig.StartupMode.JSON_FILE)) {
-                                log.info("Saving personnel info to JSON file.");
-                                savePersonnelInfosToFile(personnelInfos);
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.error("Error caught by scheduler pool. Task will be stopped.");
-                        stop();
-                    }
-                },
-                0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_PERSONNEL)), TimeUnit.MINUTES);
+            scheduler.scheduleAtFixedRate(this::fetchPilotDataFromRemote,
+                    0, Integer.parseInt(HumanMachineConfig.getProperty(AGENT_INTERVAL_PERSONNEL)), TimeUnit.MINUTES);
+        } else if (this.receiverConfig.getStartupMode().equals(PersonnelAgentReceiverConfig.StartupMode.JSON_FILE)){
+            // 跑一次就可以
+            fetchPilotDataFromRemote();
+        } else {
+            log.error("Unknown startup mode: {}", this.receiverConfig.getStartupMode());
+            throw new ZorathosException("Unknown startup mode: " + this.receiverConfig.getStartupMode());
+        }
+    }
+
+    private void fetchPilotDataFromRemote() {
+        try {
+            if (prepared) {
+                // 这玩意没有主键 所以在每一次写入之前都需要清空所有原有数据
+                // 0. 刷新Cookie
+                PersonnelAndFlightPlanHttpClientUtil.loginAndGetCookies(loginConfig);
+                // 这时候才可以拉起Flink任务
+                running = true;
+                log.info("Personnel agent is running.");
+                // 2. 拉取人员数据
+                List<PersonnelInfo> personnelInfos = PersonnelAndFlightPlanHttpClientUtil.getPersonnelInfos(receiverConfig);
+                if (personnelInfos.isEmpty()) {
+                    log.info("Fetched nothing from personnel agent system.");
+                    return;
+                }
+                if (receiverConfig.getStartupMode().equals(PersonnelAgentReceiverConfig.StartupMode.KAFKA)) {
+                    log.info("Sending personnel info to Kafka.");
+                    // 1 准备 Kafka 的 consumer group并创建所有 topic
+                    KafkaUtil.createTopicIfNotExists(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL));
+                    sendPersonnelInfosToKafka(personnelInfos);
+                } else if (receiverConfig.getStartupMode().equals(PersonnelAgentReceiverConfig.StartupMode.JSON_FILE)) {
+                    log.info("Saving personnel info to JSON file.");
+                    savePersonnelInfosToFile(personnelInfos);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error caught by scheduler pool. Task will be stopped.");
+            stop();
+        }
     }
 
     private void savePersonnelInfosToFile(List<PersonnelInfo> personnelInfos) throws IOException {
@@ -149,16 +161,26 @@ public class PersonnelAgent extends BaseAgent {
     @Override
     public void stop() {
         super.stop();
-        try {
-            scheduler.shutdownNow();
-        } catch (Exception ex) {
-            log.error("Error shutting down scheduler", ex);
+        if (!prepared && !running) {
+            log.info("Personnel agent is not running, no need to stop.");
+            return;
         }
+        if (this.receiverConfig
+                .getStartupMode()
+                .equals(PersonnelAgentReceiverConfig.StartupMode.KAFKA)) {
+            try {
+                scheduler.shutdownNow();
+            } catch (Exception ex) {
+                log.error("Error shutting down scheduler", ex);
+            }
+        }
+        log.info("Personnel agent exit 0.");
         System.exit(0);
     }
 
     /**
      * 离线拉去数据自启动时的主函数入口
+     *
      * @param args 输入参数
      */
     public static void main(String[] args) {
@@ -188,12 +210,14 @@ public class PersonnelAgent extends BaseAgent {
             personnelAgent.stop();
         }));
 
-        Thread agentThread = new Thread(personnelAgent);
+        // 为主线程设置有意义的名称
+        Thread agentThread = new Thread(personnelAgent, "PersonnelAgent-Main");
+
         agentThread.setUncaughtExceptionHandler((thread, throwable) -> {
             log.error("Personnel agent thread {} encountered an error: {}", thread.getName(), throwable.getMessage());
-            // 这里可以添加一些清理操作，比如关闭连接等
             personnelAgent.stop();
         });
+
         agentThread.start();
     }
 }

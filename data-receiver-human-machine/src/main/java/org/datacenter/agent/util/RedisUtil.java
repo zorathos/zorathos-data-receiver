@@ -98,17 +98,19 @@ public class RedisUtil {
     /**
      * 设置Redis键值（带重试机制）
      */
-    public static void set(String key, String value) {
+    public static Boolean set(String key, String value) {
         RetryUtil.executeWithRetry(() -> {
             try (StatefulRedisConnection<String, String> connection = connectionPool.borrowObject()) {
                 RedisCommands<String, String> commands = connection.sync();
                 commands.set(key, value);
-                return null; // 必须返回值以符合Supplier接口
+                log.info("Redis key: {} set successfully", key);
+                return true;
             } catch (Exception e) {
                 log.error("Failed to set the key: {}", key, e);
                 throw new ZorathosException(e, "Failed to set the key: " + key);
             }
         }, MAX_RETRY_COUNT, "Redis SET " + key);
+        return false;
     }
 
     /**
@@ -129,29 +131,31 @@ public class RedisUtil {
     /**
      * 设置键过期时间（秒）（带重试机制）
      */
-    public static void expire(String key, long seconds) {
+    public static Boolean expire(String key, long seconds) {
         RetryUtil.executeWithRetry(() -> {
             try (StatefulRedisConnection<String, String> connection = connectionPool.borrowObject()) {
                 RedisCommands<String, String> commands = connection.sync();
                 commands.expire(key, seconds);
-                return null; // 必须返回值以符合Supplier接口
+                log.info("Redis key: {} set expire time successfully", key);
+                return true;
             } catch (Exception e) {
                 log.error("Failed to set expire time for redis key: {}", key, e);
                 throw new ZorathosException(e, "Failed to set expire time for redis key: " + key);
             }
         }, MAX_RETRY_COUNT, "Redis EXPIRE " + key);
+        return false;
     }
 
     /**
      * 删除键（带重试机制）
      */
-    public static void del(String key) {
-        RetryUtil.executeWithRetry(() -> {
+    public static Boolean del(String key) {
+        return RetryUtil.executeWithRetry(() -> {
             try (StatefulRedisConnection<String, String> connection = connectionPool.borrowObject()) {
                 RedisCommands<String, String> commands = connection.sync();
-                commands.del(key);
-                log.info("Redis key: {} deleted successfully", key);
-                return null; // 必须返回值以符合Supplier接口
+                Long result = commands.del(key);
+                log.info("Redis key: {} deleted successfully, result={}", key, result);
+                return result > 0;
             } catch (Exception e) {
                 log.error("Failed to del the key: {}", key, e);
                 throw new ZorathosException(e);

@@ -91,6 +91,11 @@ public class SortiesAgent extends BaseAgent {
     @Override
     public void stop() {
         super.stop();
+        if (!prepared && !running) {
+            // 需要额外再做一次
+            log.info("Personnel agent is not running, no need to stop.");
+            return;
+        }
         try {
             scheduler.shutdown();
         } catch (Exception ex) {
