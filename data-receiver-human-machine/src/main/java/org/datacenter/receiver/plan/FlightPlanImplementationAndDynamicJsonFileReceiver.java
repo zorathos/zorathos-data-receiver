@@ -17,6 +17,7 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JsonArrayFileInputFormat;
 
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FILE_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 
 /**
  * @author : [wangminan]
@@ -49,9 +50,9 @@ public class FlightPlanImplementationAndDynamicJsonFileReceiver extends BaseRece
 
         if (this.receiverConfig.getReceiverType().equals(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.DYNAMIC)) {
             // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
-            FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN_DYNAMIC);
+            FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN_DYNAMIC, receiverConfig.getImportId());
         } else if (this.receiverConfig.getReceiverType().equals(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.IMPLEMENTATION)) {
-            FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN_IMPLEMENTATION);
+            FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(sourceDs, TiDBDatabase.FLIGHT_PLAN_IMPLEMENTATION, receiverConfig.getImportId());
         } else {
             throw new ZorathosException("Receiver type not supported.");
         }
@@ -70,6 +71,7 @@ public class FlightPlanImplementationAndDynamicJsonFileReceiver extends BaseRece
         FlightPlanImplementationAndDynamicJsonFileReceiverConfig config = FlightPlanImplementationAndDynamicJsonFileReceiverConfig.builder()
                 .receiverType(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.fromString(params.getRequired("receiverType")))
                 .url(params.getRequired(FLIGHT_PLAN_FILE_URL.getKeyForParamsMap()))
+                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
                 .build();
 
         FlightPlanImplementationAndDynamicJsonFileReceiver receiver = new FlightPlanImplementationAndDynamicJsonFileReceiver(config);

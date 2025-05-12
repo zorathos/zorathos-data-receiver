@@ -13,6 +13,7 @@ import org.datacenter.receiver.crew.util.PersonnelSinkUtil;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JsonArrayFileInputFormat;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PERSONNEL_URL;
 
 /**
@@ -45,7 +46,7 @@ public class PersonnelJsonFileReceiver extends BaseReceiver {
 
         env.fromSource(source, WatermarkStrategy.noWatermarks(), "PersonnelInfo")
                 .returns(PersonnelInfo.class)
-                .sinkTo(PersonnelSinkUtil.getPersonnelJdbcSink());
+                .sinkTo(PersonnelSinkUtil.getPilotJdbcSink(receiverConfig.getImportId()));
 
         try {
             env.execute("PersonnelJsonFileReceiver");
@@ -59,6 +60,7 @@ public class PersonnelJsonFileReceiver extends BaseReceiver {
         log.info("Parameters: {}", params.toMap());
         PersonnelJsonFileReceiverConfig receiverConfig = PersonnelJsonFileReceiverConfig.builder()
                 .url(params.getRequired(PERSONNEL_URL.getKeyForParamsMap()))
+                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
                 .build();
 
         PersonnelJsonFileReceiver receiver = new PersonnelJsonFileReceiver(receiverConfig);

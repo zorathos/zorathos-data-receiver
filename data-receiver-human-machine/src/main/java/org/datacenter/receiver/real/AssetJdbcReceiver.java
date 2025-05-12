@@ -53,6 +53,7 @@ import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_PAS
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_SORTIE_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_SQL_NODES;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.ASSET_USERNAME;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_MYSQL_DRIVER_NAME;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_PASSWORD;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
@@ -217,9 +218,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
                     INSERT INTO %s (
                         id, sortie_number, name, full_name, model, icd_id, icd,
                         db_name, source, remark, objectify_flag,
-                        copy_flag, labels, time_frame, time_type
+                        copy_flag, labels, time_frame, time_type, import_id
                     ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     ) ON DUPLICATE KEY UPDATE
                         name = VALUES(name),
                         sortie_number = VALUES(sortie_number),
@@ -234,7 +235,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
                         copy_flag = VALUES(copy_flag),
                         labels = VALUES(labels),
                         time_frame = VALUES(time_frame),
-                        time_type = VALUES(time_type)
+                        time_type = VALUES(time_type),
+                        import_id = VALUES(import_id);
                     """
                     .formatted(TiDBTable.ASSET_SUMMARY.getName());
             PreparedStatement preparedStatement = realConn.prepareStatement(sql);
@@ -253,6 +255,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             preparedStatement.setString(13, summary.getLabels());
             preparedStatement.setInt(14, summary.getTimeFrame());
             preparedStatement.setInt(15, summary.getTimeType());
+            preparedStatement.setString(16, config.getImportId());
             preparedStatement.executeUpdate();
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while sinking asset summary.");
@@ -269,9 +272,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
             String sql = """
                     INSERT INTO %s (
                         id, sortie_number, name, asset_id, icd_id,
-                        is_master, repeat_interval, repeat_times
+                        is_master, repeat_interval, repeat_times, import_id
                     ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?
                     ) ON DUPLICATE KEY UPDATE
                         name = VALUES(name),
                         sortie_number = VALUES(sortie_number),
@@ -279,7 +282,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
                         icd_id = VALUES(icd_id),
                         is_master = VALUES(is_master),
                         repeat_interval = VALUES(repeat_interval),
-                        repeat_times = VALUES(repeat_times)
+                        repeat_times = VALUES(repeat_times),
+                        import_id = VALUES(import_id);
                     """.formatted(TiDBTable.ASSET_TABLE_MODEL.getName());
             PreparedStatement preparedStatement = realConn.prepareStatement(sql);
             preparedStatement.setLong(1, model.getId());
@@ -315,9 +319,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
             String insertSql = """
                     INSERT INTO %s (
                         sortie_number, model_id, code,
-                        name, type, is_time, two_d_display, label
+                        name, type, is_time, two_d_display, label, import_id
                     ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?
                     ) ON DUPLICATE KEY UPDATE
                         name = VALUES(name),
                         model_id = VALUES(model_id),
@@ -325,7 +329,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
                         type = VALUES(type),
                         is_time = VALUES(is_time),
                         two_d_display = VALUES(two_d_display),
-                        label = VALUES(label)
+                        label = VALUES(label),
+                        import_id = VALUES(import_id);
                     """.formatted(TiDBTable.ASSET_TABLE_PROPERTY.getName());
             PreparedStatement insertStatement = realConn.prepareStatement(insertSql);
             insertStatement.setString(1, assetTableProperty.getSortieNumber());
@@ -336,6 +341,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             insertStatement.setInt(6, assetTableProperty.getIsTime());
             insertStatement.setInt(7, assetTableProperty.getTwoDDisplay());
             insertStatement.setString(8, assetTableProperty.getLabel());
+            insertStatement.setString(9, config.getImportId());
             insertStatement.executeUpdate();
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while sinking table property.");
@@ -508,6 +514,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
         log.info("Params: {}", params.toMap());
 
         AssetReceiverConfig config = AssetReceiverConfig.builder()
+                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
                 .listBaseUrl(params.getRequired(ASSET_LIST_BASE_URL.getKeyForParamsMap()))
                 .configBaseUrl(params.getRequired(ASSET_CONFIG_BASE_URL.getKeyForParamsMap()))
                 .sortieNumber(params.getRequired(ASSET_SORTIE_NUMBER.getKeyForParamsMap()))

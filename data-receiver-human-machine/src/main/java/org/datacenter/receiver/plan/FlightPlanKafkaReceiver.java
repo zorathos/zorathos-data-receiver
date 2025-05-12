@@ -67,7 +67,7 @@ public class FlightPlanKafkaReceiver extends BaseReceiver {
                 .returns(FlightPlanRoot.class);
 
         // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
-        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(kafkaSourceDS, TiDBDatabase.FLIGHT_PLAN);
+        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(kafkaSourceDS, TiDBDatabase.FLIGHT_PLAN, null);
 
         try {
             env.execute();

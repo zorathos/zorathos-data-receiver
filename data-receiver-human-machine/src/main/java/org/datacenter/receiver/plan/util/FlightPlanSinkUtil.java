@@ -23,14 +23,14 @@ import java.sql.Timestamp;
  */
 public class FlightPlanSinkUtil {
 
-    private static Sink<FlightPlanRoot> getFlightRootSink(TiDBDatabase database) {
+    private static Sink<FlightPlanRoot> getFlightRootSink(TiDBDatabase database, String importId) {
         return JdbcSink.<FlightPlanRoot>builder()
                 .withQueryStatement(
                         """
                                 INSERT INTO `flight_plan_root` (
-                                     `id`, `flight_date`, `flight_date_time`
+                                     `id`, `flight_date`, `flight_date_time`, `import_id`
                                 ) VALUES (
-                                     ?, ?, ?
+                                     ?, ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightPlanRoot>) (preparedStatement, flightPlanRoot) -> {
@@ -39,20 +39,21 @@ public class FlightPlanSinkUtil {
                                     null : Date.valueOf(flightPlanRoot.getFlightDate()));
                             preparedStatement.setTimestamp(3, flightPlanRoot.getFlightDateTime() == null ?
                                     null : Timestamp.valueOf(flightPlanRoot.getFlightDateTime()));
+                            preparedStatement.setString(4, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightHead> getFlightHeadSink(TiDBDatabase database) {
+    private static Sink<FlightHead> getFlightHeadSink(TiDBDatabase database, String importId) {
         return JdbcSink.<FlightHead>builder()
                 .withQueryStatement(
                         """
                                 INSERT INTO `flight_head` (
                                     root_id, ver, title, timeline, t_mode, plane_num, flights_time, total_time, exit_time,
-                                    sun_rise_time, sun_set_time, dark_time, dawn_time, dxthh, zhshh, dwsbxh
+                                    sun_rise_time, sun_set_time, dark_time, dawn_time, dxthh, zhshh, dwsbxh, import_id
                                 ) VALUES (
-                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightHead>) (preparedStatement, flightHead) -> {
@@ -72,37 +73,39 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(14, flightHead.getDxthh());
                             preparedStatement.setString(15, flightHead.getZhshh());
                             preparedStatement.setString(16, flightHead.getDwsbxh());
+                            preparedStatement.setString(17, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightNotes> getFlightNotesSink(TiDBDatabase database) {
+    private static Sink<FlightNotes> getFlightNotesSink(TiDBDatabase database, String importId) {
         return JdbcSink.<FlightNotes>builder()
                 .withQueryStatement(
                         """
                                 INSERT INTO `flight_notes` (
-                                    root_id, note
+                                    root_id, note, import_id
                                 ) VALUES (
-                                    ?, ?
+                                    ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightNotes>) (preparedStatement, flightNotes) -> {
                             preparedStatement.setString(1, flightNotes.getRootId());
                             preparedStatement.setString(2, flightNotes.getNote());
+                            preparedStatement.setString(3, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightCmd> getFlightCmdSink(TiDBDatabase database) {
+    private static Sink<FlightCmd> getFlightCmdSink(TiDBDatabase database, String importId) {
         return JdbcSink.<FlightCmd>builder()
                 .withQueryStatement(
                         """
                                 INSERT INTO flight_cmd (
-                                    root_id, name, lb, sx
+                                    root_id, name, lb, sx, import_id
                                 ) VALUES (
-                                    ?, ?, ?, ?
+                                    ?, ?, ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightCmd>) (preparedStatement, flightCmd) -> {
@@ -110,19 +113,20 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(2, flightCmd.getName());
                             preparedStatement.setString(3, flightCmd.getLb());
                             preparedStatement.setString(4, flightCmd.getSx());
+                            preparedStatement.setString(5, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightTask> getFlightTaskSink(TiDBDatabase tiDBDatabase) {
+    private static Sink<FlightTask> getFlightTaskSink(TiDBDatabase tiDBDatabase, String importId) {
         return JdbcSink.<FlightTask>builder()
                 .withQueryStatement(
                         """
                                 INSERT INTO flight_task (
-                                    root_id, model, code, name, rw
+                                    root_id, model, code, name, rw, import_id
                                 ) VALUES (
-                                    ?, ?, ?, ?, ?
+                                    ?, ?, ?, ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightTask>) (preparedStatement, flightTask) -> {
@@ -131,21 +135,22 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(3, flightTask.getCode());
                             preparedStatement.setString(4, flightTask.getName());
                             preparedStatement.setString(5, flightTask.getRw());
+                            preparedStatement.setString(6, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(tiDBDatabase));
     }
 
-    private static Sink<FlightPlan> getFlightPlanSink(TiDBDatabase database) {
+    private static Sink<FlightPlan> getFlightPlanSink(TiDBDatabase database, String importId) {
         return JdbcSink.<FlightPlan>builder()
                 .withQueryStatement(
                         """
                                 INSERT INTO `flight_plan` (
                                     root_id, airport_id, takeoff_time, air_battle_time, ys, plane_model, practice_number, cs, sj, jhlx, plan_time, height, ky, fz, formation_number,
                                     is_leader_plane, formation_practice, number_of_formation, front_name, front_code, front_code_name, front_nick_name,
-                                    front_property, back_name, back_code, back_code_name, back_nick_name, back_property, xsms, jkys, yxyl, wqgz, grfa
+                                    front_property, back_name, back_code, back_code_name, back_nick_name, back_property, xsms, jkys, yxyl, wqgz, grfa, import_id
                                 ) VALUES (
-                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                                 );
                                 """,
                         (JdbcStatementBuilder<FlightPlan>) (preparedStatement, flightPlan) -> {
@@ -182,30 +187,31 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(31, flightPlan.getYxyl());
                             preparedStatement.setString(32, flightPlan.getWqgz());
                             preparedStatement.setString(33, flightPlan.getGrfa());
+                            preparedStatement.setString(34, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    public static void addMultiSinkForFlightPlanRoot(SingleOutputStreamOperator<FlightPlanRoot> sourceDs, TiDBDatabase database) {
-        sourceDs.sinkTo(getFlightRootSink(database)).name("Flight root sink");
+    public static void addMultiSinkForFlightPlanRoot(SingleOutputStreamOperator<FlightPlanRoot> sourceDs, TiDBDatabase database, String importId) {
+        sourceDs.sinkTo(getFlightRootSink(database, importId)).name("Flight root sink");
         sourceDs.map(FlightPlanRoot::getFlightHead)
                 .returns(FlightHead.class)
-                .sinkTo(getFlightHeadSink(database)).name("Flight head sink");
+                .sinkTo(getFlightHeadSink(database, importId)).name("Flight head sink");
         sourceDs.map(FlightPlanRoot::getFlightNotes)
                 .returns(FlightNotes.class)
-                .sinkTo(getFlightNotesSink(database)).name("Flight notes sink");
+                .sinkTo(getFlightNotesSink(database, importId)).name("Flight notes sink");
         sourceDs.flatMap((FlightPlanRoot root, Collector<FlightCmd> out) -> root.getFlightCommands()
                         .forEach(out::collect))
                 .returns(FlightCmd.class)
-                .sinkTo(getFlightCmdSink(database)).name("Flight command sink");
+                .sinkTo(getFlightCmdSink(database, importId)).name("Flight command sink");
         sourceDs.flatMap((FlightPlanRoot root, Collector<FlightTask> out) -> root.getFlightTasks()
                         .forEach(out::collect))
                 .returns(FlightTask.class)
-                .sinkTo(getFlightTaskSink(database)).name("Flight task sink");
+                .sinkTo(getFlightTaskSink(database, importId)).name("Flight task sink");
         sourceDs.flatMap((FlightPlanRoot root, Collector<FlightPlan> out) -> root.getFlightPlans()
                         .forEach(out::collect))
                 .returns(FlightPlan.class)
-                .sinkTo(getFlightPlanSink(database)).name("Flight plan sink");
+                .sinkTo(getFlightPlanSink(database, importId)).name("Flight plan sink");
     }
 }

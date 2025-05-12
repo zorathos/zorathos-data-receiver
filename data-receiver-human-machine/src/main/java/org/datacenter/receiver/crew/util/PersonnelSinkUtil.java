@@ -22,7 +22,7 @@ public class PersonnelSinkUtil {
      * 通过反射stack我估摸着是flink在加载jar包的时候用反射加载了 PersonnelSinkUtil static变量会第一时间初始化
      * 但是 PersonnelJdbcSink 依赖于JdbcSinkUtil 也就依赖于懒加载的 {@link org.datacenter.config.HumanMachineConfig} 所以会报properties空
      */
-    public static Sink<PersonnelInfo> getPersonnelJdbcSink() {
+    public static Sink<PersonnelInfo> getPilotJdbcSink(String importId) {
         return JdbcSink.<PersonnelInfo>builder()
                 .withQueryStatement("""
                         INSERT INTO `personnel_info` (
@@ -31,11 +31,11 @@ public class PersonnelSinkUtil {
                             pilot_role, flight_level, current_aircraft_type, pxh, code_name, bm, code_character, is_air_combat_commander,
                             flight_outline, lead_pilot, command_level_daytime, command_level_nighttime, instructor, theoretical_instructor,
                             zbzt, is_trainee, is_instructor, qb, last_parachute_time_land, last_parachute_time_water, modification_time,
-                            total_time_history, total_time_current_year, total_teaching_time_history
+                            total_time_history, total_time_current_year, total_teaching_time_history, import_id
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                         ) ON DUPLICATE KEY UPDATE
-                            unit_code = VALUES(unit_code), unit = VALUES(unit), name = VALUES(name),
+                            import_id = VALUES(import_id), unit_code = VALUES(unit_code), unit = VALUES(unit), name = VALUES(name),
                             position = VALUES(position), sex = VALUES(sex), appointment_date = VALUES(appointment_date),
                             native_place = VALUES(native_place), family_background = VALUES(family_background),
                             education_level = VALUES(education_level), birthday = VALUES(birthday), enlistment_date = VALUES(enlistment_date), rating_date = VALUES(rating_date),
@@ -97,6 +97,7 @@ public class PersonnelSinkUtil {
                     preparedStatement.setString(38, personnelInfo.getTotalTimeHistory());
                     preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
                     preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
+                    preparedStatement.setString(41, importId);
                 })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PERSONNEL));

@@ -17,6 +17,7 @@ import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JsonArrayFileInputFormat;
 
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FILE_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 
 /**
  * @author : [wangminan]
@@ -48,7 +49,7 @@ public class FlightPlanJsonFileReceiver extends BaseReceiver {
         DataStreamSource<FlightPlanRoot> flightPlanSource = env.fromSource(source, WatermarkStrategy.noWatermarks(), "FlightPlanSource");
 
         // 重复使用datastream flink在每一次对datastream操作之后都会new一个新的对象 所以不用担心反复消费的问题
-        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(flightPlanSource, TiDBDatabase.FLIGHT_PLAN);
+        FlightPlanSinkUtil.addMultiSinkForFlightPlanRoot(flightPlanSource, TiDBDatabase.FLIGHT_PLAN, config.getImportId());
 
         try {
             env.execute();
@@ -63,6 +64,7 @@ public class FlightPlanJsonFileReceiver extends BaseReceiver {
 
         FlightPlanJsonFileReceiverConfig config = FlightPlanJsonFileReceiverConfig.builder()
                 .url(params.getRequired(FLIGHT_PLAN_FILE_URL.getKeyForParamsMap()))
+                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
                 .build();
 
         FlightPlanJsonFileReceiver receiver = new FlightPlanJsonFileReceiver(config);

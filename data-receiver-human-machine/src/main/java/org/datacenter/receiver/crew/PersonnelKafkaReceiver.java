@@ -62,7 +62,7 @@ public class PersonnelKafkaReceiver extends BaseReceiver {
         DataStreamSource<PersonnelInfo> kafkaSourceDS =
                 DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_PERSONNEL)), PersonnelInfo.class);
 
-        kafkaSourceDS.sinkTo(PersonnelSinkUtil.getPersonnelJdbcSink()).name("Personnel kafka sink.");
+        kafkaSourceDS.sinkTo(PersonnelSinkUtil.getPilotJdbcSink(null)).name("Personnel kafka sink.");
         try {
             env.execute();
         } catch (Exception e) {

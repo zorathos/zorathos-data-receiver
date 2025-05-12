@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BASE_URL;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_JSON;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_URL;
@@ -35,12 +36,14 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
 public class SortiesKafkaReceiver extends BaseReceiver {
 
     private final SortiesAgent sortiesAgent;
+    private final SortiesReceiverConfig receiverConfig;
 
     public SortiesKafkaReceiver(SortiesBatchReceiverConfig batchReceiverConfig, SortiesReceiverConfig sortiesReceiverConfig) {
         // 1. 加载配置 HumanMachineConfig.loadConfig();
         HumanMachineConfig sysConfig = new HumanMachineConfig();
         sysConfig.loadConfig();
         this.sortiesAgent = new SortiesAgent(batchReceiverConfig, sortiesReceiverConfig);
+        this.receiverConfig = sortiesReceiverConfig;
     }
 
     @Override
@@ -69,9 +72,16 @@ public class SortiesKafkaReceiver extends BaseReceiver {
         Sink<Sorties> sink = JdbcSink.<Sorties>builder()
                 .withQueryStatement("""
                         INSERT INTO sorties (
-                            airplane_model, airplane_number, arm_type, batch_number, camp, camp_str, car_end_time, car_start_time, create_time, down_pilot, folder_id, folder_name, icd_version, interpolation, is_effective, is_effective_name, location, pilot, qx_id, remark, role, role_str, sky_time, sortie_id, sortie_number, source, stealth, stealth_str, subject, sync_system, sync_system_str, test_drive, test_drive_str, up_pilot
+                            airplane_model, airplane_number, arm_type, batch_number,
+                            camp, camp_str, car_end_time, car_start_time, create_time,
+                            down_pilot, folder_id, folder_name, icd_version,
+                            interpolation, is_effective, is_effective_name, location,
+                            pilot, qx_id, remark, role, role_str, sky_time, sortie_id,
+                            sortie_number, source, stealth, stealth_str, subject,
+                            sync_system, sync_system_str, test_drive, test_drive_str,
+                            up_pilot, import_id
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                         ) ON DUPLICATE KEY UPDATE
                             airplane_model = VALUES(airplane_model),
                             airplane_number = VALUES(airplane_number),
@@ -105,7 +115,8 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                             sync_system_str = VALUES(sync_system_str),
                             test_drive = VALUES(test_drive),
                             test_drive_str = VALUES(test_drive_str),
-                            up_pilot = VALUES(up_pilot);
+                            up_pilot = VALUES(up_pilot)
+                            import_id = VALUES(import_id);
                         """, (JdbcStatementBuilder<Sorties>) (preparedStatement, sorties) -> {
                     preparedStatement.setString(1, sorties.getAirplaneModel());
                     preparedStatement.setString(2, sorties.getAirplaneNumber());
@@ -147,6 +158,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                     preparedStatement.setLong(32, sorties.getTestDrive());
                     preparedStatement.setString(33, sorties.getTestDriveStr());
                     preparedStatement.setString(34, sorties.getUpPilot());
+                    preparedStatement.setString(35, receiverConfig.getImportId());
                 })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
@@ -172,6 +184,7 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                 .json(decodedJson)
                 .build();
         SortiesReceiverConfig sortiesReceiverConfig = SortiesReceiverConfig.builder()
+                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
                 .baseUrl(params.getRequired(SORTIES_BASE_URL.getKeyForParamsMap()))
                 .build();
         SortiesKafkaReceiver receiver = new SortiesKafkaReceiver(batchReceiverConfig, sortiesReceiverConfig);

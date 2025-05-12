@@ -20,6 +20,7 @@ import org.datacenter.receiver.util.JdbcSinkUtil;
 import java.util.Base64;
 import java.util.List;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_JSON;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SORTIES_BATCH_URL;
 import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SORTIES_BATCH;
@@ -67,11 +68,12 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
         Sink<SortiesBatch> sinkFunction = JdbcSink.<SortiesBatch>builder()
                 .withQueryStatement("""
                                 INSERT INTO `sorties_batch` (
-                                    `id`, `batch_number`
+                                    `id`, `batch_number`, `import_id`
                                 ) VALUES (
-                                    ?, ?
+                                    ?, ?, ?
                                 ) ON DUPLICATE KEY UPDATE
-                                    batch_number = VALUES(batch_number);
+                                    batch_number = VALUES(batch_number),
+                                    import_id = VALUES(import_id);
                                 """,
                         (JdbcStatementBuilder<SortiesBatch>) (preparedStatement, sortiesBatch) -> {
                             preparedStatement.setString(1, sortiesBatch.getId());
@@ -100,6 +102,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
         String decodedJson = new String(Base64.getDecoder().decode(encodedJson));
 
         SortiesBatchReceiverConfig receiverConfig = SortiesBatchReceiverConfig.builder()
+                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
                 .url(params.getRequired(SORTIES_BATCH_URL.getKeyForParamsMap()))
                 .json(decodedJson)
                 .build();
