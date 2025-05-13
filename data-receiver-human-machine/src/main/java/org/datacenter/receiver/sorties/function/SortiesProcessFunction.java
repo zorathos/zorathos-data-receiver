@@ -2,7 +2,6 @@ package org.datacenter.receiver.sorties.function;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
 import org.datacenter.model.sorties.Sorties;
