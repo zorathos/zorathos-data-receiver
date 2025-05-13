@@ -546,10 +546,14 @@ public class AssetJdbcReceiver extends BaseReceiver {
      * 接收数据资产数据
      *
      * @param args 接收参数 格式为
-     *             --listBaseUrl http://192.168.10.100:8088/datahandle/asset/getObjectifyAsset
-     *             --configBaseUrl http://192.168.10.100:8088/datahandle/asset/getAssetValidConfig
+     *             --importId 1
+     *             --listBaseUrl http://127.0.0.1:8080/datahandle/asset/getObjectifyAsset
+     *             --configBaseUrl http://127.0.0.1:8080/datahandle/asset/getAssetValidConfig
      *             --sortieNumber 20250303_五_01_ACT-3_邱陈_J16_07#02
-     *             --feNodes 127.0.0.1:8030 --username root --password 123456
+     *             --sqlNodes 127.0.0.1:9030
+     *             --feNodes 127.0.0.1:8030
+     *             --username wangminan
+     *             --password Lab418Server!
      */
     public static void main(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);

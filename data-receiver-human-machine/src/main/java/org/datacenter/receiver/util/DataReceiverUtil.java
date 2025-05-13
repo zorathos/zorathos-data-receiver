@@ -9,6 +9,7 @@ import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ExternalizedCheckpointRetention;
+import org.apache.flink.configuration.PipelineOptions;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
@@ -65,8 +66,6 @@ public class DataReceiverUtil {
         configuration.set(CheckpointingOptions.ENABLE_UNALIGNED, true);
         configuration.set(CheckpointingOptions.ALIGNED_CHECKPOINT_TIMEOUT,
                 Duration.ofSeconds(120));
-
-        // 根据配置创建环境
 
         return StreamExecutionEnvironment.getExecutionEnvironment(configuration);
     }

@@ -5,14 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.datacenter.agent.util.RedisUtil;
 import org.datacenter.exception.ZorathosException;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 /**
  * @author wangminan
  * 基础的Agent类，使用Redis来处理启动状态，防止并发运行
  */
 @Slf4j
 @Data
-public abstract class BaseAgent implements Runnable {
-
+public abstract class BaseAgent implements Runnable, Serializable {
+    @Serial
+    private static final long serialVersionUID = 456231789L;
     protected volatile boolean prepared = false;
     protected volatile boolean running = false;
     protected boolean isStartedByThisInstance = false;

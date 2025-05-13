@@ -3,12 +3,9 @@ package org.datacenter.receiver.sorties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.util.Collector;
 import org.datacenter.agent.sorties.SortiesAgent;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
@@ -17,9 +14,12 @@ import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
 import org.datacenter.model.sorties.Sorties;
 import org.datacenter.receiver.BaseReceiver;
+import org.datacenter.receiver.sorties.function.SortiesProcessFunction;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.List;
@@ -36,7 +36,9 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
  * @description : 架次信息用的KafkaReceiver
  */
 @Slf4j
-public class SortiesKafkaReceiver extends BaseReceiver {
+public class SortiesKafkaReceiver extends BaseReceiver implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 12213145L;
 
     private final SortiesAgent sortiesAgent;
     private final SortiesReceiverConfig receiverConfig;
@@ -50,30 +52,18 @@ public class SortiesKafkaReceiver extends BaseReceiver {
         this.receiverConfig = sortiesReceiverConfig;
     }
 
-    @Override
-    public void prepare() {
-        super.prepare();
-        Thread agentThread = new Thread(sortiesAgent);
-        agentThread.setUncaughtExceptionHandler((thread, throwable) -> {
-            log.error("Sorties agent thread {} encountered an error: {}", thread.getName(), throwable.getMessage());
-            agentShutdown(sortiesAgent);
-        });
-        agentThread.start();
-        awaitAgentRunning(sortiesAgent);
-    }
-
-    @Override
-    public void start() {
-        // 1. shutdownhook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentShutdown(sortiesAgent)));
-
-        // 2. 执行环境 引入kafka数据源
-        StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
-        DataStreamSource<Sorties> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES)), Sorties.class);
-
-        // 3. jdbcsink
-        Sink<Sorties> sink = JdbcSink.<Sorties>builder()
+    /**
+     * 单独做static的sink是因为不static会报序列化问题
+     *      JdbcSink lambda表达式捕获了整个SortiesKafkaReceiver实例
+     *      SortiesKafkaReceiver包含SortiesAgent
+     *      SortiesAgent包含ObjectMapper
+     *      ObjectMapper包含Jackson时间相关的反序列化器，这些反序列化器使用了不可序列化的DateTimeFormatter
+     * 解决方案为将JdbcSink创建逻辑修改为静态方法，避免捕获整个SortiesKafkaReceiver实例
+     * @param importId 导入ID
+     * @return JdbcSink
+     */
+    private static Sink<Sorties> createSortiesSink(String importId) {
+        return JdbcSink.<Sorties>builder()
                 .withQueryStatement("""
                         INSERT INTO sorties (
                             airplane_model, airplane_number, arm_type, batch_number,
@@ -119,9 +109,9 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                             sync_system_str = VALUES(sync_system_str),
                             test_drive = VALUES(test_drive),
                             test_drive_str = VALUES(test_drive_str),
-                            up_pilot = VALUES(up_pilot)
+                            up_pilot = VALUES(up_pilot),
                             import_id = VALUES(import_id);
-                        """, (JdbcStatementBuilder<Sorties>) (preparedStatement, sorties) -> {
+                        """, (preparedStatement, sorties) -> {
                     preparedStatement.setString(1, sorties.getAirplaneModel());
                     preparedStatement.setString(2, sorties.getAirplaneNumber());
                     preparedStatement.setString(3, sorties.getArmType());
@@ -162,34 +152,41 @@ public class SortiesKafkaReceiver extends BaseReceiver {
                     preparedStatement.setLong(32, sorties.getTestDrive());
                     preparedStatement.setString(33, sorties.getTestDriveStr());
                     preparedStatement.setString(34, sorties.getUpPilot());
-                    preparedStatement.setString(35, receiverConfig.getImportId());
+                    preparedStatement.setString(35, importId);
                 })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
+    }
+
+    @Override
+    public void prepare() {
+        super.prepare();
+        Thread agentThread = new Thread(sortiesAgent);
+        agentThread.setUncaughtExceptionHandler((thread, throwable) -> {
+            log.error("Sorties agent thread {} encountered an error: {}", thread.getName(), throwable.getMessage());
+            agentShutdown(sortiesAgent);
+        });
+        agentThread.start();
+        awaitAgentRunning(sortiesAgent);
+    }
+
+    @Override
+    public void start() {
+        // 1. shutdownhook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentShutdown(sortiesAgent)));
+
+        // 2. 执行环境 引入kafka数据源
+        StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
+        env.setParallelism(1);
+        DataStreamSource<Sorties> kafkaSourceDS =
+                DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES)), Sorties.class);
+
+        // 3. jdbcsink - 使用静态方法避免捕获外部实例
+        Sink<Sorties> sink = createSortiesSink(receiverConfig.getImportId());
 
         kafkaSourceDS
-                .process(new ProcessFunction<Sorties, Sorties>() {
-                    @Override
-                    public void processElement(Sorties sorties, ProcessFunction<Sorties, Sorties>.Context context, Collector<Sorties> collector) {
-                        // 添加单次运行时处理逻辑
-                        if (receiverConfig.getRunMode().equals(SortiesReceiverConfig.RunMode.AT_ONCE)
-                                && sorties.getSortieNumber() != null
-                                && sorties.getSortieNumber().startsWith(Sorties.END_SIGNAL_PREFIX)) {
-                            log.info("Received end signal: {}, receiver will shutdown after 30 seconds after all data saved.", sorties.getSortieNumber());
-                            context.timerService().registerProcessingTimeTimer(System.currentTimeMillis() + STOP_SIGNAL_DURATION);
-                        } else {
-                            // 正常数据流转
-                            collector.collect(sorties);
-                        }
-                    }
-
-                    @Override
-                    public void onTimer(long timestamp, ProcessFunction<Sorties, Sorties>.OnTimerContext ctx, Collector<Sorties> out) throws Exception {
-                        super.onTimer(timestamp, ctx, out);
-                        log.info("Received end signal, shutting down agent and receiver.");
-                        System.exit(0);
-                    }
-                })
+                .keyBy(Sorties::getSortieNumber)
+                .process(new SortiesProcessFunction(receiverConfig.getRunMode(), STOP_SIGNAL_DURATION))
                 .sinkTo(sink).name("Sorties Kafka Sinker");
 
         try {
@@ -200,6 +197,8 @@ public class SortiesKafkaReceiver extends BaseReceiver {
     }
 
     public static void main(String[] args) {
+        // 如果报内部堆栈问题 开以下注释
+        // System.setProperty("sun.io.serialization.extendedDebugInfo", "true");
         ParameterTool params = ParameterTool.fromArgs(args);
         log.info("Params: {}", params.toMap());
 
