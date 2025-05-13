@@ -13,7 +13,6 @@ import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.StatementSet;
-import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.real.AssetReceiverConfig;
@@ -42,6 +41,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,8 +73,12 @@ public class AssetJdbcReceiver extends BaseReceiver {
     private String sortieId;
     private String batchNumber;
     private ObjectMapper mapper = DataReceiverUtil.mapper;
+    private static final String MESSAGE_OCCURRENCE_TIME = "消息发生时间";
+    // 用于暂存给入的架次的启动和结束时间
+    private LocalDateTime carStartTime;
+    private LocalDateTime carEndTime;
     // 本次读取过程中用到的 资产-资产表配置-DorisDDL triple本地缓存 这个pair的list肉眼可见的会占用很大的内存
-    private List<MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement>> assetResultList = new ArrayList<>();
+    private List<MutableTriple<AssetSummary, AssetTableConfig, StarRocksCreateTableStatement>> assetResultList = new ArrayList<>();
 
     /**
      * 准备阶段中需要完成 资产描述接入与目标库建表
@@ -84,10 +89,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
         // 0. 连接池准备
         MySQLDriverConnectionPool sortieFlightPool = new MySQLDriverConnectionPool(TiDBDatabase.SORTIES);
         MySQLDriverConnectionPool realWorldFlightPool = new MySQLDriverConnectionPool(TiDBDatabase.REAL_WORLD_FLIGHT);
-
         try {
             // 1.  JDBC 根据架次号去查询架次数据
-            String armType;
+            String weaponModel;
             String icdVersion;
             try {
                 Class.forName(HumanMachineConfig.getProperty(TIDB_MYSQL_DRIVER_NAME));
@@ -100,7 +104,10 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 if (resultSet.next()) {
                     sortieId = resultSet.getString("sortie_id");
                     batchNumber = resultSet.getString("batch_number");
-                    armType = resultSet.getString("arm_type");
+                    carStartTime = resultSet.getObject("car_start_time", LocalDateTime.class);
+                    carEndTime = resultSet.getObject("car_end_time", LocalDateTime.class);
+                    // weaponNumber拿的是airplaneNumber
+                    weaponModel = resultSet.getString("airplane_number");
                     icdVersion = resultSet.getString("icd_version");
                 } else {
                     log.error("No sortie data found for sortieNumber: {}.", config.getSortieNumber());
@@ -112,9 +119,9 @@ public class AssetJdbcReceiver extends BaseReceiver {
             }
 
             // 2. 获取到架次后拿着sortie的armType作为weaponNumber入参 icdVersion作为icd入参 查数据资产列表接口 获取资产列表
-            log.info("Fetching asset list from web interface, armType: {}, icdVersion: {}.", armType, icdVersion);
+            log.info("Fetching asset list from web interface, weaponModel: {}, icdVersion: {}.", weaponModel, icdVersion);
             String assetListUrl = config.getListBaseUrl() +
-                    "?weaponModel=" + armType +
+                    "?weaponModel=" + weaponModel +
                     "&icd=" + icdVersion;
             List<AssetSummary> assetList;
             try (HttpClient client = HttpClient.newHttpClient()) {
@@ -146,21 +153,23 @@ public class AssetJdbcReceiver extends BaseReceiver {
                     // 使用objectMapper 序列化返回列表
                     String responseBody = response.body();
                     AssetTableConfigResult result = mapper.readValue(responseBody, AssetTableConfigResult.class);
-                    assetResultList.add(new MutableTriple<>(asset, result.getResult(), new StarRocksCreateTableStatement()));
+                    // 如果有问题的话就出在这个位置 经过和翔腾的讨论
+                    // 我们默认assetTableConfigResult的getResult()方法返回的List<AssetTableConfig>类型的对象只有一个元素
+                    assetResultList.add(new MutableTriple<>(asset, result.getResult().getFirst(), new StarRocksCreateTableStatement()));
                 } catch (URISyntaxException | IOException | InterruptedException e) {
                     throw new ZorathosException(e, "Error occurs while fetching asset config.");
                 }
             }
 
             // 4.0 落库
-            for (MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair : assetResultList) {
+            for (MutableTriple<AssetSummary, AssetTableConfig, StarRocksCreateTableStatement> assetConfigPair : assetResultList) {
                 // 4.1 把既有数据写入数据库
                 AssetSummary assetSummary = assetConfigPair.getLeft();
                 assetSummary.setSortieNumber(config.getSortieNumber());
                 sinkAssetSummary(realWorldFlightPool, assetSummary);
                 // 入库AssetTableConfig 以 AssetTableModel 和 AssetTableProperty 分别入库
                 // 虽然这事情很荒谬 但我们确实只取第一个元素
-                AssetTableConfig assetTableConfig = assetConfigPair.getMiddle().getFirst();
+                AssetTableConfig assetTableConfig = assetConfigPair.getMiddle();
                 // 先入库AssetTableModel
                 AssetTableModel assetTableModel = assetTableConfig.getAssetModel();
                 assetTableModel.setSortieNumber(config.getSortieNumber());
@@ -179,7 +188,8 @@ public class AssetJdbcReceiver extends BaseReceiver {
                 // 4.2 show create table 使用 druid 解 ddl 转发给TiDB
                 try {
                     Connection dorisConn = DriverManager.getConnection(
-                            "jdbc:mysql://%s/%s?useUnicode=true&characterEncoding=UTF-8&useSSL=false".formatted(config.getSqlNodes(), dbName),
+                            "jdbc:mysql://%s/%s?useUnicode=true&characterEncoding=UTF-8&useSSL=false"
+                                    .formatted(config.getSqlNodes(), dbName),
                             config.getUsername(),
                             config.getPassword()
                     );
@@ -475,9 +485,17 @@ public class AssetJdbcReceiver extends BaseReceiver {
 
         // 迭代遍历assetResultList
         for (int i = 0; i < assetResultList.size(); i++) {
-            MutableTriple<AssetSummary, List<AssetTableConfig>, StarRocksCreateTableStatement> assetConfigPair = assetResultList.get(i);
+            MutableTriple<AssetSummary, AssetTableConfig, StarRocksCreateTableStatement> assetConfigPair = assetResultList.get(i);
             String dbName = assetConfigPair.getLeft().getDbName();
             String tableName = assetConfigPair.getLeft().getFullName();
+            List<AssetTableProperty> propertyList = assetConfigPair.getMiddle().getPropertyList();
+            String timeColumn = null;
+            for (AssetTableProperty assetTableProperty : propertyList) {
+                if (assetTableProperty.getName().equals(MESSAGE_OCCURRENCE_TIME)) {
+                    timeColumn = assetTableProperty.getCode();
+                    break;
+                }
+            }
             String flinkSource = "source_" + i;
             String flinkTarget = "target_" + i;
 
@@ -487,15 +505,40 @@ public class AssetJdbcReceiver extends BaseReceiver {
             tableEnv.executeSql(flinkSourceTable);
             tableEnv.executeSql(flinkTargetTable);
 
-            Table sourceTable = tableEnv.from(flinkSource);
-            statementSet.addInsert(flinkTarget, sourceTable);
-        }
+            String insertSql;
+            if (timeColumn != null) {
+                // 将LocalDateTime转换为毫秒时间戳 默认timezone是
+                long startTimeMillis = carStartTime.atZone(ZoneId.of("Asia/Shanghai")).toInstant().toEpochMilli();
+                long endTimeMillis = carEndTime.atZone(ZoneId.of("Asia/Shanghai")).toInstant().toEpochMilli();
 
-        // 执行所有语句
-        try {
-            statementSet.execute();
-        } catch (Exception e) {
-            throw new ZorathosException(e, "Error occurs while executing statement set.");
+                // 直接比较时间戳大小
+                insertSql = """
+                        INSERT INTO %s
+                        SELECT * FROM %s
+                        WHERE %s >= %d AND %s <= %d
+                        """.formatted(
+                        flinkTarget, flinkSource,
+                        timeColumn, startTimeMillis,
+                        timeColumn, endTimeMillis
+                );
+            } else {
+                // 如果找不到时间字段，保留原有逻辑
+                log.warn("No time column found for table: {}, will insert all data.", tableName);
+                insertSql = """
+                        INSERT INTO %s
+                        SELECT * FROM %s
+                        """.formatted(flinkTarget, flinkSource);
+            }
+
+            // 执行插入语句
+            statementSet.addInsertSql(insertSql);
+
+            // 执行所有语句
+            try {
+                statementSet.execute();
+            } catch (Exception e) {
+                throw new ZorathosException(e, "Error occurs while executing statement set.");
+            }
         }
     }
 
