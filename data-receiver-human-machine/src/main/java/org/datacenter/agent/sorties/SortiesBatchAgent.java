@@ -28,7 +28,7 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
  * @description : 架次Batch Agent
  */
 @Slf4j
-public class SortiesBatchAgent extends BaseAgent {
+public class SortiesBatchAgent extends BaseAgent{
 
     private final ObjectMapper mapper = DataReceiverUtil.mapper;
     private ScheduledExecutorService scheduler;

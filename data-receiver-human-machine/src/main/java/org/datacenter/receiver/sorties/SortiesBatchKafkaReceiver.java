@@ -3,24 +3,22 @@ package org.datacenter.receiver.sorties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.connector.jdbc.sink.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.util.Collector;
 import org.datacenter.agent.sorties.SortiesBatchAgent;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.config.receiver.sorties.SortiesBatchReceiverConfig;
-import org.datacenter.config.receiver.sorties.SortiesReceiverConfig;
 import org.datacenter.exception.ZorathosException;
 import org.datacenter.model.base.TiDBDatabase;
-import org.datacenter.model.sorties.Sorties;
 import org.datacenter.model.sorties.SortiesBatch;
 import org.datacenter.receiver.BaseReceiver;
+import org.datacenter.receiver.sorties.function.SortiesBatchProcessFunction;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JdbcSinkUtil;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Base64;
 import java.util.List;
 
@@ -35,7 +33,9 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
  * @description : 从Kafka中接收架次批数据写入TiDB
  */
 @Slf4j
-public class SortiesBatchKafkaReceiver extends BaseReceiver {
+public class SortiesBatchKafkaReceiver extends BaseReceiver implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 12213146L;
 
     private final SortiesBatchAgent sortiesBatchAgent;
     private final SortiesBatchReceiverConfig receiverConfig;
@@ -49,6 +49,31 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
         this.receiverConfig = receiverConfig;
     }
 
+    /**
+     * 创建静态的JdbcSink，避免捕获外部实例导致序列化问题
+     *
+     * @param importId 导入ID
+     * @return JdbcSink实例
+     */
+    private static Sink<SortiesBatch> createSortiesBatchSink(String importId) {
+        return JdbcSink.<SortiesBatch>builder()
+                .withQueryStatement("""
+                                INSERT INTO `sorties_batch` (
+                                    `id`, `batch_number`, `import_id`
+                                ) VALUES (
+                                    ?, ?, ?
+                                ) ON DUPLICATE KEY UPDATE
+                                    batch_number = VALUES(batch_number),
+                                    import_id = VALUES(import_id);
+                                """,
+                        (preparedStatement, sortiesBatch) -> {
+                            preparedStatement.setString(1, sortiesBatch.getId());
+                            preparedStatement.setString(2, sortiesBatch.getBatchNumber());
+                            preparedStatement.setString(3, importId);
+                        })
+                .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
+                .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
+    }
 
     @Override
     public void prepare() {
@@ -70,49 +95,16 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
         // 开始从kafka获取数据
         // 引入执行环境
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
+        env.setParallelism(1);
         DataStreamSource<SortiesBatch> kafkaSourceDS =
                 DataReceiverUtil.getKafkaSourceDS(env, List.of(HumanMachineConfig.getProperty(KAFKA_TOPIC_SORTIES_BATCH)), SortiesBatch.class);
 
-        Sink<SortiesBatch> sinkFunction = JdbcSink.<SortiesBatch>builder()
-                .withQueryStatement("""
-                                INSERT INTO `sorties_batch` (
-                                    `id`, `batch_number`, `import_id`
-                                ) VALUES (
-                                    ?, ?, ?
-                                ) ON DUPLICATE KEY UPDATE
-                                    batch_number = VALUES(batch_number),
-                                    import_id = VALUES(import_id);
-                                """,
-                        (JdbcStatementBuilder<SortiesBatch>) (preparedStatement, sortiesBatch) -> {
-                            preparedStatement.setString(1, sortiesBatch.getId());
-                            preparedStatement.setString(2, sortiesBatch.getBatchNumber());
-                        })
-                .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
-                .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
+        // 使用静态方法创建sink
+        Sink<SortiesBatch> sinkFunction = createSortiesBatchSink(receiverConfig.getImportId());
 
         kafkaSourceDS
-                .process(new ProcessFunction<SortiesBatch, SortiesBatch>() {
-                    @Override
-                    public void processElement(SortiesBatch sortiesBatch, ProcessFunction<SortiesBatch, SortiesBatch>.Context context, Collector<SortiesBatch> collector) {
-                        // 添加单次运行时处理逻辑
-                        if (receiverConfig.getRunMode().equals(SortiesBatchReceiverConfig.RunMode.AT_ONCE)
-                                && sortiesBatch.getBatchNumber() != null
-                                && sortiesBatch.getBatchNumber().startsWith(Sorties.END_SIGNAL_PREFIX)) {
-                            log.info("Received end signal: {}, receiver will shutdown after 30 seconds after all data saved.", sortiesBatch.getBatchNumber());
-                            context.timerService().registerProcessingTimeTimer(System.currentTimeMillis() + STOP_SIGNAL_DURATION);
-                        } else {
-                            // 正常数据流转
-                            collector.collect(sortiesBatch);
-                        }
-                    }
-
-                    @Override
-                    public void onTimer(long timestamp, ProcessFunction<SortiesBatch, SortiesBatch>.OnTimerContext ctx, Collector<SortiesBatch> out) throws Exception {
-                        super.onTimer(timestamp, ctx, out);
-                        log.info("Received end signal, shutting down agent and receiver.");
-                        System.exit(0);
-                    }
-                })
+                .keyBy(SortiesBatch::getBatchNumber)
+                .process(new SortiesBatchProcessFunction(receiverConfig.getRunMode(), STOP_SIGNAL_DURATION))
                 .sinkTo(sinkFunction).name("SortiesBatch Kafka Sinker");
         try {
             env.execute("SortiesBatch Kafka Receiver");
@@ -127,6 +119,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver {
      * @param args 入参 --url xxx --json xxx
      */
     public static void main(String[] args) {
+        System.setProperty("sun.io.serialization.extendedDebugInfo", "true");
         ParameterTool params = ParameterTool.fromArgs(args);
         log.info("Params: {}", params.toMap());
         String encodedJson = params.getRequired(SORTIES_BATCH_JSON.getKeyForParamsMap());
