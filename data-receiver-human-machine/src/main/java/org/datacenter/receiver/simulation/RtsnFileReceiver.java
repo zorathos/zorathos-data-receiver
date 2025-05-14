@@ -16,7 +16,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 
 
@@ -62,38 +63,35 @@ public class RtsnFileReceiver extends SimulationReceiver<Rtsn> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `rtsn` (
-                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, target_id, intercepted_weapon_id, target_real_or_virtual, 
+                    import_id,batch_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, target_id, intercepted_weapon_id, target_real_or_virtual, 
                     weapon_id, pylon_id, weapon_type, trajectory_type, missile_attack_mode
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?,?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?
                 );
                 """;
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, Rtsn data, String sortieNumber) throws SQLException {
-// 注意 sortieNumber 是从配置里面来的 csv里面没有
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getAircraftId());
-        // LocalTime -> java.sql.Time
-        preparedStatement.setTime(3, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
-        preparedStatement.setTime(4, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
-        preparedStatement.setTime(5, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
-        // Handle potential null for Long
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, Rtsn data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getAircraftId());
+        preparedStatement.setTime(4, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
+        preparedStatement.setTime(5, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
+        preparedStatement.setTime(6, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
         if (data.getMessageSequenceNumber() != null) {
-            preparedStatement.setLong(6, data.getMessageSequenceNumber());
+            preparedStatement.setLong(7, data.getMessageSequenceNumber());
         } else {
-            preparedStatement.setNull(6, java.sql.Types.BIGINT);
+            preparedStatement.setNull(7, java.sql.Types.BIGINT);
         }
-        preparedStatement.setString(7, data.getTargetId());
-        preparedStatement.setString(8, data.getInterceptedWeaponId());
-        preparedStatement.setString(9, data.getTargetRealOrVirtual());
-        preparedStatement.setString(10, data.getWeaponId());
-        preparedStatement.setString(11, data.getPylonId());
-        preparedStatement.setString(12, data.getWeaponType());
-        preparedStatement.setString(13, data.getTrajectoryType());
-        preparedStatement.setString(14, data.getMissileAttackMode());
+        preparedStatement.setString(8, data.getTargetId());
+        preparedStatement.setString(9, data.getInterceptedWeaponId());
+        preparedStatement.setString(10, data.getTargetRealOrVirtual());
+        preparedStatement.setString(11, data.getWeaponId());
+        preparedStatement.setString(12, data.getPylonId());
+        preparedStatement.setString(13, data.getWeaponType());
+        preparedStatement.setString(14, data.getTrajectoryType());
+        preparedStatement.setString(15, data.getMissileAttackMode());
     }
 
     @Override
@@ -101,12 +99,13 @@ public class RtsnFileReceiver extends SimulationReceiver<Rtsn> {
         super.start();
     }
 
-    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --import_id 12345 --batch_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         RtsnFileReceiver receiver = new RtsnFileReceiver();
         receiver.setConfig(config);
         receiver.run();

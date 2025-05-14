@@ -16,7 +16,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 
 
@@ -76,11 +77,11 @@ public class RtknFileReceiver extends SimulationReceiver<Rtkn> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `rtkn` (
-                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, target_id, intercepted_weapon_id, 
+                    import_id,batch_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_type, target_id, intercepted_weapon_id, 
                     hit_result, miss_reason, miss_distance, matching_failure_reason, ground_defense_equipment_type, ground_defense_equipment_id, ground_defense_equipment_type1, ground_defense_equipment_id1, 
                     ground_defense_equipment_type2, ground_defense_equipment_id2, ground_defense_equipment_type3, ground_defense_equipment_id3, jamming_effective, jamming, afterburner, head_on, heading, pitch
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?, ?, ?
                 );
@@ -88,42 +89,39 @@ public class RtknFileReceiver extends SimulationReceiver<Rtkn> {
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, Rtkn data, String sortieNumber) throws SQLException {
-// 注意 sortieNumber 是从配置里面来的 csv里面没有
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getAircraftId());
-        // LocalTime -> java.sql.Time
-        preparedStatement.setTime(3, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
-        preparedStatement.setTime(4, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
-        preparedStatement.setTime(5, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
-        // Handle potential null for Long
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, Rtkn data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getAircraftId());
+        preparedStatement.setTime(4, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
+        preparedStatement.setTime(5, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
+        preparedStatement.setTime(6, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
         if (data.getMessageSequenceNumber() != null) {
-            preparedStatement.setLong(6, data.getMessageSequenceNumber());
+            preparedStatement.setLong(7, data.getMessageSequenceNumber());
         } else {
-            preparedStatement.setNull(6, java.sql.Types.BIGINT);
+            preparedStatement.setNull(7, java.sql.Types.BIGINT);
         }
-        preparedStatement.setString(7, data.getWeaponId());
-        preparedStatement.setString(8, data.getWeaponType());
-        preparedStatement.setString(9, data.getTargetId());
-        preparedStatement.setString(10, data.getInterceptedWeaponId());
-        preparedStatement.setString(11, data.getHitResult());
-        preparedStatement.setString(12, data.getMissReason());
-        preparedStatement.setString(13, data.getMissDistance());
-        preparedStatement.setString(14, data.getMatchingFailureReason());
-        preparedStatement.setString(15, data.getGroundDefenseEquipmentType());
-        preparedStatement.setString(16, data.getGroundDefenseEquipmentId());
-        preparedStatement.setString(17, data.getGroundDefenseEquipmentType1());
-        preparedStatement.setString(18, data.getGroundDefenseEquipmentId1());
-        preparedStatement.setString(19, data.getGroundDefenseEquipmentType2());
-        preparedStatement.setString(20, data.getGroundDefenseEquipmentId2());
-        preparedStatement.setString(21, data.getGroundDefenseEquipmentType3());
-        preparedStatement.setString(22, data.getGroundDefenseEquipmentId3());
-        preparedStatement.setString(23, data.getJammingEffective());
-        preparedStatement.setString(24, data.getJamming());
-        preparedStatement.setString(25, data.getAfterburner());
-        preparedStatement.setString(26, data.getHeadOn());
-        preparedStatement.setString(27, data.getHeading());
-        preparedStatement.setString(28, data.getPitch());
+        preparedStatement.setString(8, data.getWeaponId());
+        preparedStatement.setString(9, data.getWeaponType());
+        preparedStatement.setString(10, data.getTargetId());
+        preparedStatement.setString(11, data.getInterceptedWeaponId());
+        preparedStatement.setString(12, data.getHitResult());
+        preparedStatement.setString(13, data.getMissReason());
+        preparedStatement.setString(14, data.getMissDistance());
+        preparedStatement.setString(15, data.getMatchingFailureReason());
+        preparedStatement.setString(16, data.getGroundDefenseEquipmentType());
+        preparedStatement.setString(17, data.getGroundDefenseEquipmentId());
+        preparedStatement.setString(18, data.getGroundDefenseEquipmentType1());
+        preparedStatement.setString(19, data.getGroundDefenseEquipmentId1());
+        preparedStatement.setString(20, data.getGroundDefenseEquipmentType2());
+        preparedStatement.setString(21, data.getGroundDefenseEquipmentId2());
+        preparedStatement.setString(22, data.getGroundDefenseEquipmentType3());
+        preparedStatement.setString(23, data.getGroundDefenseEquipmentId3());
+        preparedStatement.setString(24, data.getJammingEffective());
+        preparedStatement.setString(25, data.getJamming());
+        preparedStatement.setString(26, data.getAfterburner());
+        preparedStatement.setString(27, data.getHeadOn());
+        preparedStatement.setString(28, data.getHeading());
+        preparedStatement.setString(29, data.getPitch());
     }
 
     @Override
@@ -131,12 +129,13 @@ public class RtknFileReceiver extends SimulationReceiver<Rtkn> {
         super.start();
     }
 
-    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --import_id 12345 --batch_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         RtknFileReceiver receiver = new RtknFileReceiver();
         receiver.setConfig(config);
         receiver.run();

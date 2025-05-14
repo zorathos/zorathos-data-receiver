@@ -38,20 +38,20 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
             log.info("Linking to table: {}.{} for preparation.", database.getName(), table.getName());
             Connection connection = simulationConnectionPool.getConnection();
             String selectSql = """
-                    SELECT COUNT(*) FROM `%s` WHERE `sortie_number` = ?;
+                    SELECT COUNT(*) FROM `%s` WHERE `batch_number` = ?;
                     """.formatted(table.getName());
             var preparedStatement = connection.prepareStatement(selectSql);
-            preparedStatement.setString(1, config.getSortieNumber());
+            preparedStatement.setString(1, batchNumber);
             var resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 int count = resultSet.getInt(1);
                 if (count > 0) {
                     // 如果有对应记录 就删除
                     String deleteSql = """
-                            DELETE FROM `%s` WHERE `sortie_number` = ?;
+                            DELETE FROM `%s` WHERE `batch_number` = ?;
                             """.formatted(table.getName());
                     var deletePreparedStatement = connection.prepareStatement(deleteSql);
-                    deletePreparedStatement.setString(1, config.getSortieNumber());
+                    deletePreparedStatement.setString(1, config.getBatchNumber());
                     deletePreparedStatement.executeUpdate();
                     log.info("Delete {} records from table: {}.{}.", count, database.getName(), table.getName());
                 } else {
@@ -73,8 +73,9 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
 
     @Override
     protected JdbcStatementBuilder<T> getJdbcStatementBuilder() {
-        final String sortieNumber = config.getSortieNumber();
+        final String batchNumber = config.getBatchNumber();
+        final  String importId = config.getImportId();
 
-        return (statement, data) -> bindPreparedStatement(statement, data, sortieNumber);
+        return (statement, data) -> bindPreparedStatement(statement, data, batchNumber,importId);
     }
 }

@@ -13,8 +13,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 
 public class AgRtsnFileReceiver extends SimulationReceiver<AgRtsn> {
     @Override
@@ -74,13 +75,13 @@ public class AgRtsnFileReceiver extends SimulationReceiver<AgRtsn> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `ag_rtsn` (
-                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_pylon_id, weapon_type, number_of_missiles_released, 
+                    import_id,batch_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, weapon_id, weapon_pylon_id, weapon_type, number_of_missiles_released, 
                     aircraft_ground_speed, aircraft_longitude, aircraft_latitude, aircraft_altitude, aircraft_heading, aircraft_pitch, aircraft_roll, aircraft_angle_of_attack, aircraft_north_speed, 
                     aircraft_vertical_speed, aircraft_east_speed, north_wind_speed, vertical_wind_speed, east_wind_speed, target_longitude, target_latitude, target_altitude, target_distance, 
                     seeker_head_number, target_coordinate_validity, target_azimuth_elevation_validity, target_elevation_angle, target_azimuth_angle, impact_angle_validity, entry_angle, 
                     impact_angle, direction_validity
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?, ?, ?
@@ -89,57 +90,58 @@ public class AgRtsnFileReceiver extends SimulationReceiver<AgRtsn> {
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, AgRtsn data, String sortieNumber) throws SQLException {
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getAircraftId());
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, AgRtsn data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getAircraftId());
         // LocalTime -> java.sql.Time
-        preparedStatement.setTime(3, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
-        preparedStatement.setTime(4, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
-        preparedStatement.setTime(5, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
+        preparedStatement.setTime(4, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
+        preparedStatement.setTime(5, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
+        preparedStatement.setTime(6, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
         // Handle potential null for Long
         if (data.getMessageSequenceNumber() != null) {
-            preparedStatement.setLong(6, data.getMessageSequenceNumber());
+            preparedStatement.setLong(7, data.getMessageSequenceNumber());
         } else {
-            preparedStatement.setNull(6, java.sql.Types.BIGINT);
+            preparedStatement.setNull(7, java.sql.Types.BIGINT);
         }
-        preparedStatement.setString(7, data.getWeaponId());
-        preparedStatement.setString(8, data.getWeaponPylonId());
-        preparedStatement.setString(9, data.getWeaponType());
-        preparedStatement.setString(10, data.getNumberOfMissilesReleased());
-        preparedStatement.setString(11, data.getAircraftGroundSpeed());
-        preparedStatement.setString(12, data.getAircraftLongitude());
-        preparedStatement.setString(13, data.getAircraftLatitude());
-        preparedStatement.setString(14, data.getAircraftAltitude());
-        preparedStatement.setString(15, data.getAircraftHeading());
-        preparedStatement.setString(16, data.getAircraftPitch());
-        preparedStatement.setString(17, data.getAircraftRoll());
-        preparedStatement.setString(18, data.getAircraftAngleOfAttack());
-        preparedStatement.setString(19, data.getAircraftNorthSpeed());
-        preparedStatement.setString(20, data.getAircraftVerticalSpeed());
-        preparedStatement.setString(21, data.getAircraftEastSpeed());
-        preparedStatement.setString(22, data.getNorthWindSpeed());
-        preparedStatement.setString(23, data.getVerticalWindSpeed());
-        preparedStatement.setString(24, data.getEastWindSpeed());
-        preparedStatement.setString(25, data.getTargetLongitude());
-        preparedStatement.setString(26, data.getTargetLatitude());
-        preparedStatement.setString(27, data.getTargetAltitude());
-        preparedStatement.setString(28, data.getTargetDistance());
-        preparedStatement.setString(29, data.getSeekerHeadNumber());
-        preparedStatement.setString(30, data.getTargetCoordinateValidity());
-        preparedStatement.setString(31, data.getTargetAzimuthElevationValidity());
-        preparedStatement.setString(32, data.getTargetElevationAngle());
-        preparedStatement.setString(33, data.getTargetAzimuthAngle());
-        preparedStatement.setString(34, data.getImpactAngleValidity());
-        preparedStatement.setString(35, data.getEntryAngle());
-        preparedStatement.setString(36, data.getImpactAngle());
-        preparedStatement.setString(37, data.getDirectionValidity());
+        preparedStatement.setString(8, data.getWeaponId());
+        preparedStatement.setString(9, data.getWeaponPylonId());
+        preparedStatement.setString(10, data.getWeaponType());
+        preparedStatement.setString(11, data.getNumberOfMissilesReleased());
+        preparedStatement.setString(12, data.getAircraftGroundSpeed());
+        preparedStatement.setString(13, data.getAircraftLongitude());
+        preparedStatement.setString(14, data.getAircraftLatitude());
+        preparedStatement.setString(15, data.getAircraftAltitude());
+        preparedStatement.setString(16, data.getAircraftHeading());
+        preparedStatement.setString(17, data.getAircraftPitch());
+        preparedStatement.setString(18, data.getAircraftRoll());
+        preparedStatement.setString(19, data.getAircraftAngleOfAttack());
+        preparedStatement.setString(20, data.getAircraftNorthSpeed());
+        preparedStatement.setString(21, data.getAircraftVerticalSpeed());
+        preparedStatement.setString(22, data.getAircraftEastSpeed());
+        preparedStatement.setString(23, data.getNorthWindSpeed());
+        preparedStatement.setString(24, data.getVerticalWindSpeed());
+        preparedStatement.setString(25, data.getEastWindSpeed());
+        preparedStatement.setString(26, data.getTargetLongitude());
+        preparedStatement.setString(27, data.getTargetLatitude());
+        preparedStatement.setString(28, data.getTargetAltitude());
+        preparedStatement.setString(29, data.getTargetDistance());
+        preparedStatement.setString(30, data.getSeekerHeadNumber());
+        preparedStatement.setString(31, data.getTargetCoordinateValidity());
+        preparedStatement.setString(32, data.getTargetAzimuthElevationValidity());
+        preparedStatement.setString(33, data.getTargetElevationAngle());
+        preparedStatement.setString(34, data.getTargetAzimuthAngle());
+        preparedStatement.setString(35, data.getImpactAngleValidity());
+        preparedStatement.setString(36, data.getEntryAngle());
+        preparedStatement.setString(37, data.getImpactAngle());
+        preparedStatement.setString(38, data.getDirectionValidity());
     }
 
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         AgRtsnFileReceiver receiver = new AgRtsnFileReceiver();
         receiver.setConfig(config);
         receiver.run();

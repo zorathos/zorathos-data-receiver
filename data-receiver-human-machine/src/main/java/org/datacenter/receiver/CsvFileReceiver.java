@@ -58,7 +58,7 @@ public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends B
     protected abstract String getInsertQuery();
 
     // 定义抽象方法：绑定PreparedStatement参数
-    protected abstract void bindPreparedStatement(PreparedStatement preparedStatement, T data, String sortieNumber) throws SQLException;
+    protected abstract void bindPreparedStatement(PreparedStatement preparedStatement, T data, String batchNumber, long importId) throws SQLException;
 
     // 简化版的JdbcStatementBuilder获取方法
     protected abstract JdbcStatementBuilder<T> getJdbcStatementBuilder();

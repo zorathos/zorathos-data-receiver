@@ -16,7 +16,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 
 
@@ -57,25 +58,23 @@ public class HitResultFileReceiver extends SimulationReceiver<HitResult> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `hit_result` (
-                    sortie_number, launcher_id, target_id, weapon_type, weapon_id, launch_time, end_time, hit_result
+                    import_id,batch_number, launcher_id, target_id, weapon_type, weapon_id, launch_time, end_time, hit_result
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?
+                    ?,?, ?, ?, ?, ?, ?, ?, ?
                 );
                 """;
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, HitResult data, String sortieNumber) throws SQLException {
-        // 注意 sortieNumber 是从配置里面来的 csv里面没有
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getLauncherId());
-        preparedStatement.setString(3, data.getTargetId());
-        preparedStatement.setString(4, data.getWeaponType());
-        preparedStatement.setString(5, data.getWeaponId());
-        preparedStatement.setString(6, data.getLaunchTime()); // launchTime is String
-        // LocalTime -> java.sql.Time
-        preparedStatement.setTime(7, data.getEndTime() != null ? Time.valueOf(data.getEndTime()) : null);
-        preparedStatement.setString(8, data.getHitResult());
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, HitResult data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getLauncherId());
+        preparedStatement.setString(4, data.getTargetId());
+        preparedStatement.setString(5, data.getWeaponType());
+        preparedStatement.setString(6, data.getWeaponId());
+        preparedStatement.setString(7, data.getLaunchTime());
+        preparedStatement.setTime(8, data.getEndTime() != null ? Time.valueOf(data.getEndTime()) : null);
+        preparedStatement.setString(9, data.getHitResult());
     }
 
     @Override
@@ -83,12 +82,13 @@ public class HitResultFileReceiver extends SimulationReceiver<HitResult> {
         super.start();
     }
 
-    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --import_id 20250303_五_01_ACT-3_邱陈_J16_07#02 --batch_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap())),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         HitResultFileReceiver receiver = new HitResultFileReceiver();
         receiver.setConfig(config);
         receiver.run();

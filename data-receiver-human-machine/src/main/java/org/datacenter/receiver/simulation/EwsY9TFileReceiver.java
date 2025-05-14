@@ -16,7 +16,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 
 
@@ -63,39 +64,36 @@ public class EwsY9TFileReceiver extends SimulationReceiver<EwsY9T> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `ews_y9t` (
-                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, jamming_azimuth, jamming_frequency_count, jamming_type, jamming_band, 
+                    import_id,batch_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, jamming_azimuth, jamming_frequency_count, jamming_type, jamming_band, 
                     jamming_direction, jamming_status, jamming_elevation, jamming_start_frequency, jamming_end_frequency
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?
                 );
                 """;
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, EwsY9T data, String sortieNumber) throws SQLException {
-        // 注意 sortieNumber 是从配置里面来的 csv里面没有
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getAircraftId());
-        // LocalTime -> java.sql.Time
-        preparedStatement.setTime(3, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
-        preparedStatement.setTime(4, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
-        preparedStatement.setTime(5, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
-        // Handle potential null for Long
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, EwsY9T data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getAircraftId());
+        preparedStatement.setTime(4, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
+        preparedStatement.setTime(5, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
+        preparedStatement.setTime(6, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
         if (data.getMessageSequenceNumber() != null) {
-            preparedStatement.setLong(6, data.getMessageSequenceNumber());
+            preparedStatement.setLong(7, data.getMessageSequenceNumber());
         } else {
-            preparedStatement.setNull(6, java.sql.Types.BIGINT);
+            preparedStatement.setNull(7, java.sql.Types.BIGINT);
         }
-        preparedStatement.setString(7, data.getJammingAzimuth());
-        preparedStatement.setString(8, data.getJammingFrequencyCount());
-        preparedStatement.setString(9, data.getJammingType());
-        preparedStatement.setString(10, data.getJammingBand());
-        preparedStatement.setString(11, data.getJammingDirection());
-        preparedStatement.setString(12, data.getJammingStatus());
-        preparedStatement.setString(13, data.getJammingElevation());
-        preparedStatement.setString(14, data.getJammingStartFrequency());
-        preparedStatement.setString(15, data.getJammingEndFrequency());
+        preparedStatement.setString(8, data.getJammingAzimuth());
+        preparedStatement.setString(9, data.getJammingFrequencyCount());
+        preparedStatement.setString(10, data.getJammingType());
+        preparedStatement.setString(11, data.getJammingBand());
+        preparedStatement.setString(12, data.getJammingDirection());
+        preparedStatement.setString(13, data.getJammingStatus());
+        preparedStatement.setString(14, data.getJammingElevation());
+        preparedStatement.setString(15, data.getJammingStartFrequency());
+        preparedStatement.setString(16, data.getJammingEndFrequency());
     }
 
     @Override
@@ -103,12 +101,13 @@ public class EwsY9TFileReceiver extends SimulationReceiver<EwsY9T> {
         super.start();
     }
 
-    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --import_id 20250303_五_01_ACT-3_邱陈_J16_07#02 --batch_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap())),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         EwsY9TFileReceiver receiver = new EwsY9TFileReceiver();
         receiver.setConfig(config);
         receiver.run();

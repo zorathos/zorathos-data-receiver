@@ -16,8 +16,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 
 
 /**
@@ -58,36 +59,33 @@ public class CommandFileReceiver extends SimulationReceiver<Command> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `command` (
-                    sortie_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, command_type, command_id, command_content, response_sequence_number
+                    import_id,batch_number, aircraft_id, message_time, satellite_guidance_time, local_time, message_sequence_number, command_type, command_id, command_content, response_sequence_number
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 );
                 """;
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, Command data, String sortieNumber) throws SQLException {
-        // 注意 sortieNumber 是从配置里面来的 csv里面没有
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getAircraftId());
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, Command data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getAircraftId());
         // LocalTime -> java.sql.Time
-        preparedStatement.setTime(3, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
-        preparedStatement.setTime(4, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
-        preparedStatement.setTime(5, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
-        // Handle potential null for Long (messageSequenceNumber)
+        preparedStatement.setTime(4, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
+        preparedStatement.setTime(5, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
+        preparedStatement.setTime(6, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
         if (data.getMessageSequenceNumber() != null) {
-            preparedStatement.setLong(6, data.getMessageSequenceNumber());
+            preparedStatement.setLong(7, data.getMessageSequenceNumber());
         } else {
-            preparedStatement.setNull(6, java.sql.Types.BIGINT);
+            preparedStatement.setNull(7, java.sql.Types.BIGINT);
         }
-        preparedStatement.setString(7, data.getCommandType());
-        preparedStatement.setString(8, data.getCommandId());
-        preparedStatement.setString(9, data.getCommandContent());
-        // Handle potential null for Long (responseSequenceNumber)
+        preparedStatement.setString(8, data.getCommandType());
+        preparedStatement.setString(9, data.getCommandId());
+        preparedStatement.setString(10, data.getCommandContent());
         if (data.getResponseSequenceNumber() != null) {
-            preparedStatement.setLong(10, data.getResponseSequenceNumber());
+            preparedStatement.setLong(11, data.getResponseSequenceNumber());
         } else {
-            preparedStatement.setNull(10, java.sql.Types.BIGINT);
+            preparedStatement.setNull(11, java.sql.Types.BIGINT);
         }
     }
 
@@ -101,7 +99,8 @@ public class CommandFileReceiver extends SimulationReceiver<Command> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         CommandFileReceiver receiver = new CommandFileReceiver();
         receiver.setConfig(config);
         receiver.run();

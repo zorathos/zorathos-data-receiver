@@ -15,7 +15,8 @@ import org.datacenter.receiver.simulation.base.SimulationReceiver;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 
 
@@ -53,22 +54,21 @@ public class Sendto3DDataFileReceiver extends SimulationReceiver<Sendto3DData> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `sendto_3d_data` (
-                    sortie_number, aircraft_id, aircraft_callsign, aircraft_code_name, red_blue_affiliation, flight_batch
+                    import_id,batch_number, aircraft_id, aircraft_callsign, aircraft_code_name, red_blue_affiliation, flight_batch
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?
+                    ?,?, ?, ?, ?, ?, ?
                 );
                 """;
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, Sendto3DData data, String sortieNumber) throws SQLException {
-        // 注意 sortieNumber 是从配置里面来的 csv里面没有
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getAircraftId());
-        preparedStatement.setString(3, data.getAircraftCallsign());
-        preparedStatement.setString(4, data.getAircraftCodeName());
-        preparedStatement.setString(5, data.getRedBlueAffiliation());
-        preparedStatement.setString(6, data.getFlightBatch());
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, Sendto3DData data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getAircraftId());
+        preparedStatement.setString(4, data.getAircraftCallsign());
+        preparedStatement.setString(5, data.getAircraftCodeName());
+        preparedStatement.setString(6, data.getRedBlueAffiliation());
+        preparedStatement.setString(7, data.getFlightBatch());
     }
 
     @Override
@@ -76,12 +76,13 @@ public class Sendto3DDataFileReceiver extends SimulationReceiver<Sendto3DData> {
         super.start();
     }
 
-    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --import_id 12345 --batch_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         Sendto3DDataFileReceiver receiver = new Sendto3DDataFileReceiver();
         receiver.setConfig(config);
         receiver.run();

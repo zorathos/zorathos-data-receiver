@@ -16,8 +16,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_SORTIE_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 
 
 /**
@@ -69,11 +70,11 @@ public class CdDroneTspiFileReceiver extends SimulationReceiver<CdDroneTspi> {
     protected String getInsertQuery() {
         return """
                 INSERT INTO `cd_drone_tspi` (
-                    sortie_number, aircraft_id, aircraft_type, message_time, satellite_guidance_time, local_time, message_sequence_number, longitude, latitude, pressure_altitude, 
+                    import_id,batch_number, aircraft_id, aircraft_type, message_time, satellite_guidance_time, local_time, message_sequence_number, longitude, latitude, pressure_altitude, 
                     roll, pitch, heading, satellite_altitude, training_status, chaff, afterburner, north_velocity, vertical_velocity, east_velocity, 
                     delay_status
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                    ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                     ?
                 );
@@ -81,35 +82,32 @@ public class CdDroneTspiFileReceiver extends SimulationReceiver<CdDroneTspi> {
     }
 
     @Override
-    protected void bindPreparedStatement(PreparedStatement preparedStatement, CdDroneTspi data, String sortieNumber) throws SQLException {
-        // 注意 sortieNumber 是从配置里面来的 csv里面没有
-        preparedStatement.setString(1, sortieNumber);
-        preparedStatement.setString(2, data.getAircraftId());
-        preparedStatement.setString(3, data.getAircraftType());
-        // LocalTime -> java.sql.Time
-        preparedStatement.setTime(4, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
-        preparedStatement.setTime(5, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
-        preparedStatement.setTime(6, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
-        // Handle potential null for Long
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, CdDroneTspi data, String batchNumber, long importId) throws SQLException {
+        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setString(3, data.getAircraftId());
+        preparedStatement.setString(4, data.getAircraftType());
+        preparedStatement.setTime(5, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
+        preparedStatement.setTime(6, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
+        preparedStatement.setTime(7, data.getLocalTime() != null ? Time.valueOf(data.getLocalTime()) : null);
         if (data.getMessageSequenceNumber() != null) {
-            preparedStatement.setLong(7, data.getMessageSequenceNumber());
+            preparedStatement.setLong(8, data.getMessageSequenceNumber());
         } else {
-            preparedStatement.setNull(7, java.sql.Types.BIGINT);
+            preparedStatement.setNull(8, java.sql.Types.BIGINT);
         }
-        preparedStatement.setString(8, data.getLongitude());
-        preparedStatement.setString(9, data.getLatitude());
-        preparedStatement.setString(10, data.getPressureAltitude());
-        preparedStatement.setString(11, data.getRoll());
-        preparedStatement.setString(12, data.getPitch());
-        preparedStatement.setString(13, data.getHeading());
-        preparedStatement.setString(14, data.getSatelliteAltitude());
-        preparedStatement.setString(15, data.getTrainingStatus());
-        preparedStatement.setString(16, data.getChaff());
-        preparedStatement.setString(17, data.getAfterburner());
-        preparedStatement.setString(18, data.getNorthVelocity());
-        preparedStatement.setString(19, data.getVerticalVelocity());
-        preparedStatement.setString(20, data.getEastVelocity());
-        preparedStatement.setString(21, data.getDelayStatus());
+        preparedStatement.setString(9, data.getLongitude());
+        preparedStatement.setString(10, data.getLatitude());
+        preparedStatement.setString(11, data.getPressureAltitude());
+        preparedStatement.setString(12, data.getRoll());
+        preparedStatement.setString(13, data.getPitch());
+        preparedStatement.setString(14, data.getHeading());
+        preparedStatement.setString(15, data.getSatelliteAltitude());
+        preparedStatement.setString(16, data.getTrainingStatus());
+        preparedStatement.setString(17, data.getChaff());
+        preparedStatement.setString(18, data.getAfterburner());
+        preparedStatement.setString(19, data.getNorthVelocity());
+        preparedStatement.setString(20, data.getVerticalVelocity());
+        preparedStatement.setString(21, data.getEastVelocity());
+        preparedStatement.setString(22, data.getDelayStatus());
     }
 
     @Override
@@ -117,12 +115,13 @@ public class CdDroneTspiFileReceiver extends SimulationReceiver<CdDroneTspi> {
         super.start();
     }
 
-    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --sortie_number 20250303_五_01_ACT-3_邱陈_J16_07#02
+    // 参数输入形式为 --url s3://human-machine/simulation/simulated_data_large.csv --import_id 12345 --batch_number 20250303_五_01_ACT-3_邱陈_J16_07#02
     public static void main(String[] args) {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(SIMULATION_SORTIE_NUMBER.getKeyForParamsMap()));
+                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         CdDroneTspiFileReceiver receiver = new CdDroneTspiFileReceiver();
         receiver.setConfig(config);
         receiver.run();
