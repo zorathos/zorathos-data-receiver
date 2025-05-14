@@ -22,7 +22,7 @@ import java.io.Serial;
 @Slf4j
 public class JsonStringFileInputFormat<T> extends SimpleStreamFormat<T> {
     @Serial
-    private static final long serialVersionUID = 895648L;
+    private static final long serialVersionUID = 1L;
     public static final String DEFAULT_CHARSET_NAME = "UTF-8";
     private final String charsetName;
     protected final Class<T> modelClass;

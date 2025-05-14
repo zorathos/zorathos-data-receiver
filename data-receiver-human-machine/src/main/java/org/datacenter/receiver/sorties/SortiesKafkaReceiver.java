@@ -38,7 +38,7 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
 @Slf4j
 public class SortiesKafkaReceiver extends BaseReceiver implements Serializable {
     @Serial
-    private static final long serialVersionUID = 12213145L;
+    private static final long serialVersionUID = 1L;
 
     private final SortiesAgent sortiesAgent;
     private final SortiesReceiverConfig receiverConfig;

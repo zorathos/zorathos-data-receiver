@@ -19,5 +19,5 @@ import java.io.Serializable;
 public abstract class PhysiologicalFileReceiver<T> extends CsvFileReceiver<T, PhysiologicalFileReceiverConfig> implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = 8345278L;
+    private static final long serialVersionUID = 1L;
 }
