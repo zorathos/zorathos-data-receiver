@@ -60,7 +60,7 @@ public class PersonnelJsonFileReceiver extends BaseReceiver {
         log.info("Parameters: {}", params.toMap());
         PersonnelJsonFileReceiverConfig receiverConfig = PersonnelJsonFileReceiverConfig.builder()
                 .url(params.getRequired(PERSONNEL_URL.getKeyForParamsMap()))
-                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
+                .importId(Long.valueOf(params.getRequired(IMPORT_ID.getKeyForParamsMap())))
                 .build();
 
         PersonnelJsonFileReceiver receiver = new PersonnelJsonFileReceiver(receiverConfig);

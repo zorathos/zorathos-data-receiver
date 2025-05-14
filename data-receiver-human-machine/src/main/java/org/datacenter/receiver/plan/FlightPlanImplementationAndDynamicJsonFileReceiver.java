@@ -71,7 +71,7 @@ public class FlightPlanImplementationAndDynamicJsonFileReceiver extends BaseRece
         FlightPlanImplementationAndDynamicJsonFileReceiverConfig config = FlightPlanImplementationAndDynamicJsonFileReceiverConfig.builder()
                 .receiverType(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.fromString(params.getRequired("receiverType")))
                 .url(params.getRequired(FLIGHT_PLAN_FILE_URL.getKeyForParamsMap()))
-                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
+                .importId(Long.valueOf(params.getRequired(IMPORT_ID.getKeyForParamsMap())))
                 .build();
 
         FlightPlanImplementationAndDynamicJsonFileReceiver receiver = new FlightPlanImplementationAndDynamicJsonFileReceiver(config);

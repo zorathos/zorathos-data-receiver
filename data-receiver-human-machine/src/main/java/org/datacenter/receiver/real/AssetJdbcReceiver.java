@@ -265,7 +265,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             preparedStatement.setString(13, summary.getLabels());
             preparedStatement.setInt(14, summary.getTimeFrame());
             preparedStatement.setInt(15, summary.getTimeType());
-            preparedStatement.setString(16, config.getImportId());
+            preparedStatement.setLong(16, config.getImportId());
             preparedStatement.executeUpdate();
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while sinking asset summary.");
@@ -351,7 +351,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
             insertStatement.setInt(6, assetTableProperty.getIsTime());
             insertStatement.setInt(7, assetTableProperty.getTwoDDisplay());
             insertStatement.setString(8, assetTableProperty.getLabel());
-            insertStatement.setString(9, config.getImportId());
+            insertStatement.setLong(9, config.getImportId());
             insertStatement.executeUpdate();
         } catch (Exception e) {
             throw new ZorathosException(e, "Error occurs while sinking table property.");
@@ -561,7 +561,7 @@ public class AssetJdbcReceiver extends BaseReceiver {
         log.info("Params: {}", params.toMap());
 
         AssetReceiverConfig config = AssetReceiverConfig.builder()
-                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
+                .importId(Long.valueOf(params.getRequired(IMPORT_ID.getKeyForParamsMap())))
                 .listBaseUrl(params.getRequired(ASSET_LIST_BASE_URL.getKeyForParamsMap()))
                 .configBaseUrl(params.getRequired(ASSET_CONFIG_BASE_URL.getKeyForParamsMap()))
                 .sortieNumber(params.getRequired(ASSET_SORTIE_NUMBER.getKeyForParamsMap()))
