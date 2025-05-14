@@ -67,11 +67,7 @@ public class TShirtHeartRateFileReceiver extends PhysiologicalFileReceiver<TShir
 
     // 参数输入形式为 --url s3://human-machine/physiological/physiological_data_large.csv --importId 1
     public static void main(String[] args) {
-        ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        PhysiologicalFileReceiverConfig config = PhysiologicalFileReceiverConfig.builder()
-                .importId(Long.valueOf(parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap())))
-                .url(parameterTool.getRequired(PHYSIOLOGY_FILE_URL.getKeyForParamsMap()))
-                .build();
+        PhysiologicalFileReceiverConfig config = parseArgs(args);
         TShirtHeartRateFileReceiver receiver = new TShirtHeartRateFileReceiver();
         receiver.setConfig(config);
         receiver.run();
