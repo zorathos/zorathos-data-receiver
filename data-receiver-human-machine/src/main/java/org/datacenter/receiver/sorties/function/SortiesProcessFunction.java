@@ -16,7 +16,7 @@ import java.io.Serializable;
 @Slf4j
 public class SortiesProcessFunction extends KeyedProcessFunction<String, Sorties, Sorties> implements Serializable {
     @Serial
-    private static final long serialVersionUID = 5608907463L;
+    private static final long serialVersionUID = 1L;
 
     // 只存储必要的字段，而不是整个配置对象
     private final SortiesReceiverConfig.RunMode runMode;

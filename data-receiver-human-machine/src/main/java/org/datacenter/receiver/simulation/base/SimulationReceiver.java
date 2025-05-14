@@ -25,7 +25,7 @@ import java.sql.SQLException;
 public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, SimulationReceiverConfig> implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = 2345678L;
+    private static final long serialVersionUID = 1L;
 
     @Override
     public void prepare() {

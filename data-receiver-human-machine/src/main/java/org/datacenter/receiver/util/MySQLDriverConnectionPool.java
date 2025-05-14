@@ -24,7 +24,7 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.TIDB_USERNAME;
 @Slf4j
 public class MySQLDriverConnectionPool implements Serializable {
     @Serial
-    private static final long serialVersionUID = 235710784L;
+    private static final long serialVersionUID = 1L;
 
     private final DruidDataSource dataSource;
 

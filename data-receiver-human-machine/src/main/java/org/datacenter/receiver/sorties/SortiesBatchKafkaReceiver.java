@@ -35,7 +35,7 @@ import static org.datacenter.config.keys.HumanMachineSysConfigKey.KAFKA_TOPIC_SO
 @Slf4j
 public class SortiesBatchKafkaReceiver extends BaseReceiver implements Serializable {
     @Serial
-    private static final long serialVersionUID = 12213146L;
+    private static final long serialVersionUID = 1L;
 
     private final SortiesBatchAgent sortiesBatchAgent;
     private final SortiesBatchReceiverConfig receiverConfig;
@@ -116,7 +116,11 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver implements Serializa
     /**
      * 主函数
      *
-     * @param args 入参 --url xxx --json xxx
+     * @param args 入参
+     *             --importId 1
+     *             --runMode AT_ONCE
+     *             --url http://127.0.0.1:8080/task/dataAsset/queryAllBatches
+     *             --json ewogICJhY21pVGltZUVuZCI6ICIiLAogICJhY21pVGltZVN0YXJ0IjogIiIKfQo=
      */
     public static void main(String[] args) {
         System.setProperty("sun.io.serialization.extendedDebugInfo", "true");

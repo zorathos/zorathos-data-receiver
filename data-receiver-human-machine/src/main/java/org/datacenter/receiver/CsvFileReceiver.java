@@ -38,7 +38,7 @@ import java.sql.SQLException;
 @EqualsAndHashCode(callSuper = true)
 public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends BaseReceiver implements Serializable {
     @Serial
-    private static final long serialVersionUID = 1231445L;
+    private static final long serialVersionUID = 1L;
     protected TiDBDatabase database;
     protected C config;
     protected TiDBTable table;

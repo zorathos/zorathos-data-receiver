@@ -16,7 +16,7 @@ import java.io.Serial;
 @Slf4j
 public class SortiesBatchProcessFunction extends KeyedProcessFunction<String, SortiesBatch, SortiesBatch> {
     @Serial
-    private static final long serialVersionUID = 12213147L;
+    private static final long serialVersionUID = 1L;
     // 只存储必要的字段，而不是整个配置对象
     private final SortiesBatchReceiverConfig.RunMode runMode;
     private final Long stopSignalDuration;

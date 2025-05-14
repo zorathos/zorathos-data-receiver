@@ -16,7 +16,7 @@ import java.io.Serializable;
 @Data
 public abstract class BaseAgent implements Runnable, Serializable {
     @Serial
-    private static final long serialVersionUID = 456231789L;
+    private static final long serialVersionUID = 1L;
     protected volatile boolean prepared = false;
     protected volatile boolean running = false;
     protected boolean isStartedByThisInstance = false;

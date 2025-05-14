@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class JsonArrayFileInputFormat<T> extends SimpleStreamFormat<T> {
     @Serial
-    private static final long serialVersionUID = 895649L;
+    private static final long serialVersionUID = 1L;
     public static final String DEFAULT_CHARSET_NAME = "UTF-8";
     private final String charsetName;
     protected final Class<T> modelClass;
