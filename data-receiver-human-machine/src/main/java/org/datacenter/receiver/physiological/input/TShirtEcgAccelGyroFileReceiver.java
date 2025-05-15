@@ -1,6 +1,5 @@
 package org.datacenter.receiver.physiological.input;
 
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.apache.flink.util.function.SerializableFunction;
@@ -11,9 +10,6 @@ import org.datacenter.receiver.physiological.base.PhysiologicalFileReceiver;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PHYSIOLOGY_FILE_URL;
 
 /**
  * @author : [wangminan]

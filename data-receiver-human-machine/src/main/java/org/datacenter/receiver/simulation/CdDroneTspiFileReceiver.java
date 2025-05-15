@@ -16,9 +16,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
-import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 
 
 /**
