@@ -41,7 +41,7 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
                     SELECT COUNT(*) FROM `%s` WHERE `batch_number` = ?;
                     """.formatted(table.getName());
             var preparedStatement = connection.prepareStatement(selectSql);
-            preparedStatement.setString(1, batchNumber);
+            preparedStatement.setString(1, config.getBatchNumber());
             var resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 int count = resultSet.getInt(1);
@@ -74,7 +74,7 @@ public abstract class SimulationReceiver<T> extends CsvFileReceiver<T, Simulatio
     @Override
     protected JdbcStatementBuilder<T> getJdbcStatementBuilder() {
         final String batchNumber = config.getBatchNumber();
-        final  String importId = config.getImportId();
+        final  long importId = config.getImportId();
 
         return (statement, data) -> bindPreparedStatement(statement, data, batchNumber,importId);
     }

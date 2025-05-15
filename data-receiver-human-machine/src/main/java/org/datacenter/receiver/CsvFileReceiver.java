@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.file.src.FileSource;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
@@ -13,6 +14,7 @@ import org.apache.flink.formats.csv.CsvReaderFormat;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.function.SerializableFunction;
 import org.apache.flink.util.function.SerializableSupplier;
@@ -63,6 +65,11 @@ public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends B
     // 简化版的JdbcStatementBuilder获取方法
     protected abstract JdbcStatementBuilder<T> getJdbcStatementBuilder();
 
+    //Map函数。默认返回null
+    protected MapFunction<T,T> getMapFunction() {
+        return null;
+    }
+
     // 构建CsvReaderFormat
     protected CsvReaderFormat<T> buildCsvReaderFormat() {
         return CsvReaderFormat.forSchema(
@@ -94,14 +101,27 @@ public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends B
     public void start() {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         CsvReaderFormat<T> csvReaderFormat = buildCsvReaderFormat();
+        MapFunction<T,T> mapFunction = getMapFunction();
 
         FileSource<T> fileSource = buildFileSource(csvReaderFormat);
         JdbcSink<T> sink = buildJdbcSink();
 
-        env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), modelClass.getName() + " File Source")
-                .returns(modelClass)
-                .sinkTo(sink)
-                .name(modelClass.getName() + " File Sink");
+        DataStream<T> stream =env.fromSource(fileSource, WatermarkStrategy.noWatermarks(), modelClass.getName() + " File Source")
+                .returns(modelClass);
+
+        //如果有Map函数就过一遍Map，没有则无事发生
+        DataStream<T> mappedStream ;
+        if (mapFunction != null) {
+            mappedStream = stream.map(mapFunction)
+                    .name(modelClass.getName() + " Custom Map");
+        } else {
+            mappedStream = stream;
+        }
+
+        mappedStream.sinkTo(sink)
+                                 .name(modelClass.getName() + " File Sink");
+
+
         try {
             env.execute(modelClass.getName() + " File Receiver");
 

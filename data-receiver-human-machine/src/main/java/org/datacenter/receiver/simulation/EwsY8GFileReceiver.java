@@ -75,7 +75,8 @@ public class EwsY8GFileReceiver extends SimulationReceiver<EwsY8G> {
 
     @Override
     protected void bindPreparedStatement(PreparedStatement preparedStatement, EwsY8G data, String batchNumber, long importId) throws SQLException {
-        preparedStatement.setLong(1, importId);        preparedStatement.setString(2, batchNumber);
+        preparedStatement.setLong(1, importId);
+        preparedStatement.setString(2, batchNumber);
         preparedStatement.setString(3, data.getAircraftId());
         preparedStatement.setTime(4, data.getMessageTime() != null ? Time.valueOf(data.getMessageTime()) : null);
         preparedStatement.setTime(5, data.getSatelliteGuidanceTime() != null ? Time.valueOf(data.getSatelliteGuidanceTime()) : null);
