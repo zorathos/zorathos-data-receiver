@@ -26,9 +26,9 @@ public class JointPostureKafkaReceiver extends PhysiologicalKafkaReceiver<JointP
         return JdbcSink.<JointPosture>builder()
                 .withQueryStatement("""
                         INSERT INTO joint_posture (
-                            record_id, task_id, device_id, timestamp, sampling_rate, import_id,
+                            record_id, task_id, device_id, timestamp, import_id,
                             joint_name, qx, qy, qz, qw, px, py, pz
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                         """, (preparedStatement, jointPosture) -> {
                     // 绑定数据逻辑保持不变
                     preparedStatement.setLong(1, jointPosture.getRecordId());
@@ -36,17 +36,16 @@ public class JointPostureKafkaReceiver extends PhysiologicalKafkaReceiver<JointP
                     preparedStatement.setLong(3, jointPosture.getDeviceId());
                     preparedStatement.setTimestamp(4, jointPosture.getTimestamp() == null ?
                             null : java.sql.Timestamp.valueOf(jointPosture.getTimestamp()));
-                    preparedStatement.setDouble(5, jointPosture.getSamplingRate());
-                    preparedStatement.setLong(6, importId);
-                    preparedStatement.setString(7, jointPosture.getJointName() != null ?
+                    preparedStatement.setLong(5, importId);
+                    preparedStatement.setString(6, jointPosture.getJointName() != null ?
                             jointPosture.getJointName().name() : null);
-                    preparedStatement.setObject(8, jointPosture.getQx());
-                    preparedStatement.setObject(9, jointPosture.getQy());
-                    preparedStatement.setObject(10, jointPosture.getQz());
-                    preparedStatement.setObject(11, jointPosture.getQw());
-                    preparedStatement.setObject(12, jointPosture.getPx());
-                    preparedStatement.setObject(13, jointPosture.getPy());
-                    preparedStatement.setObject(14, jointPosture.getPz());
+                    preparedStatement.setObject(7, jointPosture.getQx());
+                    preparedStatement.setObject(8, jointPosture.getQy());
+                    preparedStatement.setObject(9, jointPosture.getQz());
+                    preparedStatement.setObject(10, jointPosture.getQw());
+                    preparedStatement.setObject(11, jointPosture.getPx());
+                    preparedStatement.setObject(12, jointPosture.getPy());
+                    preparedStatement.setObject(13, jointPosture.getPz());
                 })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PHYSIOLOGICAL));

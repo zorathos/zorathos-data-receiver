@@ -31,7 +31,6 @@ public class TShirtHrvFileReceiver extends PhysiologicalFileReceiver<TShirtHrv> 
                 .addColumn("taskId")
                 .addColumn("deviceId")
                 .addColumn("timestamp")
-                .addColumn("samplingRate")
                 .addColumn("rrMean")
                 .addColumn("averageHeartRate")
                 .addColumn("sdnn")
@@ -60,13 +59,13 @@ public class TShirtHrvFileReceiver extends PhysiologicalFileReceiver<TShirtHrv> 
     public String getInsertQuery() {
         return """
                 INSERT INTO %s (
-                    record_id, task_id, device_id, timestamp, sampling_rate,
+                    record_id, task_id, device_id, timestamp,
                     rr_mean, average_heart_rate, sdnn, rmssd, pnn50,
                     sd1, sd2, sd1rsd2, apen, lf_norm,
                     hf_norm, lfrhf, hf, lf, vlf,
                     ulf, ttlpwr, rsa, import_id
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?
                 )
@@ -80,26 +79,25 @@ public class TShirtHrvFileReceiver extends PhysiologicalFileReceiver<TShirtHrv> 
         preparedStatement.setLong(3, data.getDeviceId());
         preparedStatement.setTimestamp(4, data.getTimestamp() == null ?
                 null : java.sql.Timestamp.valueOf(data.getTimestamp()));
-        preparedStatement.setDouble(5, data.getSamplingRate());
-        preparedStatement.setObject(6, data.getRrMean());
-        preparedStatement.setObject(7, data.getAverageHeartRate());
-        preparedStatement.setObject(8, data.getSdnn());
-        preparedStatement.setObject(9, data.getRmssd());
-        preparedStatement.setObject(10, data.getPnn50());
-        preparedStatement.setObject(11, data.getSd1());
-        preparedStatement.setObject(12, data.getSd2());
-        preparedStatement.setObject(13, data.getSd1rsd2());
-        preparedStatement.setObject(14, data.getApen());
-        preparedStatement.setObject(15, data.getLfNorm());
-        preparedStatement.setObject(16, data.getHfNorm());
-        preparedStatement.setObject(17, data.getLfrhf());
-        preparedStatement.setObject(18, data.getHf());
-        preparedStatement.setObject(19, data.getLf());
-        preparedStatement.setObject(20, data.getVlf());
-        preparedStatement.setObject(21, data.getUlf());
-        preparedStatement.setObject(22, data.getTtlpwr());
-        preparedStatement.setObject(23, data.getRsa());
-        preparedStatement.setLong(24, importId);
+        preparedStatement.setObject(5, data.getRrMean());
+        preparedStatement.setObject(6, data.getAverageHeartRate());
+        preparedStatement.setObject(7, data.getSdnn());
+        preparedStatement.setObject(8, data.getRmssd());
+        preparedStatement.setObject(9, data.getPnn50());
+        preparedStatement.setObject(10, data.getSd1());
+        preparedStatement.setObject(11, data.getSd2());
+        preparedStatement.setObject(12, data.getSd1rsd2());
+        preparedStatement.setObject(13, data.getApen());
+        preparedStatement.setObject(14, data.getLfNorm());
+        preparedStatement.setObject(15, data.getHfNorm());
+        preparedStatement.setObject(16, data.getLfrhf());
+        preparedStatement.setObject(17, data.getHf());
+        preparedStatement.setObject(18, data.getLf());
+        preparedStatement.setObject(19, data.getVlf());
+        preparedStatement.setObject(20, data.getUlf());
+        preparedStatement.setObject(21, data.getTtlpwr());
+        preparedStatement.setObject(22, data.getRsa());
+        preparedStatement.setLong(23, importId);
     }
 
     // 参数输入形式为 --url s3://human-machine/physiological/physiological_data_large.csv --importId 1

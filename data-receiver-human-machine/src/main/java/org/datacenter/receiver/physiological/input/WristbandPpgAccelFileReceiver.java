@@ -31,7 +31,6 @@ public class WristbandPpgAccelFileReceiver extends PhysiologicalFileReceiver<Wri
                 .addColumn("taskId")
                 .addColumn("deviceId")
                 .addColumn("timestamp")
-                .addColumn("samplingRate")
                 .addColumn("ppgRed1")
                 .addColumn("ppgRed2")
                 .addColumn("ppgRed3")
@@ -53,13 +52,13 @@ public class WristbandPpgAccelFileReceiver extends PhysiologicalFileReceiver<Wri
     public String getInsertQuery() {
         return """
                 INSERT INTO %s (
-                    record_id, task_id, device_id, timestamp, sampling_rate,
+                    record_id, task_id, device_id, timestamp,
                     ppg_red1, ppg_red2, ppg_red3, ppg_red4,
                     ppg_infrared1, ppg_infrared2, ppg_infrared3, ppg_infrared4,
                     accel_x, accel_y, accel_z,
                     import_id
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 """.formatted(table.getName());
     }
@@ -71,19 +70,18 @@ public class WristbandPpgAccelFileReceiver extends PhysiologicalFileReceiver<Wri
         preparedStatement.setLong(3, data.getDeviceId());
         preparedStatement.setTimestamp(4, data.getTimestamp() == null ?
                 null : java.sql.Timestamp.valueOf(data.getTimestamp()));
-        preparedStatement.setDouble(5, data.getSamplingRate());
-        preparedStatement.setString(6, data.getPpgRed1());
-        preparedStatement.setString(7, data.getPpgRed2());
-        preparedStatement.setString(8, data.getPpgRed3());
-        preparedStatement.setString(9, data.getPpgRed4());
-        preparedStatement.setString(10, data.getPpgInfrared1());
-        preparedStatement.setString(11, data.getPpgInfrared2());
-        preparedStatement.setString(12, data.getPpgInfrared3());
-        preparedStatement.setString(13, data.getPpgInfrared4());
-        preparedStatement.setObject(14, data.getAccelX());
-        preparedStatement.setObject(15, data.getAccelY());
-        preparedStatement.setObject(16, data.getAccelZ());
-        preparedStatement.setLong(17, importId);
+        preparedStatement.setString(5, data.getPpgRed1());
+        preparedStatement.setString(6, data.getPpgRed2());
+        preparedStatement.setString(7, data.getPpgRed3());
+        preparedStatement.setString(8, data.getPpgRed4());
+        preparedStatement.setString(9, data.getPpgInfrared1());
+        preparedStatement.setString(10, data.getPpgInfrared2());
+        preparedStatement.setString(11, data.getPpgInfrared3());
+        preparedStatement.setString(12, data.getPpgInfrared4());
+        preparedStatement.setObject(13, data.getAccelX());
+        preparedStatement.setObject(14, data.getAccelY());
+        preparedStatement.setObject(15, data.getAccelZ());
+        preparedStatement.setLong(16, importId);
     }
 
     // 参数输入形式为 --url s3://human-machine/physiological/physiological_data_large.csv --importId 1

@@ -30,7 +30,6 @@ public class TShirtRespFileReceiver extends PhysiologicalFileReceiver<TShirtResp
                 .addColumn("taskId")
                 .addColumn("deviceId")
                 .addColumn("timestamp")
-                .addColumn("samplingRate")
                 .addColumn("respData")
                 .setUseHeader(true)
                 .setColumnSeparator(',')
@@ -42,7 +41,7 @@ public class TShirtRespFileReceiver extends PhysiologicalFileReceiver<TShirtResp
     public String getInsertQuery() {
         return """
                 INSERT INTO %s (
-                    record_id, task_id, device_id, timestamp, sampling_rate,
+                    record_id, task_id, device_id, timestamp,
                     resp_data, import_id
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """.formatted(table.getName());
@@ -55,9 +54,8 @@ public class TShirtRespFileReceiver extends PhysiologicalFileReceiver<TShirtResp
         preparedStatement.setLong(3, data.getDeviceId());
         preparedStatement.setTimestamp(4, data.getTimestamp() == null ?
                 null : java.sql.Timestamp.valueOf(data.getTimestamp()));
-        preparedStatement.setDouble(5, data.getSamplingRate());
-        preparedStatement.setObject(6, data.getRespData());
-        preparedStatement.setLong(7, importId);
+        preparedStatement.setObject(5, data.getRespData());
+        preparedStatement.setLong(6, importId);
     }
 
     // 参数输入形式为 --url s3://human-machine/physiological/physiological_data_large.csv --importId 1

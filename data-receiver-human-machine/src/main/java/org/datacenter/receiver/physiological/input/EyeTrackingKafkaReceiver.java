@@ -38,7 +38,7 @@ public class EyeTrackingKafkaReceiver extends PhysiologicalKafkaReceiver<EyeTrac
         return JdbcSink.<EyeTracking>builder()
                 .withQueryStatement("""
                         INSERT INTO eye_tracking (
-                            record_id, task_id, device_id, timestamp, sampling_rate, import_id
+                            record_id, task_id, device_id, timestamp, import_id
                             pupil_diameter_left_px, pupil_diameter_left_mm, pupil_diameter_right_px, pupil_diameter_right_mm,
                             pupil_distance_left, pupil_distance_right,
                             pupil_center_x_left, pupil_center_y_left, pupil_center_x_right, pupil_center_y_right,
@@ -51,7 +51,7 @@ public class EyeTrackingKafkaReceiver extends PhysiologicalKafkaReceiver<EyeTrac
                             fixation_duration_us, fixation_saccade_count, fixation_saccade_state,
                             fixation_saccade_center_x, fixation_saccade_center_y
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?,
                             ?, ?, ?, ?,
                             ?, ?,
                             ?, ?, ?, ?,
@@ -70,43 +70,42 @@ public class EyeTrackingKafkaReceiver extends PhysiologicalKafkaReceiver<EyeTrac
                     preparedStatement.setLong(3, eyeTracking.getDeviceId());
                     preparedStatement.setTimestamp(4, eyeTracking.getTimestamp() == null ?
                             null : java.sql.Timestamp.valueOf(eyeTracking.getTimestamp()));
-                    preparedStatement.setDouble(5, eyeTracking.getSamplingRate());
-                    preparedStatement.setLong(6, importId);
-                    preparedStatement.setObject(7, eyeTracking.getPupilDiameterLeftPx());
-                    preparedStatement.setObject(8, eyeTracking.getPupilDiameterLeftMm());
-                    preparedStatement.setObject(9, eyeTracking.getPupilDiameterRightPx());
-                    preparedStatement.setObject(10, eyeTracking.getPupilDiameterRightMm());
-                    preparedStatement.setObject(11, eyeTracking.getPupilDistanceLeft());
-                    preparedStatement.setObject(12, eyeTracking.getPupilDistanceRight());
-                    preparedStatement.setObject(13, eyeTracking.getPupilCenterXLeft());
-                    preparedStatement.setObject(14, eyeTracking.getPupilCenterYLeft());
-                    preparedStatement.setObject(15, eyeTracking.getPupilCenterXRight());
-                    preparedStatement.setObject(16, eyeTracking.getPupilCenterYRight());
-                    preparedStatement.setObject(17, eyeTracking.getBlankLeft());
-                    preparedStatement.setObject(18, eyeTracking.getBlankRight());
-                    preparedStatement.setObject(19, eyeTracking.getOpennessLeft());
-                    preparedStatement.setObject(20, eyeTracking.getOpennessRight());
-                    preparedStatement.setObject(21, eyeTracking.getGazePointLeftX());
-                    preparedStatement.setObject(22, eyeTracking.getGazePointLeftY());
-                    preparedStatement.setObject(23, eyeTracking.getGazePointRightX());
-                    preparedStatement.setObject(24, eyeTracking.getGazePointRightY());
-                    preparedStatement.setObject(25, eyeTracking.getGazeOriginLeftX());
-                    preparedStatement.setObject(26, eyeTracking.getGazeOriginLeftY());
-                    preparedStatement.setObject(27, eyeTracking.getGazeOriginLeftZ());
-                    preparedStatement.setObject(28, eyeTracking.getGazeOriginRightX());
-                    preparedStatement.setObject(29, eyeTracking.getGazeOriginRightY());
-                    preparedStatement.setObject(30, eyeTracking.getGazeOriginRightZ());
-                    preparedStatement.setObject(31, eyeTracking.getGazeDirectionLeftX());
-                    preparedStatement.setObject(32, eyeTracking.getGazeDirectionLeftY());
-                    preparedStatement.setObject(33, eyeTracking.getGazeDirectionLeftZ());
-                    preparedStatement.setObject(34, eyeTracking.getGazeDirectionRightX());
-                    preparedStatement.setObject(35, eyeTracking.getGazeDirectionRightY());
-                    preparedStatement.setObject(36, eyeTracking.getGazeDirectionRightZ());
-                    preparedStatement.setObject(37, eyeTracking.getFixationDurationUs());
-                    preparedStatement.setObject(38, eyeTracking.getFixationSaccadeCount());
-                    preparedStatement.setObject(39, eyeTracking.getFixationSaccadeState());
-                    preparedStatement.setObject(40, eyeTracking.getFixationSaccadeCenterX());
-                    preparedStatement.setObject(41, eyeTracking.getFixationSaccadeCenterY());
+                    preparedStatement.setLong(5, importId);
+                    preparedStatement.setObject(6, eyeTracking.getPupilDiameterLeftPx());
+                    preparedStatement.setObject(7, eyeTracking.getPupilDiameterLeftMm());
+                    preparedStatement.setObject(8, eyeTracking.getPupilDiameterRightPx());
+                    preparedStatement.setObject(9, eyeTracking.getPupilDiameterRightMm());
+                    preparedStatement.setObject(10, eyeTracking.getPupilDistanceLeft());
+                    preparedStatement.setObject(11, eyeTracking.getPupilDistanceRight());
+                    preparedStatement.setObject(12, eyeTracking.getPupilCenterXLeft());
+                    preparedStatement.setObject(13, eyeTracking.getPupilCenterYLeft());
+                    preparedStatement.setObject(14, eyeTracking.getPupilCenterXRight());
+                    preparedStatement.setObject(15, eyeTracking.getPupilCenterYRight());
+                    preparedStatement.setObject(16, eyeTracking.getBlankLeft());
+                    preparedStatement.setObject(17, eyeTracking.getBlankRight());
+                    preparedStatement.setObject(18, eyeTracking.getOpennessLeft());
+                    preparedStatement.setObject(19, eyeTracking.getOpennessRight());
+                    preparedStatement.setObject(20, eyeTracking.getGazePointLeftX());
+                    preparedStatement.setObject(21, eyeTracking.getGazePointLeftY());
+                    preparedStatement.setObject(22, eyeTracking.getGazePointRightX());
+                    preparedStatement.setObject(23, eyeTracking.getGazePointRightY());
+                    preparedStatement.setObject(24, eyeTracking.getGazeOriginLeftX());
+                    preparedStatement.setObject(25, eyeTracking.getGazeOriginLeftY());
+                    preparedStatement.setObject(26, eyeTracking.getGazeOriginLeftZ());
+                    preparedStatement.setObject(27, eyeTracking.getGazeOriginRightX());
+                    preparedStatement.setObject(28, eyeTracking.getGazeOriginRightY());
+                    preparedStatement.setObject(29, eyeTracking.getGazeOriginRightZ());
+                    preparedStatement.setObject(30, eyeTracking.getGazeDirectionLeftX());
+                    preparedStatement.setObject(31, eyeTracking.getGazeDirectionLeftY());
+                    preparedStatement.setObject(32, eyeTracking.getGazeDirectionLeftZ());
+                    preparedStatement.setObject(33, eyeTracking.getGazeDirectionRightX());
+                    preparedStatement.setObject(34, eyeTracking.getGazeDirectionRightY());
+                    preparedStatement.setObject(35, eyeTracking.getGazeDirectionRightZ());
+                    preparedStatement.setObject(36, eyeTracking.getFixationDurationUs());
+                    preparedStatement.setObject(37, eyeTracking.getFixationSaccadeCount());
+                    preparedStatement.setObject(38, eyeTracking.getFixationSaccadeState());
+                    preparedStatement.setObject(39, eyeTracking.getFixationSaccadeCenterX());
+                    preparedStatement.setObject(40, eyeTracking.getFixationSaccadeCenterY());
                 })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PHYSIOLOGICAL));
