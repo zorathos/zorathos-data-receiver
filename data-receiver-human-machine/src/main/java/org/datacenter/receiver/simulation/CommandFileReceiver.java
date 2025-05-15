@@ -99,7 +99,7 @@ public class CommandFileReceiver extends SimulationReceiver<Command> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                Long.parseLong(parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap())),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         CommandFileReceiver receiver = new CommandFileReceiver();
         receiver.setConfig(config);

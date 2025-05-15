@@ -27,9 +27,9 @@ public class WristbandPpgAccelFileReceiver extends PhysiologicalFileReceiver<Wri
     @Override
     public SerializableFunction<CsvMapper, CsvSchema> getSchemaGenerator() {
         return mapper -> CsvSchema.builder()
-                .addColumn("recordId")
                 .addColumn("taskId")
                 .addColumn("deviceId")
+                .addColumn("pilotId")
                 .addColumn("timestamp")
                 .addColumn("ppgRed1")
                 .addColumn("ppgRed2")
@@ -52,7 +52,7 @@ public class WristbandPpgAccelFileReceiver extends PhysiologicalFileReceiver<Wri
     public String getInsertQuery() {
         return """
                 INSERT INTO %s (
-                    record_id, task_id, device_id, timestamp,
+                    pilot_id, task_id, device_id, timestamp,
                     ppg_red1, ppg_red2, ppg_red3, ppg_red4,
                     ppg_infrared1, ppg_infrared2, ppg_infrared3, ppg_infrared4,
                     accel_x, accel_y, accel_z,
@@ -65,7 +65,7 @@ public class WristbandPpgAccelFileReceiver extends PhysiologicalFileReceiver<Wri
 
     @Override
     public void bindPreparedStatement(PreparedStatement preparedStatement, WristbandPpgAccel data, Long importId) throws SQLException {
-        preparedStatement.setLong(1, data.getRecordId());
+        preparedStatement.setLong(1, data.getPilotId());
         preparedStatement.setLong(2, data.getTaskId());
         preparedStatement.setLong(3, data.getDeviceId());
         preparedStatement.setTimestamp(4, data.getTimestamp() == null ?

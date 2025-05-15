@@ -26,9 +26,9 @@ public class WristbandGsrFileReceiver extends PhysiologicalFileReceiver<Wristban
     @Override
     public SerializableFunction<CsvMapper, CsvSchema> getSchemaGenerator() {
         return mapper -> CsvSchema.builder()
-                .addColumn("recordId")
                 .addColumn("taskId")
                 .addColumn("deviceId")
+                .addColumn("pilotId")
                 .addColumn("timestamp")
                 .addColumn("gsrData")
                 .setUseHeader(true)
@@ -41,7 +41,7 @@ public class WristbandGsrFileReceiver extends PhysiologicalFileReceiver<Wristban
     public String getInsertQuery() {
         return """
                 INSERT INTO %s (
-                    record_id, task_id, device_id, timestamp,
+                    pilot_id, task_id, device_id, timestamp,
                     gsr_data, import_id
                 ) VALUES (?, ?, ?, ?, ?, ?)
                 """.formatted(table.getName());
@@ -49,7 +49,7 @@ public class WristbandGsrFileReceiver extends PhysiologicalFileReceiver<Wristban
 
     @Override
     public void bindPreparedStatement(PreparedStatement preparedStatement, WristbandGsr data, Long importId) throws SQLException {
-        preparedStatement.setLong(1, data.getRecordId());
+        preparedStatement.setLong(1, data.getPilotId());
         preparedStatement.setLong(2, data.getTaskId());
         preparedStatement.setLong(3, data.getDeviceId());
         preparedStatement.setTimestamp(4, data.getTimestamp() == null ?

@@ -16,6 +16,7 @@ import org.datacenter.receiver.plan.util.FlightPlanSinkUtil;
 import org.datacenter.receiver.util.DataReceiverUtil;
 import org.datacenter.receiver.util.JsonArrayFileInputFormat;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FILE_RECEIVER_TYPE;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.FLIGHT_PLAN_FILE_URL;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
 
@@ -69,7 +70,9 @@ public class FlightPlanImplementationAndDynamicJsonFileReceiver extends BaseRece
         log.info("Parameters: {}", params.toMap());
 
         FlightPlanImplementationAndDynamicJsonFileReceiverConfig config = FlightPlanImplementationAndDynamicJsonFileReceiverConfig.builder()
-                .receiverType(FlightPlanImplementationAndDynamicJsonFileReceiverConfig.FlightPlanReceiverType.fromString(params.getRequired("receiverType")))
+                .receiverType(FlightPlanImplementationAndDynamicJsonFileReceiverConfig
+                        .FlightPlanReceiverType
+                        .fromString(params.getRequired(FLIGHT_PLAN_FILE_RECEIVER_TYPE.getKeyForParamsMap())))
                 .url(params.getRequired(FLIGHT_PLAN_FILE_URL.getKeyForParamsMap()))
                 .importId(Long.valueOf(params.getRequired(IMPORT_ID.getKeyForParamsMap())))
                 .build();

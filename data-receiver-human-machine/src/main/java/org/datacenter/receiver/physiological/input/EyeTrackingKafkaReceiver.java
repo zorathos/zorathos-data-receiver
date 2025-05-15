@@ -38,7 +38,7 @@ public class EyeTrackingKafkaReceiver extends PhysiologicalKafkaReceiver<EyeTrac
         return JdbcSink.<EyeTracking>builder()
                 .withQueryStatement("""
                         INSERT INTO eye_tracking (
-                            record_id, task_id, device_id, timestamp, import_id
+                            pilot_id, task_id, device_id, timestamp, import_id
                             pupil_diameter_left_px, pupil_diameter_left_mm, pupil_diameter_right_px, pupil_diameter_right_mm,
                             pupil_distance_left, pupil_distance_right,
                             pupil_center_x_left, pupil_center_y_left, pupil_center_x_right, pupil_center_y_right,
@@ -65,7 +65,7 @@ public class EyeTrackingKafkaReceiver extends PhysiologicalKafkaReceiver<EyeTrac
                             ?, ?
                         );
                         """, (preparedStatement, eyeTracking) -> {
-                    preparedStatement.setLong(1, eyeTracking.getRecordId());
+                    preparedStatement.setLong(1, eyeTracking.getPilotId());
                     preparedStatement.setLong(2, eyeTracking.getTaskId());
                     preparedStatement.setLong(3, eyeTracking.getDeviceId());
                     preparedStatement.setTimestamp(4, eyeTracking.getTimestamp() == null ?

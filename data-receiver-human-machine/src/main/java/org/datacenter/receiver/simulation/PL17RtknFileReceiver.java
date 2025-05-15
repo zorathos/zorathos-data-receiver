@@ -116,7 +116,7 @@ public class PL17RtknFileReceiver extends SimulationReceiver<PL17Rtkn> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                Long.parseLong(parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap())),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         PL17RtknFileReceiver receiver = new PL17RtknFileReceiver();
         receiver.setConfig(config);

@@ -30,7 +30,7 @@ public class EegEmgKafkaReceiver extends PhysiologicalKafkaReceiver<EegEmg> {
         return JdbcSink.<EegEmg>builder()
                 .withQueryStatement("""
                         INSERT INTO eeg_emg (
-                            record_id, task_id, device_id, timestamp, sampling_rate, import_id,
+                            pilot_id, task_id, device_id, timestamp, sampling_rate, import_id,
                             channel_1, channel_2, channel_3, channel_4, channel_5,
                             channel_6, channel_7, channel_8, channel_9, channel_10,
                             emg_1, emg_2, emg_3, emg_4, emg_5, emg_6, emg_7, emg_8
@@ -41,7 +41,7 @@ public class EegEmgKafkaReceiver extends PhysiologicalKafkaReceiver<EegEmg> {
                             ?, ?, ?, ?, ?, ?, ?, ?
                         );
                         """, (preparedStatement, eegEmg) -> {
-                    preparedStatement.setLong(1, eegEmg.getRecordId());
+                    preparedStatement.setLong(1, eegEmg.getPilotId());
                     preparedStatement.setLong(2, eegEmg.getTaskId());
                     preparedStatement.setLong(3, eegEmg.getDeviceId());
                     preparedStatement.setTimestamp(4, eegEmg.getTimestamp() == null ?

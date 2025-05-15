@@ -100,7 +100,7 @@ public class EwsKJ500FileReceiver extends SimulationReceiver<EwsKJ500> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap())),
+                Long.parseLong(parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap()))),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         EwsKJ500FileReceiver receiver = new EwsKJ500FileReceiver();
         receiver.setConfig(config);

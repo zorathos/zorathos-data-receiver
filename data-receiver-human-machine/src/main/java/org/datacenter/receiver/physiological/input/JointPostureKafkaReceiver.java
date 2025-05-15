@@ -17,6 +17,8 @@ public class JointPostureKafkaReceiver extends PhysiologicalKafkaReceiver<JointP
     public static void main(String[] args) {
         PhysiologicalKafkaReceiverConfig config = parseArgs(args);
         JointPostureKafkaReceiver receiver = new JointPostureKafkaReceiver();
+        // 将接收器设置为接收JSON数组
+        receiver.setItemInArray(true);
         receiver.setConfig(config);
         receiver.run();
     }
@@ -26,12 +28,12 @@ public class JointPostureKafkaReceiver extends PhysiologicalKafkaReceiver<JointP
         return JdbcSink.<JointPosture>builder()
                 .withQueryStatement("""
                         INSERT INTO joint_posture (
-                            record_id, task_id, device_id, timestamp, import_id,
+                            pilot_id, task_id, device_id, timestamp, import_id,
                             joint_name, qx, qy, qz, qw, px, py, pz
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                         """, (preparedStatement, jointPosture) -> {
                     // 绑定数据逻辑保持不变
-                    preparedStatement.setLong(1, jointPosture.getRecordId());
+                    preparedStatement.setLong(1, jointPosture.getPilotId());
                     preparedStatement.setLong(2, jointPosture.getTaskId());
                     preparedStatement.setLong(3, jointPosture.getDeviceId());
                     preparedStatement.setTimestamp(4, jointPosture.getTimestamp() == null ?

@@ -27,9 +27,9 @@ public class TShirtHrvFileReceiver extends PhysiologicalFileReceiver<TShirtHrv> 
     @Override
     public SerializableFunction<CsvMapper, CsvSchema> getSchemaGenerator() {
         return mapper -> CsvSchema.builder()
-                .addColumn("recordId")
                 .addColumn("taskId")
                 .addColumn("deviceId")
+                .addColumn("pilotId")
                 .addColumn("timestamp")
                 .addColumn("rrMean")
                 .addColumn("averageHeartRate")
@@ -59,7 +59,7 @@ public class TShirtHrvFileReceiver extends PhysiologicalFileReceiver<TShirtHrv> 
     public String getInsertQuery() {
         return """
                 INSERT INTO %s (
-                    record_id, task_id, device_id, timestamp,
+                    pilot_id, task_id, device_id, timestamp,
                     rr_mean, average_heart_rate, sdnn, rmssd, pnn50,
                     sd1, sd2, sd1rsd2, apen, lf_norm,
                     hf_norm, lfrhf, hf, lf, vlf,
@@ -74,7 +74,7 @@ public class TShirtHrvFileReceiver extends PhysiologicalFileReceiver<TShirtHrv> 
 
     @Override
     public void bindPreparedStatement(PreparedStatement preparedStatement, TShirtHrv data, Long importId) throws SQLException {
-        preparedStatement.setLong(1, data.getRecordId());
+        preparedStatement.setLong(1, data.getPilotId());
         preparedStatement.setLong(2, data.getTaskId());
         preparedStatement.setLong(3, data.getDeviceId());
         preparedStatement.setTimestamp(4, data.getTimestamp() == null ?

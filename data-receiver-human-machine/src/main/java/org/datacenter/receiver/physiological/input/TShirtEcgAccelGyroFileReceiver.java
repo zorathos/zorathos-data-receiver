@@ -27,9 +27,9 @@ public class TShirtEcgAccelGyroFileReceiver extends PhysiologicalFileReceiver<TS
     @Override
     public SerializableFunction<CsvMapper, CsvSchema> getSchemaGenerator() {
         return mapper -> CsvSchema.builder()
-                .addColumn("recordId")
                 .addColumn("taskId")
                 .addColumn("deviceId")
+                .addColumn("pilotId")
                 .addColumn("timestamp")
                 .addColumn("ecg1")
                 .addColumn("ecg2")
@@ -50,7 +50,7 @@ public class TShirtEcgAccelGyroFileReceiver extends PhysiologicalFileReceiver<TS
     public String getInsertQuery() {
         return """
                 INSERT INTO %s (
-                    record_id, task_id, device_id, timestamp,
+                    pilot_id, task_id, device_id, timestamp,
                     ecg1, ecg2, ecg3,
                     accel_x, accel_y, accel_z,
                     gyro_x, gyro_y, gyro_z,
@@ -63,7 +63,7 @@ public class TShirtEcgAccelGyroFileReceiver extends PhysiologicalFileReceiver<TS
 
     @Override
     public void bindPreparedStatement(PreparedStatement preparedStatement, TShirtEcgAccelGyro data, Long importId) throws SQLException {
-        preparedStatement.setLong(1, data.getRecordId());
+        preparedStatement.setLong(1, data.getPilotId());
         preparedStatement.setLong(2, data.getTaskId());
         preparedStatement.setLong(3, data.getDeviceId());
         preparedStatement.setTimestamp(4, data.getTimestamp() == null ?

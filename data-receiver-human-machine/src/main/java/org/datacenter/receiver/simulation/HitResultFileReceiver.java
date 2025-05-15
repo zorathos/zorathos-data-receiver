@@ -87,7 +87,7 @@ public class HitResultFileReceiver extends SimulationReceiver<HitResult> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap())),
+                Long.parseLong(parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap()))),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         HitResultFileReceiver receiver = new HitResultFileReceiver();
         receiver.setConfig(config);

@@ -108,7 +108,7 @@ public class EwsY8GFileReceiver extends SimulationReceiver<EwsY8G> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap())),
+                Long.parseLong(parameterTool.getRequired((IMPORT_ID.getKeyForParamsMap()))),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         EwsY8GFileReceiver receiver = new EwsY8GFileReceiver();
         receiver.setConfig(config);

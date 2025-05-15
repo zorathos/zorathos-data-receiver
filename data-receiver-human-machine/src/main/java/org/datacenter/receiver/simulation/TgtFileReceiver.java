@@ -174,7 +174,7 @@ public class TgtFileReceiver extends SimulationReceiver<Tgt> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                Long.parseLong(parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap())),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         TgtFileReceiver receiver = new TgtFileReceiver();
         receiver.setConfig(config);

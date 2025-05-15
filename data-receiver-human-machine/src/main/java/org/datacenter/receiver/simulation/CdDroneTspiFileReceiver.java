@@ -120,7 +120,7 @@ public class CdDroneTspiFileReceiver extends SimulationReceiver<CdDroneTspi> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                Long.parseLong(parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap())),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         CdDroneTspiFileReceiver receiver = new CdDroneTspiFileReceiver();
         receiver.setConfig(config);

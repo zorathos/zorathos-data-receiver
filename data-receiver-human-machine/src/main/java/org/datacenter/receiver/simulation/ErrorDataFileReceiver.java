@@ -16,6 +16,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.IMPORT_ID;
+import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_BATCH_NUMBER;
 import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.SIMULATION_URL;
 
 
@@ -88,8 +90,8 @@ public class ErrorDataFileReceiver extends SimulationReceiver<ErrorData> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired("import_id"),
-                parameterTool.getRequired("batch_number"));
+                Long.parseLong(parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap())),
+                parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         ErrorDataFileReceiver receiver = new ErrorDataFileReceiver();
         receiver.setConfig(config);
         receiver.run();

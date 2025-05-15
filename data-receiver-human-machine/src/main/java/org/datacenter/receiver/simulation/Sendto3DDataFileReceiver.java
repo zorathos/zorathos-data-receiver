@@ -81,7 +81,7 @@ public class Sendto3DDataFileReceiver extends SimulationReceiver<Sendto3DData> {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         SimulationReceiverConfig config = new SimulationReceiverConfig(
                 parameterTool.getRequired(SIMULATION_URL.getKeyForParamsMap()),
-                parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap()),
+                Long.parseLong(parameterTool.getRequired(IMPORT_ID.getKeyForParamsMap())),
                 parameterTool.getRequired(SIMULATION_BATCH_NUMBER.getKeyForParamsMap()));
         Sendto3DDataFileReceiver receiver = new Sendto3DDataFileReceiver();
         receiver.setConfig(config);

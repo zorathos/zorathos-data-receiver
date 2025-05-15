@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.datacenter.config.receiver.physiological.PhysiologicalKafkaReceiverConfig;
 import org.datacenter.exception.ZorathosException;
@@ -25,6 +25,7 @@ import static org.datacenter.config.keys.HumanMachineReceiverConfigKey.PHYSIOLOG
 @Data
 @Slf4j
 public abstract class PhysiologicalKafkaReceiver<T> extends BaseReceiver {
+    protected Boolean itemInArray = false;
     protected PhysiologicalKafkaReceiverConfig config;
 
     /**
@@ -63,8 +64,14 @@ public abstract class PhysiologicalKafkaReceiver<T> extends BaseReceiver {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         env.setParallelism(1);
 
-        DataStreamSource<T> kafkaSourceDS =
-                DataReceiverUtil.getKafkaSourceDS(env, List.of(config.getTopic()), getDataClass());
+        SingleOutputStreamOperator<T> kafkaSourceDS;
+
+        if (itemInArray) {
+            kafkaSourceDS = DataReceiverUtil.getKafkaArraySourceDS(env, List.of(config.getTopic()), getDataClass());
+        } else {
+            // 实际返回的是一个DataStreamSource 能用到并行化特性
+            kafkaSourceDS = DataReceiverUtil.getKafkaSourceDS(env, List.of(config.getTopic()), getDataClass());
+        }
 
         // 创建sink
         Sink<T> sink = createSink(importId);
