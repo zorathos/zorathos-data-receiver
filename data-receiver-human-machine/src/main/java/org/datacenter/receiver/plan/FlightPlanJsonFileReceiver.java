@@ -64,7 +64,7 @@ public class FlightPlanJsonFileReceiver extends BaseReceiver {
 
         FlightPlanJsonFileReceiverConfig config = FlightPlanJsonFileReceiverConfig.builder()
                 .url(params.getRequired(FLIGHT_PLAN_FILE_URL.getKeyForParamsMap()))
-                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
+                .importId(Long.valueOf(params.getRequired(IMPORT_ID.getKeyForParamsMap())))
                 .build();
 
         FlightPlanJsonFileReceiver receiver = new FlightPlanJsonFileReceiver(config);

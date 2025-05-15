@@ -23,7 +23,7 @@ import java.sql.Timestamp;
  */
 public class FlightPlanSinkUtil {
 
-    private static Sink<FlightPlanRoot> getFlightRootSink(TiDBDatabase database, String importId) {
+    private static Sink<FlightPlanRoot> getFlightRootSink(TiDBDatabase database, Long importId) {
         return JdbcSink.<FlightPlanRoot>builder()
                 .withQueryStatement(
                         """
@@ -39,13 +39,13 @@ public class FlightPlanSinkUtil {
                                     null : Date.valueOf(flightPlanRoot.getFlightDate()));
                             preparedStatement.setTimestamp(3, flightPlanRoot.getFlightDateTime() == null ?
                                     null : Timestamp.valueOf(flightPlanRoot.getFlightDateTime()));
-                            preparedStatement.setString(4, importId);
+                            preparedStatement.setLong(4, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightHead> getFlightHeadSink(TiDBDatabase database, String importId) {
+    private static Sink<FlightHead> getFlightHeadSink(TiDBDatabase database, Long importId) {
         return JdbcSink.<FlightHead>builder()
                 .withQueryStatement(
                         """
@@ -73,13 +73,13 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(14, flightHead.getDxthh());
                             preparedStatement.setString(15, flightHead.getZhshh());
                             preparedStatement.setString(16, flightHead.getDwsbxh());
-                            preparedStatement.setString(17, importId);
+                            preparedStatement.setLong(17, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightNotes> getFlightNotesSink(TiDBDatabase database, String importId) {
+    private static Sink<FlightNotes> getFlightNotesSink(TiDBDatabase database, Long importId) {
         return JdbcSink.<FlightNotes>builder()
                 .withQueryStatement(
                         """
@@ -92,13 +92,13 @@ public class FlightPlanSinkUtil {
                         (JdbcStatementBuilder<FlightNotes>) (preparedStatement, flightNotes) -> {
                             preparedStatement.setString(1, flightNotes.getRootId());
                             preparedStatement.setString(2, flightNotes.getNote());
-                            preparedStatement.setString(3, importId);
+                            preparedStatement.setLong(3, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightCmd> getFlightCmdSink(TiDBDatabase database, String importId) {
+    private static Sink<FlightCmd> getFlightCmdSink(TiDBDatabase database, Long importId) {
         return JdbcSink.<FlightCmd>builder()
                 .withQueryStatement(
                         """
@@ -113,13 +113,13 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(2, flightCmd.getName());
                             preparedStatement.setString(3, flightCmd.getLb());
                             preparedStatement.setString(4, flightCmd.getSx());
-                            preparedStatement.setString(5, importId);
+                            preparedStatement.setLong(5, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    private static Sink<FlightTask> getFlightTaskSink(TiDBDatabase tiDBDatabase, String importId) {
+    private static Sink<FlightTask> getFlightTaskSink(TiDBDatabase tiDBDatabase, Long importId) {
         return JdbcSink.<FlightTask>builder()
                 .withQueryStatement(
                         """
@@ -135,13 +135,13 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(3, flightTask.getCode());
                             preparedStatement.setString(4, flightTask.getName());
                             preparedStatement.setString(5, flightTask.getRw());
-                            preparedStatement.setString(6, importId);
+                            preparedStatement.setLong(6, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(tiDBDatabase));
     }
 
-    private static Sink<FlightPlan> getFlightPlanSink(TiDBDatabase database, String importId) {
+    private static Sink<FlightPlan> getFlightPlanSink(TiDBDatabase database, Long importId) {
         return JdbcSink.<FlightPlan>builder()
                 .withQueryStatement(
                         """
@@ -187,13 +187,13 @@ public class FlightPlanSinkUtil {
                             preparedStatement.setString(31, flightPlan.getYxyl());
                             preparedStatement.setString(32, flightPlan.getWqgz());
                             preparedStatement.setString(33, flightPlan.getGrfa());
-                            preparedStatement.setString(34, importId);
+                            preparedStatement.setLong(34, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(database));
     }
 
-    public static void addMultiSinkForFlightPlanRoot(SingleOutputStreamOperator<FlightPlanRoot> sourceDs, TiDBDatabase database, String importId) {
+    public static void addMultiSinkForFlightPlanRoot(SingleOutputStreamOperator<FlightPlanRoot> sourceDs, TiDBDatabase database, Long importId) {
         sourceDs.sinkTo(getFlightRootSink(database, importId)).name("Flight root sink");
         sourceDs.map(FlightPlanRoot::getFlightHead)
                 .returns(FlightHead.class)

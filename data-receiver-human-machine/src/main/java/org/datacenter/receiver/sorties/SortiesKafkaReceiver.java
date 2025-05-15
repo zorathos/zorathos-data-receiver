@@ -62,7 +62,7 @@ public class SortiesKafkaReceiver extends BaseReceiver implements Serializable {
      * @param importId 导入ID
      * @return JdbcSink
      */
-    private static Sink<Sorties> createSortiesSink(String importId) {
+    private static Sink<Sorties> createSortiesSink(Long importId) {
         return JdbcSink.<Sorties>builder()
                 .withQueryStatement("""
                         INSERT INTO sorties (
@@ -152,7 +152,7 @@ public class SortiesKafkaReceiver extends BaseReceiver implements Serializable {
                     preparedStatement.setLong(32, sorties.getTestDrive());
                     preparedStatement.setString(33, sorties.getTestDriveStr());
                     preparedStatement.setString(34, sorties.getUpPilot());
-                    preparedStatement.setString(35, importId);
+                    preparedStatement.setLong(35, importId);
                 })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
@@ -210,7 +210,7 @@ public class SortiesKafkaReceiver extends BaseReceiver implements Serializable {
                 .json(decodedJson)
                 .build();
         SortiesReceiverConfig sortiesReceiverConfig = SortiesReceiverConfig.builder()
-                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
+                .importId(Long.valueOf(params.getRequired(IMPORT_ID.getKeyForParamsMap())))
                 .baseUrl(params.getRequired(SORTIES_BASE_URL.getKeyForParamsMap()))
                 .runMode(SortiesReceiverConfig.RunMode.fromString(
                         params.getRequired(SORTIES_RUN_MODE.getKeyForParamsMap())))

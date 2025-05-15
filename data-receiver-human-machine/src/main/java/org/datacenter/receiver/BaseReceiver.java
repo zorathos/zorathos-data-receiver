@@ -5,6 +5,8 @@ import org.datacenter.agent.BaseAgent;
 import org.datacenter.config.HumanMachineConfig;
 import org.datacenter.exception.ZorathosException;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -14,7 +16,9 @@ import java.util.concurrent.CountDownLatch;
  * @description : 数据接收器基类
  */
 @Slf4j
-public abstract class BaseReceiver {
+public abstract class BaseReceiver implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     public void run() {
         prepare();

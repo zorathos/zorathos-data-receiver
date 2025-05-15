@@ -22,7 +22,7 @@ public class PersonnelSinkUtil {
      * 通过反射stack我估摸着是flink在加载jar包的时候用反射加载了 PersonnelSinkUtil static变量会第一时间初始化
      * 但是 PersonnelJdbcSink 依赖于JdbcSinkUtil 也就依赖于懒加载的 {@link org.datacenter.config.HumanMachineConfig} 所以会报properties空
      */
-    public static Sink<PersonnelInfo> getPilotJdbcSink(String importId) {
+    public static Sink<PersonnelInfo> getPilotJdbcSink(Long importId) {
         return JdbcSink.<PersonnelInfo>builder()
                 .withQueryStatement("""
                         INSERT INTO `personnel_info` (
@@ -97,7 +97,7 @@ public class PersonnelSinkUtil {
                     preparedStatement.setString(38, personnelInfo.getTotalTimeHistory());
                     preparedStatement.setString(39, personnelInfo.getTotalTimeCurrentYear());
                     preparedStatement.setString(40, personnelInfo.getTotalTeachingTimeHistory());
-                    preparedStatement.setString(41, importId);
+                    preparedStatement.setLong(41, importId);
                 })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.PERSONNEL));

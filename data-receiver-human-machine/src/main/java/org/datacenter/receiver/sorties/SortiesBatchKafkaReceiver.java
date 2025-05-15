@@ -55,7 +55,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver implements Serializa
      * @param importId 导入ID
      * @return JdbcSink实例
      */
-    private static Sink<SortiesBatch> createSortiesBatchSink(String importId) {
+    private static Sink<SortiesBatch> createSortiesBatchSink(Long importId) {
         return JdbcSink.<SortiesBatch>builder()
                 .withQueryStatement("""
                                 INSERT INTO `sorties_batch` (
@@ -69,7 +69,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver implements Serializa
                         (preparedStatement, sortiesBatch) -> {
                             preparedStatement.setString(1, sortiesBatch.getId());
                             preparedStatement.setString(2, sortiesBatch.getBatchNumber());
-                            preparedStatement.setString(3, importId);
+                            preparedStatement.setLong(3, importId);
                         })
                 .withExecutionOptions(JdbcSinkUtil.getTiDBJdbcExecutionOptions())
                 .buildAtLeastOnce(JdbcSinkUtil.getTiDBJdbcConnectionOptions(TiDBDatabase.SORTIES));
@@ -130,7 +130,7 @@ public class SortiesBatchKafkaReceiver extends BaseReceiver implements Serializa
         String decodedJson = new String(Base64.getDecoder().decode(encodedJson));
 
         SortiesBatchReceiverConfig receiverConfig = SortiesBatchReceiverConfig.builder()
-                .importId(params.getRequired(IMPORT_ID.getKeyForParamsMap()))
+                .importId(Long.valueOf(params.getRequired(IMPORT_ID.getKeyForParamsMap())))
                 .url(params.getRequired(SORTIES_BATCH_URL.getKeyForParamsMap()))
                 .runMode(SortiesBatchReceiverConfig.RunMode.fromString(
                         params.getRequired(SORTIES_RUN_MODE.getKeyForParamsMap())))

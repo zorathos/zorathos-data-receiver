@@ -59,6 +59,13 @@ public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends B
     // 定义抽象方法：获取插入SQL语句
     protected abstract String getInsertQuery();
 
+    /**
+     * 生理数据用于绑定PreparedStatement参数
+     * @param preparedStatement PreparedStatement
+     * @param data 数据对象
+     */
+    protected void bindPreparedStatement(PreparedStatement preparedStatement, T data, Long importId) throws SQLException {};
+
     // 定义抽象方法：绑定PreparedStatement参数
     protected abstract void bindPreparedStatement(PreparedStatement preparedStatement, T data, String batchNumber, long importId) throws SQLException;
 
