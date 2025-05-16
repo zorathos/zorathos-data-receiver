@@ -29,6 +29,8 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -72,9 +74,16 @@ public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends B
     // 简化版的JdbcStatementBuilder获取方法
     protected abstract JdbcStatementBuilder<T> getJdbcStatementBuilder();
 
-    //Map函数。默认返回null
-    protected MapFunction<T,T> getMapFunction() {
-        return null;
+    /**
+     * 子类可以覆盖此方法以提供一个 MapFunction 的列表。如果不进行Map操作则无需重写。
+     * 这些 MapFunction 将按列表中的顺序依次应用于数据流。
+     * 每个 MapFunction 的输入和输出类型都应为 T。
+     * @return 一个 MapFunction 的列表
+     */
+    protected List<MapFunction<T, T>> getSequentialMapFunctions() {
+        // 默认不提供任何 MapFunction
+        log.debug("CsvFileReceiver: getSequentialMapFunctions() 默认返回空列表。");
+        return Collections.emptyList();
     }
 
     // 构建CsvReaderFormat
@@ -108,7 +117,7 @@ public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends B
     public void start() {
         StreamExecutionEnvironment env = DataReceiverUtil.prepareStreamEnv();
         CsvReaderFormat<T> csvReaderFormat = buildCsvReaderFormat();
-        MapFunction<T,T> mapFunction = getMapFunction();
+        List<MapFunction<T, T>> mappers = getSequentialMapFunctions();
 
         FileSource<T> fileSource = buildFileSource(csvReaderFormat);
         JdbcSink<T> sink = buildJdbcSink();
@@ -117,15 +126,29 @@ public abstract class CsvFileReceiver<T, C extends BaseReceiverConfig> extends B
                 .returns(modelClass);
 
         //如果有Map函数就过一遍Map，没有则无事发生
-        DataStream<T> mappedStream ;
-        if (mapFunction != null) {
-            mappedStream = stream.map(mapFunction)
-                    .name(modelClass.getName() + " Custom Map");
-        } else {
-            mappedStream = stream;
+        if (mappers != null && !mappers.isEmpty()) {
+           // log.info("为 {} 按顺序应用 {} 个 Map 转换器。", modelClass.getName(), mappers.size());
+            int mapIndex = 0;
+            for (MapFunction<T, T> mapper : mappers) {
+                // 仍然增加索引以保持后续编号的准确性
+                if (mapper != null) {
+                    // 为每个map操作指定一个唯一的名称，方便调试和监控
+                    String mapName = String.format("%s Sequential Map [%d/%d] (%s)",
+                            modelClass.getName(),
+                            mapIndex + 1,
+                            mappers.size(),
+                            mapper.getClass().getSimpleName());
+                    //log.debug("应用 Map 转换器: {}", mapName);
+
+                    stream = stream.map(mapper)
+                            .returns(modelClass) // 假设每个map操作的输出类型仍为T
+                            .name(mapName);
+                }
+                mapIndex++;
+            }
         }
 
-        mappedStream.sinkTo(sink)
+        stream.sinkTo(sink)
                                  .name(modelClass.getName() + " File Sink");
 
 
