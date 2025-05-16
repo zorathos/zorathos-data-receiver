@@ -34,6 +34,12 @@ public class EyeTrackingKafkaReceiver extends PhysiologicalKafkaReceiver<EyeTrac
     }
 
     @Override
+    public void prepare() {
+        super.prepare();
+        modelClass = EyeTracking.class;
+    }
+
+    @Override
     protected Sink<EyeTracking> createSink(Long importId) {
         return JdbcSink.<EyeTracking>builder()
                 .withQueryStatement("""
@@ -114,11 +120,6 @@ public class EyeTrackingKafkaReceiver extends PhysiologicalKafkaReceiver<EyeTrac
     @Override
     protected String getReceiverName() {
         return "EyeTracking";
-    }
-
-    @Override
-    protected Class<EyeTracking> getDataClass() {
-        return EyeTracking.class;
     }
 
     @Override

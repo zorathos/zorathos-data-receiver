@@ -24,6 +24,12 @@ public class JointPostureKafkaReceiver extends PhysiologicalKafkaReceiver<JointP
     }
 
     @Override
+    public void prepare() {
+        super.prepare();
+        modelClass = JointPosture.class;
+    }
+
+    @Override
     protected Sink<JointPosture> createSink(Long importId) {
         return JdbcSink.<JointPosture>builder()
                 .withQueryStatement("""
@@ -56,10 +62,5 @@ public class JointPostureKafkaReceiver extends PhysiologicalKafkaReceiver<JointP
     @Override
     protected String getReceiverName() {
         return "JointPosture";
-    }
-
-    @Override
-    protected Class<JointPosture> getDataClass() {
-        return JointPosture.class;
     }
 }

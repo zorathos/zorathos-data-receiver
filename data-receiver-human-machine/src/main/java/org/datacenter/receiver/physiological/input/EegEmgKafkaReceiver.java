@@ -26,6 +26,12 @@ public class EegEmgKafkaReceiver extends PhysiologicalKafkaReceiver<EegEmg> {
     }
 
     @Override
+    public void prepare() {
+        super.prepare();
+        modelClass = EegEmg.class;
+    }
+
+    @Override
     protected Sink<EegEmg> createSink(Long importId) {
         return JdbcSink.<EegEmg>builder()
                 .withQueryStatement("""
@@ -74,10 +80,5 @@ public class EegEmgKafkaReceiver extends PhysiologicalKafkaReceiver<EegEmg> {
     @Override
     protected String getReceiverName() {
         return "EegEmg";
-    }
-
-    @Override
-    protected Class<EegEmg> getDataClass() {
-        return EegEmg.class;
     }
 }
